@@ -898,76 +898,86 @@ textarea{resize:vertical;min-height:150px;line-height:1.65}
 
       <!-- LIVE DEBATE -->
       <div class="page" id="page-debate">
-        <div class="section-head"><h2>Live Debate</h2><p>Pick a topic. Two AI coaches argue opposite sides. You jump in and defend your position.</p></div>
+        <div class="section-head"><h2>Live Debate</h2><p>Pick a topic. Speak your argument. Two AI coaches argue opposite sides and respond to you out loud.</p></div>
         <div id="debate-container">
           <!-- Setup screen -->
           <div id="debate-setup-screen" style="background:var(--bg1);border:1px solid var(--border);border-radius:16px;overflow:hidden">
             <div class="debate-setup">
-              <div style="font-size:40px">⚔️</div>
-              <h3>Start a Debate</h3>
-              <p>Choose a topic and two coaches will argue opposite sides. Jump in anytime to defend your position — they'll respond to you directly.</p>
+              <div style="font-size:44px">⚔️</div>
+              <h3>Voice Debate</h3>
+              <p>Pick a topic. Two coaches will argue FOR and AGAINST it — out loud. Hold the mic button to make your argument and both coaches will respond to you with their voices.</p>
               <input class="debate-topic-input" id="debate-topic" placeholder="e.g. Remote work is more productive than office work" onkeydown="if(event.key==='Enter')startDebate()"/>
-              <div class="debate-coach-picks">
+              <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;width:100%;max-width:500px">
                 <div>
                   <label style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;display:block">FOR</label>
-                  <select id="debate-coach-a" style="background:var(--bg2);border:1px solid var(--border2);border-radius:9px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:8px 12px;width:100%;outline:none">
+                  <select id="debate-coach-a" style="background:var(--bg2);border:1px solid var(--border2);border-radius:9px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:8px 12px;width:100%;outline:none;appearance:none">
                     <option value="Sage">Sage</option><option value="Blaze">Blaze</option><option value="Nova">Nova</option><option value="Echo">Echo</option><option value="Rex">Rex</option><option value="Luna">Luna</option>
                   </select>
                 </div>
                 <div class="debate-vs">VS</div>
                 <div>
                   <label style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;display:block">AGAINST</label>
-                  <select id="debate-coach-b" style="background:var(--bg2);border:1px solid var(--border2);border-radius:9px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:8px 12px;width:100%;outline:none">
+                  <select id="debate-coach-b" style="background:var(--bg2);border:1px solid var(--border2);border-radius:9px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:8px 12px;width:100%;outline:none;appearance:none">
                     <option value="Rex">Rex</option><option value="Blaze">Blaze</option><option value="Sage">Sage</option><option value="Nova">Nova</option><option value="Echo">Echo</option><option value="Luna">Luna</option>
                   </select>
                 </div>
               </div>
-              <button class="btn-primary" onclick="startDebate()" style="max-width:220px;margin-top:8px">⚔️ Start Debate</button>
+              <button class="btn-primary" onclick="startDebate()" style="max-width:220px;margin-top:8px">⚔️ Start Voice Debate</button>
             </div>
           </div>
-          <!-- Live debate screen (hidden initially) -->
+
+          <!-- Live debate screen -->
           <div id="debate-live-screen" style="display:none">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-              <div id="debate-topic-display" style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--text)"></div>
+              <div id="debate-topic-display" style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text)"></div>
               <button onclick="resetDebate()" class="btn-ghost" style="width:auto;padding:7px 16px;font-size:12px">↺ New Topic</button>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;background:var(--bg1);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:14px">
-              <!-- Side A -->
-              <div class="debate-side debate-side-a">
-                <div class="debate-coach-header">
-                  <div class="debate-coach-avatar" id="debate-avatar-a"></div>
-                  <div>
-                    <div class="debate-coach-name" id="debate-name-a"></div>
-                    <div class="debate-coach-stance" style="color:var(--accent2)">Arguing FOR ✓</div>
-                  </div>
-                </div>
-                <div class="debate-messages" id="debate-msgs-a"></div>
+
+            <!-- Two coach faces side by side -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+              <!-- Coach A (FOR) -->
+              <div style="background:var(--bg1);border:1px solid rgba(79,195,247,0.2);border-radius:14px;padding:22px;display:flex;flex-direction:column;align-items:center;gap:12px">
+                <div style="font-size:10px;color:var(--accent2);font-family:'DM Mono',monospace;letter-spacing:1.5px;text-transform:uppercase">Arguing FOR ✓</div>
+                <canvas id="debate-face-a" width="120" height="120" style="width:120px;height:120px;border-radius:50%"></canvas>
+                <div id="debate-name-a" style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700"></div>
+                <div id="debate-status-a" style="font-size:11px;color:var(--muted2);font-family:'DM Mono',monospace;min-height:16px;text-align:center"></div>
+                <div id="debate-log-a" style="width:100%;max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:8px"></div>
               </div>
-              <!-- Side B -->
-              <div class="debate-side debate-side-b">
-                <div class="debate-coach-header">
-                  <div class="debate-coach-avatar" id="debate-avatar-b"></div>
-                  <div>
-                    <div class="debate-coach-name" id="debate-name-b"></div>
-                    <div class="debate-coach-stance" style="color:var(--red)">Arguing AGAINST ✗</div>
-                  </div>
-                </div>
-                <div class="debate-messages" id="debate-msgs-b"></div>
+              <!-- Coach B (AGAINST) -->
+              <div style="background:var(--bg1);border:1px solid rgba(248,113,113,0.2);border-radius:14px;padding:22px;display:flex;flex-direction:column;align-items:center;gap:12px">
+                <div style="font-size:10px;color:var(--red);font-family:'DM Mono',monospace;letter-spacing:1.5px;text-transform:uppercase">Arguing AGAINST ✗</div>
+                <canvas id="debate-face-b" width="120" height="120" style="width:120px;height:120px;border-radius:50%"></canvas>
+                <div id="debate-name-b" style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700"></div>
+                <div id="debate-status-b" style="font-size:11px;color:var(--muted2);font-family:'DM Mono',monospace;min-height:16px;text-align:center"></div>
+                <div id="debate-log-b" style="width:100%;max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:8px"></div>
               </div>
             </div>
-            <!-- User input -->
-            <div style="background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:16px">
-              <div style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:8px">YOUR ARGUMENT — Both coaches will respond to you</div>
-              <div style="display:flex;gap:10px">
-                <textarea id="debate-user-input" placeholder="Make your argument..." style="flex:1;min-height:60px;max-height:120px;resize:none;font-size:14px;line-height:1.5" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendDebateMsg();}"></textarea>
-                <button class="debate-send-btn" id="debate-send-btn" onclick="sendDebateMsg()">Send</button>
+
+            <!-- Voice input area -->
+            <div style="background:var(--bg1);border:1px solid var(--border);border-radius:14px;padding:20px;display:flex;flex-direction:column;align-items:center;gap:14px">
+              <div style="font-size:10.5px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px">Your Argument</div>
+              <div id="debate-transcript" style="font-size:14px;color:var(--muted2);font-style:italic;min-height:40px;text-align:center;line-height:1.65;max-width:500px">Hold the button and make your argument...</div>
+              <div style="display:flex;align-items:center;gap:16px">
+                <div id="debate-waveform" style="display:flex;gap:3px;align-items:center;height:24px">
+                  <div class="wave-bar" id="dwb0" style="height:4px"></div><div class="wave-bar" id="dwb1" style="height:6px"></div>
+                  <div class="wave-bar" id="dwb2" style="height:10px"></div><div class="wave-bar" id="dwb3" style="height:6px"></div>
+                  <div class="wave-bar" id="dwb4" style="height:14px"></div><div class="wave-bar" id="dwb5" style="height:6px"></div>
+                  <div class="wave-bar" id="dwb6" style="height:10px"></div><div class="wave-bar" id="dwb7" style="height:6px"></div>
+                  <div class="wave-bar" id="dwb8" style="height:4px"></div>
+                </div>
+                <button class="hold-btn idle" id="debate-mic-btn" style="width:64px;height:64px;font-size:22px"
+                  onmousedown="startDebateListening()" onmouseup="stopDebateListening()"
+                  ontouchstart="startDebateListening()" ontouchend="stopDebateListening()">🎙️</button>
+                <div style="width:75px"></div>
               </div>
-              <div class="debate-status" id="debate-status"></div>
+              <div style="font-size:10.5px;color:var(--muted);font-family:'DM Mono',monospace">Hold to speak · Release to send to both coaches</div>
+              <div class="debate-status" id="debate-global-status"></div>
             </div>
           </div>
         </div>
       </div>
 
+      <!-- HEAD TO HEAD -->
       <!-- HEAD TO HEAD -->
       <div class="page" id="page-h2h">
         <div class="section-head"><h2>Head-to-Head</h2><p>Submit two responses to the same question. AI picks the winner with a full breakdown.</p></div>
@@ -2043,15 +2053,20 @@ No markdown.`;
   } catch(e) { /* silent fail */ }
 }
 
-// ── LIVE DEBATE ───────────────────────────────────────────────────────────────
-let debateHistory = {a:[], b:[]};
-let debateCoachA = 'Sage';
-let debateCoachB = 'Rex';
+// ── LIVE DEBATE (VOICE) ──────────────────────────────────────────────────────
+let debateHistoryA = [], debateHistoryB = [];
+let debateCoachA = 'Sage', debateCoachB = 'Rex';
 let debateTopic = '';
 let debateRunning = false;
+let debateRecognition = null;
+let debateFaceAnimA = null, debateFaceAnimB = null;
+let debateWaveInterval = null;
+let debateStateA = 'idle', debateStateB = 'idle'; // idle | speaking
+let debateBlinkT = 0;
+let debateMouthA = 0, debateMouthB = 0;
 
 function initDebatePage() {
-  // nothing needed on init
+  // nothing needed
 }
 
 async function startDebate() {
@@ -2061,107 +2076,273 @@ async function startDebate() {
   debateCoachB = document.getElementById('debate-coach-b').value;
   if (debateCoachA === debateCoachB) { showToast('⚠️', 'Pick two different coaches'); return; }
   debateTopic = topic;
-  debateHistory = {a:[], b:[]};
+  debateHistoryA = []; debateHistoryB = [];
   debateRunning = true;
 
-  // Show live screen
   document.getElementById('debate-setup-screen').style.display = 'none';
   document.getElementById('debate-live-screen').style.display = 'block';
-  document.getElementById('debate-topic-display').textContent = '"' + topic + '"';
+  document.getElementById('debate-topic-display').textContent = '\u201c' + topic + '\u201d';
 
-  // Set up coach headers
-  const cA = COACHES[debateCoachA], cB = COACHES[debateCoachB];
-  document.getElementById('debate-avatar-a').textContent = debateCoachA[0];
-  document.getElementById('debate-avatar-a').style.cssText = `background:${cA.bg};color:${cA.color};width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:18px;font-weight:800;flex-shrink:0`;
+  // Set names
   document.getElementById('debate-name-a').textContent = debateCoachA;
-  document.getElementById('debate-avatar-b').textContent = debateCoachB[0];
-  document.getElementById('debate-avatar-b').style.cssText = `background:${cB.bg};color:${cB.color};width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:18px;font-weight:800;flex-shrink:0`;
   document.getElementById('debate-name-b').textContent = debateCoachB;
 
-  // Clear messages
-  document.getElementById('debate-msgs-a').innerHTML = '';
-  document.getElementById('debate-msgs-b').innerHTML = '';
+  // Clear logs
+  document.getElementById('debate-log-a').innerHTML = '';
+  document.getElementById('debate-log-b').innerHTML = '';
+  document.getElementById('debate-transcript').textContent = 'Hold the button and make your argument...';
+
+  // Start face animations
+  if (debateFaceAnimA) cancelAnimationFrame(debateFaceAnimA);
+  if (debateFaceAnimB) cancelAnimationFrame(debateFaceAnimB);
+  drawDebateFace('a');
+  drawDebateFace('b');
+  startDebateWaveform();
 
   // Opening statements
-  await getDebateOpening();
+  await getDebateOpenings();
 }
 
-async function getDebateOpening() {
-  document.getElementById('debate-status').textContent = 'Coaches preparing opening statements...';
-  document.getElementById('debate-send-btn').disabled = true;
+function drawDebateFace(side) {
+  const canvas = document.getElementById('debate-face-' + side);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const coach = side === 'a' ? debateCoachA : debateCoachB;
+  const state = side === 'a' ? debateStateA : debateStateB;
+  const mouth = side === 'a' ? debateMouthA : debateMouthB;
+  const f = FACE_F[coach] || FACE_F.Luna;
+  const c = COACHES[coach] || COACHES.Luna;
+  const W = 120, H = 120, cx = 60, cy = 60, r = 54;
 
-  const sysA = `You are ${debateCoachA} in a live debate. You are arguing FOR: "${debateTopic}". Give a punchy 2-3 sentence opening argument. Be direct and confident. No markdown.`;
-  const sysB = `You are ${debateCoachB} in a live debate. You are arguing AGAINST: "${debateTopic}". Give a punchy 2-3 sentence opening argument. Be direct and forceful. No markdown.`;
+  ctx.clearRect(0, 0, W, H);
+  const grd = ctx.createRadialGradient(cx, cy, 10, cx, cy, r);
+  grd.addColorStop(0, c.bg); grd.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  const fg = ctx.createRadialGradient(cx, cy - 12, 6, cx, cy, r);
+  fg.addColorStop(0, '#1e2130'); fg.addColorStop(1, '#0f1118');
+  ctx.fillStyle = fg; ctx.fill();
+  ctx.strokeStyle = c.accent.replace('0.8', '0.25'); ctx.lineWidth = 1.2; ctx.stroke();
 
-  try {
-    const [replyA, replyB] = await Promise.all([
-      callAI([{role:'user',content:'Give your opening argument.'}], sysA),
-      callAI([{role:'user',content:'Give your opening argument.'}], sysB)
-    ]);
-    addDebateMsg('a', debateCoachA, replyA);
-    addDebateMsg('b', debateCoachB, replyB);
-    debateHistory.a.push({role:'assistant',content:replyA});
-    debateHistory.b.push({role:'assistant',content:replyB});
-    document.getElementById('debate-status').textContent = 'Make your argument — both coaches will respond.';
-  } catch(e) {
-    document.getElementById('debate-status').textContent = 'Error: ' + e.message;
+  debateBlinkT += 0.025;
+  const blink = Math.abs(Math.sin(debateBlinkT * 0.6));
+  const eyeH = state === 'idle' ? (blink > 0.97 ? 0.05 : 1) : 1;
+  const eyeY = cy - 8;
+
+  [[cx - 14, eyeY], [cx + 14, eyeY]].forEach(([ex, ey], idx) => {
+    ctx.beginPath(); ctx.ellipse(ex, ey, 7, 7 * eyeH, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(235,235,250,0.9)'; ctx.fill();
+    ctx.beginPath(); ctx.ellipse(ex, ey, 4.5, 4.5 * eyeH, 0, 0, Math.PI * 2);
+    ctx.fillStyle = f.irisColor; ctx.fill();
+    ctx.beginPath(); ctx.ellipse(ex, ey, 2, 2 * eyeH, 0, 0, Math.PI * 2);
+    ctx.fillStyle = '#000'; ctx.fill();
+    ctx.beginPath(); ctx.arc(ex + 1.5, ey - 1.5, 1, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.fill();
+    const bx = f.browAngle * (idx === 0 ? 1 : -1);
+    ctx.beginPath(); ctx.moveTo(ex - 6, ey - 10 + bx * 5);
+    ctx.quadraticCurveTo(ex, ey - 13, ex + 6, ey - 10 - bx * 5);
+    ctx.strokeStyle = f.eyeColor; ctx.lineWidth = 1.8; ctx.lineCap = 'round'; ctx.stroke();
+  });
+
+  const mx = cx, my = cy + 20;
+  const mo = state === 'speaking' ? mouth : 0;
+  ctx.beginPath();
+  ctx.moveTo(mx - 12, my + f.mouthCurve * 4);
+  ctx.quadraticCurveTo(mx, my + f.mouthCurve * 9 + mo * 7, mx + 12, my + f.mouthCurve * 4);
+  ctx.strokeStyle = f.eyeColor; ctx.lineWidth = 1.8; ctx.lineCap = 'round'; ctx.stroke();
+  if (mo > 0.2) {
+    ctx.beginPath();
+    ctx.moveTo(mx - 10, my + f.mouthCurve * 4 + 2);
+    ctx.quadraticCurveTo(mx, my + f.mouthCurve * 9 + mo * 7 + 5, mx + 10, my + f.mouthCurve * 4 + 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fill();
   }
-  document.getElementById('debate-send-btn').disabled = false;
-}
 
-async function sendDebateMsg() {
-  const input = document.getElementById('debate-user-input');
-  const text = input.value.trim();
-  if (!text || !debateRunning) return;
-  const btn = document.getElementById('debate-send-btn');
-  btn.disabled = true;
-  input.value = '';
-
-  // Show user msg on both sides
-  addDebateMsg('a', 'You', text, true);
-  addDebateMsg('b', 'You', text, true);
-
-  debateHistory.a.push({role:'user', content:text});
-  debateHistory.b.push({role:'user', content:text});
-
-  document.getElementById('debate-status').textContent = 'Both coaches responding...';
-
-  const sysA = `You are ${debateCoachA} in a live debate, arguing FOR: "${debateTopic}". The user just made an argument. Respond directly to what they said — support them if they agree with you, or push back if they don't. 2-3 sentences. Sharp and in character. No markdown.`;
-  const sysB = `You are ${debateCoachB} in a live debate, arguing AGAINST: "${debateTopic}". The user just made an argument. Respond directly to what they said — challenge them if they support the topic, or back them if they don't. 2-3 sentences. Forceful and in character. No markdown.`;
-
-  try {
-    const [replyA, replyB] = await Promise.all([
-      callAI(debateHistory.a, sysA),
-      callAI(debateHistory.b, sysB)
-    ]);
-    addDebateMsg('a', debateCoachA, replyA);
-    addDebateMsg('b', debateCoachB, replyB);
-    debateHistory.a.push({role:'assistant',content:replyA});
-    debateHistory.b.push({role:'assistant',content:replyB});
-    document.getElementById('debate-status').textContent = 'Make your next argument...';
-  } catch(e) {
-    document.getElementById('debate-status').textContent = 'Error: ' + e.message;
+  if (state === 'speaking') {
+    ctx.beginPath(); ctx.arc(cx, cy, r + 3, 0, Math.PI * 2);
+    const col = side === 'a' ? `rgba(79,195,247,${0.3 + 0.25 * Math.sin(Date.now() / 200)})` : `rgba(248,113,113,${0.3 + 0.25 * Math.sin(Date.now() / 200)})`;
+    ctx.strokeStyle = col; ctx.lineWidth = 2.5; ctx.stroke();
   }
-  btn.disabled = false;
-  input.focus();
+
+  const raf = requestAnimationFrame(() => drawDebateFace(side));
+  if (side === 'a') debateFaceAnimA = raf; else debateFaceAnimB = raf;
 }
 
-function addDebateMsg(side, who, text, isUser=false) {
-  const container = document.getElementById('debate-msgs-' + side);
+function startDebateWaveform() {
+  if (debateWaveInterval) clearInterval(debateWaveInterval);
+  debateWaveInterval = setInterval(() => {
+    const isListening = document.getElementById('debate-mic-btn')?.className.includes('recording');
+    for (let i = 0; i < 9; i++) {
+      const el = document.getElementById('dwb' + i);
+      if (!el) continue;
+      const h = isListening ? 4 + Math.random() * 24 : 4 + Math.sin(Date.now() / 600 + i * 0.7) * 2.5;
+      el.style.height = Math.max(4, h) + 'px';
+      el.style.background = isListening ? 'var(--accent2)' : 'rgba(108,99,255,0.35)';
+    }
+  }, 80);
+}
+
+function addDebateLogMsg(side, who, text, isUser = false) {
+  const log = document.getElementById('debate-log-' + side);
   const div = document.createElement('div');
-  div.className = 'debate-msg ' + (isUser ? 'debate-msg-user' : 'debate-msg-coach');
-  div.innerHTML = `<div class="debate-msg-name">${who}</div>${escHtml(text)}`;
-  container.appendChild(div);
-  container.scrollTop = container.scrollHeight;
+  div.style.cssText = `padding:8px 12px;border-radius:9px;font-size:12.5px;line-height:1.6;${isUser ? 'background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.15);color:var(--text);' : 'background:var(--bg2);border:1px solid var(--border);color:var(--muted2);'}`;
+  div.innerHTML = `<div style="font-size:9.5px;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:4px">${who}</div>${escHtml(text)}`;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+async function speakDebate(text, side) {
+  const coach = side === 'a' ? debateCoachA : debateCoachB;
+  if (side === 'a') { debateStateA = 'speaking'; document.getElementById('debate-status-a').textContent = 'Speaking...'; }
+  else { debateStateB = 'speaking'; document.getElementById('debate-status-b').textContent = 'Speaking...'; }
+
+  const mouthInterval = setInterval(() => {
+    const mo = 0.2 + Math.random() * 0.6;
+    if (side === 'a') debateMouthA = mo; else debateMouthB = mo;
+    setTimeout(() => { if (side === 'a') debateMouthA = 0; else debateMouthB = 0; }, 100);
+  }, 160);
+
+  return new Promise(async (resolve) => {
+    try {
+      const res = await fetch('/api/speak', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, coach })
+      });
+      if (!res.ok) throw new Error('TTS failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.onended = () => {
+        clearInterval(mouthInterval);
+        if (side === 'a') { debateStateA = 'idle'; debateMouthA = 0; document.getElementById('debate-status-a').textContent = ''; }
+        else { debateStateB = 'idle'; debateMouthB = 0; document.getElementById('debate-status-b').textContent = ''; }
+        URL.revokeObjectURL(url);
+        resolve();
+      };
+      audio.onerror = () => { clearInterval(mouthInterval); resolve(); };
+      audio.play();
+    } catch (e) {
+      clearInterval(mouthInterval);
+      if (side === 'a') { debateStateA = 'idle'; document.getElementById('debate-status-a').textContent = ''; }
+      else { debateStateB = 'idle'; document.getElementById('debate-status-b').textContent = ''; }
+      resolve();
+    }
+  });
+}
+
+async function getDebateOpenings() {
+  document.getElementById('debate-global-status').textContent = 'Coaches preparing opening statements...';
+  document.getElementById('debate-mic-btn').disabled = true;
+
+  const sysA = `You are ${debateCoachA} in a live voice debate. You are arguing FOR: "${debateTopic}". Give a punchy 2 sentence opening argument. Spoken language only, no markdown.`;
+  const sysB = `You are ${debateCoachB} in a live voice debate. You are arguing AGAINST: "${debateTopic}". Give a punchy 2 sentence opening argument. Spoken language only, no markdown.`;
+
+  try {
+    const [replyA, replyB] = await Promise.all([
+      callAI([{ role: 'user', content: 'Give your opening argument.' }], sysA),
+      callAI([{ role: 'user', content: 'Give your opening argument.' }], sysB)
+    ]);
+    debateHistoryA.push({ role: 'assistant', content: replyA });
+    debateHistoryB.push({ role: 'assistant', content: replyB });
+    addDebateLogMsg('a', debateCoachA, replyA);
+    addDebateLogMsg('b', debateCoachB, replyB);
+    // Speak A then B sequentially
+    await speakDebate(replyA, 'a');
+    await speakDebate(replyB, 'b');
+    document.getElementById('debate-global-status').textContent = 'Your turn — hold the mic and make your argument.';
+  } catch (e) {
+    document.getElementById('debate-global-status').textContent = 'Error: ' + e.message;
+  }
+  document.getElementById('debate-mic-btn').disabled = false;
+}
+
+function startDebateListening() {
+  if (!debateRunning) return;
+  window.speechSynthesis?.cancel();
+  const btn = document.getElementById('debate-mic-btn');
+  btn.className = 'hold-btn recording'; btn.textContent = '🔴';
+  document.getElementById('debate-transcript').textContent = 'Listening...';
+  document.getElementById('debate-global-status').textContent = '';
+
+  if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+    showToast('⚠️', 'Use Chrome for voice');
+    btn.className = 'hold-btn idle'; btn.textContent = '🎙️';
+    return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  debateRecognition = new SR();
+  debateRecognition.continuous = true;
+  debateRecognition.interimResults = true;
+  debateRecognition.lang = 'en-US';
+  let finalT = '';
+  debateRecognition.onresult = (e) => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) finalT += e.results[i][0].transcript + ' ';
+      else interim += e.results[i][0].transcript;
+    }
+    document.getElementById('debate-transcript').textContent = (finalT + interim).trim() || 'Listening...';
+  };
+  debateRecognition.onend = () => {
+    if (btn.className.includes('recording')) { try { debateRecognition.start(); } catch (err) {} }
+  };
+  debateRecognition.start();
+}
+
+async function stopDebateListening() {
+  if (debateRecognition) { debateRecognition.stop(); debateRecognition = null; }
+  const btn = document.getElementById('debate-mic-btn');
+  const text = document.getElementById('debate-transcript').textContent;
+  if (!text || text === 'Listening...' || text.trim().length < 2) {
+    btn.className = 'hold-btn idle'; btn.textContent = '🎙️'; return;
+  }
+
+  btn.className = 'hold-btn processing'; btn.textContent = '⏳';
+  btn.disabled = true;
+  document.getElementById('debate-global-status').textContent = 'Both coaches responding...';
+
+  addDebateLogMsg('a', 'You', text, true);
+  addDebateLogMsg('b', 'You', text, true);
+  debateHistoryA.push({ role: 'user', content: text });
+  debateHistoryB.push({ role: 'user', content: text });
+
+  const sysA = `You are ${debateCoachA} in a live voice debate, arguing FOR: "${debateTopic}". The user just made an argument. Respond directly — 2 sentences max, spoken language, no markdown.`;
+  const sysB = `You are ${debateCoachB} in a live voice debate, arguing AGAINST: "${debateTopic}". The user just made an argument. Respond directly — 2 sentences max, spoken language, no markdown.`;
+
+  try {
+    const [replyA, replyB] = await Promise.all([
+      callAI(debateHistoryA, sysA),
+      callAI(debateHistoryB, sysB)
+    ]);
+    debateHistoryA.push({ role: 'assistant', content: replyA });
+    debateHistoryB.push({ role: 'assistant', content: replyB });
+    addDebateLogMsg('a', debateCoachA, replyA);
+    addDebateLogMsg('b', debateCoachB, replyB);
+    document.getElementById('debate-transcript').textContent = 'Hold the button and make your next argument...';
+    // Speak both coaches sequentially
+    await speakDebate(replyA, 'a');
+    await speakDebate(replyB, 'b');
+    document.getElementById('debate-global-status').textContent = 'Your turn again.';
+  } catch (e) {
+    document.getElementById('debate-global-status').textContent = 'Error: ' + e.message;
+  }
+
+  btn.className = 'hold-btn idle'; btn.textContent = '🎙️';
+  btn.disabled = false;
 }
 
 function resetDebate() {
   debateRunning = false;
+  if (debateRecognition) { debateRecognition.stop(); debateRecognition = null; }
+  if (debateFaceAnimA) { cancelAnimationFrame(debateFaceAnimA); debateFaceAnimA = null; }
+  if (debateFaceAnimB) { cancelAnimationFrame(debateFaceAnimB); debateFaceAnimB = null; }
+  if (debateWaveInterval) { clearInterval(debateWaveInterval); debateWaveInterval = null; }
   document.getElementById('debate-setup-screen').style.display = 'block';
   document.getElementById('debate-live-screen').style.display = 'none';
   document.getElementById('debate-topic').value = '';
 }
 
+// ── HEAD TO HEAD ──────────────────────────────────────────────────────────────
 // ── HEAD TO HEAD ──────────────────────────────────────────────────────────────
 function initH2H() {
   // nothing on init
