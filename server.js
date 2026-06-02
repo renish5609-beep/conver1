@@ -76,7 +76,7 @@ app.post('/api/auth/oauth', async (req, res) => {
   const { provider } = req.body;
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider,
-    options: { redirectTo: `http://localhost:${PORT}/auth/callback` }
+    options: { redirectTo: `https://conver1-production.up.railway.app/auth/callback`, skipBrowserRedirect: false }
   });
   if (error) return res.status(400).json({ error: error.message });
   res.json({ url: data.url });
