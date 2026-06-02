@@ -1,0 +1,2109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Conver — AI Conversation Intelligence</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#08090d;--bg1:#0f1118;--bg2:#161820;--bg3:#1e2130;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --text:#f2f3f8;--muted:#7b8299;--muted2:#a0aabf;
+  --accent:#6c63ff;--accent2:#4fc3f7;--accent3:#a78bfa;
+  --green:#34d399;--amber:#fbbf24;--red:#f87171;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.6;overflow:hidden}
+.app{display:flex;height:100vh}
+
+/* SIDEBAR */
+.sidebar{width:224px;min-width:224px;background:var(--bg1);border-right:1px solid var(--border);display:flex;flex-direction:column}
+.sidebar-logo{padding:22px 20px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.logo-icon{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent3));display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.logo-text{font-family:'Syne',sans-serif;font-size:19px;font-weight:800;letter-spacing:-0.5px;color:#fff}
+.logo-sub{font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:1px;font-family:'DM Mono',monospace}
+.nav{flex:1;padding:12px 10px;display:flex;flex-direction:column;gap:2px;overflow-y:auto}
+.nav-section{font-size:9px;color:var(--muted);letter-spacing:1.8px;text-transform:uppercase;padding:12px 12px 4px;font-family:'DM Mono',monospace}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;cursor:pointer;color:var(--muted2);font-size:13px;transition:all 0.15s;border:none;background:none;width:100%;text-align:left;font-family:'DM Sans',sans-serif}
+.nav-item:hover{background:var(--bg2);color:var(--text)}
+.nav-item.active{background:rgba(108,99,255,0.16);color:var(--accent3);font-weight:500}
+.nav-item .icon{width:15px;height:15px;flex-shrink:0;opacity:0.6}
+.nav-item.active .icon{opacity:1}
+.sidebar-score{margin:0 10px 10px;padding:14px 16px;background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.18);border-radius:12px}
+.ss-label{font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;font-family:'DM Mono',monospace;margin-bottom:6px}
+.ss-score{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--accent3);letter-spacing:-1px;line-height:1}
+.ss-sub{font-size:11px;color:var(--muted2);margin-top:4px}
+.ss-bar{height:3px;background:var(--bg3);border-radius:3px;margin-top:10px;overflow:hidden}
+.ss-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent3));border-radius:3px;transition:width 1s ease}
+.sidebar-footer{padding:12px 12px;border-top:1px solid var(--border)}
+.sidebar-footer p{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:56px;border-bottom:1px solid var(--border);background:var(--bg1);flex-shrink:0;gap:16px}
+.page-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;white-space:nowrap}
+.chip-row{display:flex;gap:6px;flex-wrap:nowrap;align-items:center}
+.chip{font-size:10.5px;padding:3px 10px;border-radius:20px;background:var(--bg2);border:1px solid var(--border2);color:var(--muted2);font-family:'DM Mono',monospace;white-space:nowrap}
+.chip.hi{background:rgba(108,99,255,0.12);border-color:rgba(108,99,255,0.3);color:var(--accent3)}
+.streak-chip{display:flex;align-items:center;gap:5px;font-size:10.5px;padding:3px 10px;border-radius:20px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);color:var(--amber);font-family:'DM Mono',monospace;white-space:nowrap}
+.content{flex:1;overflow-y:auto;padding:26px;scroll-behavior:smooth}
+.page{display:none;animation:fadeUp 0.22s ease}
+.page.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+.section-head{margin-bottom:22px}
+.section-head h2{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;letter-spacing:-0.3px;margin-bottom:4px}
+.section-head p{font-size:13.5px;color:var(--muted2)}
+.panel{background:var(--bg1);border:1px solid var(--border);border-radius:14px;padding:22px}
+.panel-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;margin-bottom:16px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+label{font-size:12px;color:var(--muted2);display:block;margin-bottom:6px;font-weight:500}
+.form-group{margin-bottom:14px}
+select,textarea,input[type=text]{background:var(--bg2);border:1px solid var(--border2);border-radius:9px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 14px;width:100%;transition:border-color 0.2s,box-shadow 0.2s;outline:none;appearance:none}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237b8299' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px}
+select option{background:#1a1c2a}
+select:focus,textarea:focus,input[type=text]:focus{border-color:rgba(108,99,255,0.5);box-shadow:0 0 0 3px rgba(108,99,255,0.1)}
+textarea{resize:vertical;min-height:150px;line-height:1.65}
+.btn-primary{width:100%;padding:12px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;letter-spacing:0.2px}
+.btn-primary:hover:not(:disabled){background:#7c74ff;transform:translateY(-1px);box-shadow:0 8px 28px rgba(108,99,255,0.35)}
+.btn-primary:active:not(:disabled){transform:translateY(0)}
+.btn-primary:disabled{opacity:0.45;cursor:not-allowed}
+.btn-ghost{background:var(--bg2);border:1px solid var(--border2);border-radius:9px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:8px 14px;cursor:pointer;transition:all 0.15s;width:100%;text-align:left}
+.btn-ghost:hover{background:var(--bg3);border-color:rgba(255,255,255,0.18)}
+.empty-state{text-align:center;padding:44px 20px;color:var(--muted)}
+.empty-state svg{opacity:0.18;margin:0 auto 14px;display:block}
+.empty-state p{font-size:13.5px;line-height:1.7}
+.loading-dots{display:flex;gap:6px;justify-content:center;padding:40px}
+.loading-dots span{width:8px;height:8px;border-radius:50%;animation:bounce 1.3s infinite}
+.loading-dots span:nth-child(1){background:var(--accent);animation-delay:0s}
+.loading-dots span:nth-child(2){background:var(--accent3);animation-delay:0.2s}
+.loading-dots span:nth-child(3){background:var(--accent2);animation-delay:0.4s}
+@keyframes bounce{0%,80%,100%{transform:scale(0.75);opacity:0.4}40%{transform:scale(1.25);opacity:1}}
+.tag{font-size:11px;padding:3px 10px;border-radius:20px;font-family:'DM Mono',monospace;border:1px solid}
+.t-purple{background:rgba(167,139,250,0.1);color:var(--accent3);border-color:rgba(167,139,250,0.2)}
+.t-blue{background:rgba(79,195,247,0.08);color:var(--accent2);border-color:rgba(79,195,247,0.2)}
+.t-green{background:rgba(52,211,153,0.08);color:var(--green);border-color:rgba(52,211,153,0.2)}
+.t-amber{background:rgba(251,191,36,0.08);color:var(--amber);border-color:rgba(251,191,36,0.2)}
+.t-red{background:rgba(248,113,113,0.08);color:var(--red);border-color:rgba(248,113,113,0.2)}
+
+/* HOME */
+.home-hero{display:grid;grid-template-columns:1fr 280px;gap:16px;margin-bottom:20px}
+.hero-main{background:linear-gradient(135deg,rgba(108,99,255,0.13),rgba(79,195,247,0.04));border:1px solid rgba(108,99,255,0.2);border-radius:18px;padding:36px 40px;position:relative;overflow:hidden}
+.hero-main::after{content:'';position:absolute;top:-60px;right:-60px;width:220px;height:220px;background:radial-gradient(circle,rgba(108,99,255,0.2),transparent 70%);pointer-events:none}
+.hero-eyebrow{font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);font-family:'DM Mono',monospace;margin-bottom:12px}
+.hero-h1{font-family:'Syne',sans-serif;font-size:30px;font-weight:800;line-height:1.1;letter-spacing:-1px;margin-bottom:12px}
+.hero-h1 em{color:var(--accent3);font-style:normal}
+.hero-desc{color:var(--muted2);font-size:14px;line-height:1.75;margin-bottom:16px}
+.tag-row{display:flex;gap:7px;flex-wrap:wrap}
+.conver-score-card{background:var(--bg1);border:1px solid var(--border);border-radius:18px;padding:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;position:relative;overflow:hidden}
+.conver-score-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 40%,rgba(167,139,250,0.08),transparent 70%);pointer-events:none}
+.csc-label{font-size:9.5px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:12px}
+.csc-ring{position:relative;width:120px;height:120px;margin:0 auto 16px}
+.csc-ring svg{width:120px;height:120px;transform:rotate(-90deg)}
+.csc-ring-bg{fill:none;stroke:var(--bg3);stroke-width:8}
+.csc-ring-fill{fill:none;stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset 1s ease}
+.csc-num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.csc-num span:first-child{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;letter-spacing:-1.5px;line-height:1}
+.csc-num span:last-child{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:2px}
+.csc-grade{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:4px}
+.csc-sub{font-size:12px;color:var(--muted2)}
+
+.home-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+.hg-card{background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:18px;cursor:pointer;transition:all 0.2s}
+.hg-card:hover{border-color:var(--border2);background:var(--bg2);transform:translateY(-2px)}
+.hg-icon{font-size:22px;margin-bottom:10px}
+.hg-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;margin-bottom:4px}
+.hg-desc{font-size:12px;color:var(--muted2);line-height:1.6}
+.hg-link{font-size:11px;color:var(--accent3);margin-top:10px;display:block;font-weight:500}
+
+.home-bottom{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.hb-card{background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:18px 20px}
+.hb-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;font-family:'DM Mono',monospace;margin-bottom:6px}
+.hb-value{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;letter-spacing:-0.5px}
+.hb-sub{font-size:11.5px;color:var(--muted);margin-top:3px}
+
+/* WARMUP */
+.warmup-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+.warmup-q{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:10px;cursor:pointer;transition:all 0.2s;position:relative}
+.warmup-q:hover{border-color:rgba(108,99,255,0.3);background:rgba(108,99,255,0.05)}
+.warmup-q.selected{border-color:rgba(108,99,255,0.5);background:rgba(108,99,255,0.08)}
+.warmup-q-num{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:6px}
+.warmup-q-text{font-size:14px;color:var(--text);line-height:1.6}
+.warmup-q-tag{position:absolute;top:14px;right:14px}
+.warmup-tip{background:rgba(108,99,255,0.06);border:1px solid rgba(108,99,255,0.15);border-radius:10px;padding:14px 16px;margin-bottom:10px}
+.warmup-tip-label{font-size:10px;color:var(--accent3);font-family:'DM Mono',monospace;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
+.warmup-tip-text{font-size:13px;color:var(--muted2);line-height:1.65}
+
+/* PRACTICE */
+.practice-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+.score-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.score-box{background:var(--bg2);border-radius:10px;padding:14px;text-align:center;border:1px solid var(--border)}
+.score-num{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;line-height:1;letter-spacing:-1px}
+.score-num.good{color:var(--green)}.score-num.mid{color:var(--amber)}.score-num.low{color:var(--red)}
+.score-lbl{font-size:10px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:1px;font-family:'DM Mono',monospace}
+.result-block{background:var(--bg2);border-radius:10px;padding:16px;border:1px solid var(--border);margin-bottom:10px}
+.result-block:last-child{margin-bottom:0}
+.result-block h4{font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:10px}
+.bullet{font-size:13px;color:var(--muted2);padding:5px 0;border-bottom:1px solid var(--border);line-height:1.55;display:flex;gap:8px}
+.bullet:last-child{border-bottom:none;padding-bottom:0}
+.bullet::before{content:'→';color:var(--accent3);font-weight:700;flex-shrink:0;margin-top:1px}
+.rewrite-box{font-size:13.5px;color:var(--text);line-height:1.75;font-style:italic;background:rgba(108,99,255,0.06);border-left:3px solid var(--accent3);padding:14px 16px;border-radius:0 9px 9px 0}
+.comm-read{font-size:13px;color:var(--muted2);line-height:1.7}
+
+/* SCENARIO PICKER */
+.scenario-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.sc-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:all 0.15s}
+.sc-card:hover{border-color:var(--border2);background:var(--bg3)}
+.sc-card.active{border-color:rgba(108,99,255,0.5);background:rgba(108,99,255,0.08)}
+.sc-icon{font-size:20px;margin-bottom:8px}
+.sc-name{font-size:12.5px;font-weight:600;font-family:'Syne',sans-serif;margin-bottom:3px}
+.sc-hint{font-size:11px;color:var(--muted2);line-height:1.5}
+
+/* REPORT MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
+.modal-overlay.hidden{display:none}
+.report-modal{background:var(--bg1);border:1px solid var(--border2);border-radius:18px;width:600px;max-width:95vw;max-height:88vh;overflow-y:auto;padding:36px}
+.rm-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px}
+.rm-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;letter-spacing:-0.5px}
+.rm-close{background:var(--bg2);border:1px solid var(--border2);border-radius:8px;color:var(--muted2);cursor:pointer;padding:6px 12px;font-size:13px;transition:all 0.15s}
+.rm-close:hover{color:var(--text);border-color:rgba(255,255,255,0.2)}
+.rm-meta{font-size:12px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:4px}
+.rm-scores{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px}
+.rm-score-box{background:var(--bg2);border-radius:10px;padding:16px;text-align:center;border:1px solid var(--border)}
+.rm-score-num{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;letter-spacing:-1px;line-height:1}
+.rm-score-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-family:'DM Mono',monospace;margin-top:4px}
+.rm-section{margin-bottom:20px}
+.rm-section-label{font-size:10.5px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:10px}
+.rm-text{font-size:13.5px;color:var(--muted2);line-height:1.7}
+.rm-rewrite{font-size:14px;color:var(--text);line-height:1.75;font-style:italic;background:rgba(108,99,255,0.06);border-left:3px solid var(--accent3);padding:14px 16px;border-radius:0 8px 8px 0}
+.rm-overall{background:rgba(108,99,255,0.07);border:1px solid rgba(108,99,255,0.15);border-radius:12px;padding:18px;margin-bottom:24px}
+.rm-overall-label{font-size:10px;color:var(--accent3);font-family:'DM Mono',monospace;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:8px}
+.rm-overall-text{font-size:14px;color:var(--text);line-height:1.7}
+.rm-actions{display:flex;gap:10px}
+.rm-btn{flex:1;padding:12px;border-radius:9px;border:none;cursor:pointer;font-family:'Syne',sans-serif;font-size:13.5px;font-weight:700;transition:all 0.2s}
+.rm-btn-primary{background:var(--accent);color:#fff}
+.rm-btn-primary:hover{background:#7c74ff}
+.rm-btn-ghost{background:var(--bg2);border:1px solid var(--border2);color:var(--text)}
+.rm-btn-ghost:hover{background:var(--bg3)}
+
+/* RADAR CHART */
+.radar-wrap{position:relative;width:200px;height:200px;margin:0 auto}
+.radar-wrap canvas{width:200px;height:200px}
+
+/* SKILLS PAGE */
+.skills-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.skill-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.skill-row:last-child{border-bottom:none}
+.skill-name{font-size:13.5px;color:var(--text);width:110px;flex-shrink:0}
+.skill-bar-wrap{flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.skill-bar-fill{height:100%;border-radius:3px;transition:width 0.8s ease}
+.skill-val{font-size:12px;font-family:'DM Mono',monospace;color:var(--accent3);width:36px;text-align:right;flex-shrink:0}
+.streak-display{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
+.streak-num{font-family:'Syne',sans-serif;font-size:56px;font-weight:800;color:var(--amber);letter-spacing:-3px;line-height:1}
+.streak-label{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;letter-spacing:1.5px;text-transform:uppercase;margin-top:4px}
+.streak-days{display:flex;gap:6px;margin-top:16px;justify-content:center}
+.streak-day{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-family:'DM Mono',monospace}
+.sd-done{background:rgba(251,191,36,0.2);color:var(--amber);border:1px solid rgba(251,191,36,0.3)}
+.sd-today{background:rgba(108,99,255,0.2);color:var(--accent3);border:1px solid rgba(108,99,255,0.4)}
+.sd-empty{background:var(--bg3);color:var(--muted);border:1px solid var(--border)}
+
+/* PROFILES */
+.profiles-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.profile-card{background:var(--bg1);border:1px solid var(--border);border-radius:14px;padding:22px;cursor:pointer;transition:all 0.2s;text-align:center;position:relative}
+.profile-card:hover{border-color:var(--border2);transform:translateY(-2px)}
+.profile-card.selected{border-color:rgba(108,99,255,0.5);background:rgba(108,99,255,0.06);box-shadow:0 0 0 1px rgba(108,99,255,0.12)}
+.profile-card.selected::after{content:'✓ Active';position:absolute;top:12px;right:12px;font-size:10px;color:var(--accent3);background:rgba(108,99,255,0.15);padding:2px 8px;border-radius:20px;font-family:'DM Mono',monospace}
+.p-avatar{width:58px;height:58px;border-radius:50%;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:22px;font-weight:800}
+.p-name{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:6px}
+.p-desc{font-size:12.5px;color:var(--muted2);line-height:1.6}
+.p-tags{display:flex;justify-content:center;flex-wrap:wrap;gap:5px;margin-top:12px}
+
+/* COMPANION */
+.companion-layout{display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:start}
+.chat-wrap{display:flex;flex-direction:column;height:500px}
+.chat-messages{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--bg2);border-radius:12px;margin-bottom:10px;border:1px solid var(--border);scroll-behavior:smooth}
+.msg{max-width:82%;padding:11px 15px;border-radius:14px;font-size:13.5px;line-height:1.65}
+.msg-ai{background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.14);color:var(--text);align-self:flex-start;border-radius:4px 14px 14px 14px}
+.msg-user{background:var(--bg3);border:1px solid var(--border2);color:var(--text);align-self:flex-end;border-radius:14px 4px 14px 14px}
+.msg-name{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:4px}
+.chat-input-row{display:flex;gap:8px}
+.chat-input-row input{flex:1}
+.send-btn{padding:10px 18px;background:var(--accent);border:none;border-radius:9px;color:#fff;cursor:pointer;font-family:'Syne',sans-serif;font-weight:700;font-size:13.5px;transition:all 0.2s;white-space:nowrap;flex-shrink:0}
+.send-btn:hover:not(:disabled){background:#7c74ff}
+.send-btn:disabled{opacity:0.45;cursor:not-allowed}
+.quick-prompts{display:flex;flex-direction:column;gap:7px;margin-top:8px}
+
+/* VOICE */
+.voice-layout{display:grid;grid-template-columns:1fr 320px;gap:22px;align-items:start}
+.voice-stage{background:var(--bg1);border:1px solid var(--border);border-radius:18px;padding:36px 28px;display:flex;flex-direction:column;align-items:center;gap:22px;min-height:480px;justify-content:center}
+.coach-face-wrap{position:relative;width:170px;height:170px}
+.coach-face-canvas{width:170px;height:170px;border-radius:50%}
+.coach-face-ring{position:absolute;inset:-8px;border-radius:50%;border:2px solid transparent}
+.coach-face-ring.listening{border-color:var(--accent2);animation:ringPulse 1s ease-in-out infinite}
+.coach-face-ring.speaking{border-color:var(--accent3);animation:ringPulse 0.6s ease-in-out infinite}
+@keyframes ringPulse{0%,100%{opacity:0.3;transform:scale(1)}50%{opacity:1;transform:scale(1.04)}}
+.voice-coach-name{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;letter-spacing:-0.5px}
+.voice-status{font-size:12.5px;color:var(--muted2);font-family:'DM Mono',monospace;min-height:18px;text-align:center}
+.voice-status.listening{color:var(--accent2)}.voice-status.speaking{color:var(--accent3)}
+.hold-btn{width:76px;height:76px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:26px;transition:all 0.2s;outline:none}
+.hold-btn.idle{background:rgba(108,99,255,0.14);border:2px solid rgba(108,99,255,0.3)}
+.hold-btn.idle:hover{background:rgba(108,99,255,0.24);transform:scale(1.05)}
+.hold-btn.recording{background:rgba(248,113,113,0.18);border:2px solid var(--red);animation:recPulse 1s ease-in-out infinite}
+.hold-btn.processing{background:rgba(167,139,250,0.12);border:2px solid var(--accent3);cursor:not-allowed}
+@keyframes recPulse{0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,0.4)}50%{box-shadow:0 0 0 14px rgba(248,113,113,0)}}
+.hold-hint{font-size:10.5px;color:var(--muted);font-family:'DM Mono',monospace;text-align:center;margin-top:-10px}
+.voice-transcript{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;min-height:60px;font-size:13.5px;color:var(--muted2);line-height:1.65;font-style:italic;width:100%;max-width:420px;text-align:center}
+.waveform{display:flex;align-items:center;justify-content:center;gap:3px;height:28px}
+.wave-bar{width:3px;border-radius:3px;background:var(--accent3)}
+.voice-controls-side{display:flex;flex-direction:column;gap:12px}
+.vc-card{background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:16px}
+.vc-title{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:10px}
+.coach-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.cp-btn{background:var(--bg2);border:1px solid var(--border2);border-radius:8px;padding:7px 4px;cursor:pointer;text-align:center;transition:all 0.15s;color:var(--muted2);font-size:11.5px;font-family:'DM Sans',sans-serif}
+.cp-btn:hover{background:var(--bg3);color:var(--text)}
+.cp-btn.active{border-color:rgba(108,99,255,0.5);background:rgba(108,99,255,0.1);color:var(--accent3)}
+.cp-btn .cp-init{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;display:block;margin-bottom:1px}
+.voice-log{display:flex;flex-direction:column;gap:8px;max-height:360px;overflow-y:auto}
+.vlog-item{background:var(--bg2);border-radius:9px;padding:12px 14px;border:1px solid var(--border)}
+.vlog-who{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:4px;display:flex;align-items:center;gap:5px}
+.vlog-who .dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.vlog-text{font-size:13px;color:var(--muted2);line-height:1.6}
+
+/* INSIGHTS */
+.insights-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.insight-card{background:var(--bg1);border:1px solid var(--border);border-radius:14px;padding:20px}
+.insight-title{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:14px}
+.bar-group{margin-bottom:10px}
+.bar-label{display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px}
+.bar-label span:first-child{color:var(--muted2)}
+.bar-label span:last-child{font-family:'DM Mono',monospace;font-size:10.5px;color:var(--accent3);font-weight:500}
+.bar-track{background:var(--bg3);border-radius:3px;height:5px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width 0.7s ease}
+
+/* HISTORY */
+.history-list{display:flex;flex-direction:column;gap:10px}
+.history-item{background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:16px 20px;display:flex;gap:14px;align-items:flex-start;transition:all 0.15s;cursor:pointer}
+.history-item:hover{border-color:var(--border2);background:var(--bg2)}
+.h-scores{display:flex;gap:6px;margin-top:8px}
+.ms{font-size:10.5px;font-family:'DM Mono',monospace;padding:2px 8px;border-radius:5px}
+.ms-c{background:rgba(79,195,247,0.1);color:var(--accent2)}
+.ms-co{background:rgba(167,139,250,0.1);color:var(--accent3)}
+.ms-p{background:rgba(52,211,153,0.1);color:var(--green)}
+
+/* SETTINGS */
+.settings-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--border)}
+.toggle-row:last-child{border-bottom:none}
+.toggle-info h4{font-size:13.5px;font-weight:500;color:var(--text)}
+.toggle-info p{font-size:11.5px;color:var(--muted2);margin-top:2px}
+.toggle{position:relative;width:38px;height:21px;flex-shrink:0;cursor:pointer}
+.toggle input{opacity:0;width:0;height:0;position:absolute}
+.toggle-slider{position:absolute;top:0;left:0;right:0;bottom:0;background:var(--bg3);border-radius:21px;transition:0.3s;border:1px solid var(--border2);cursor:pointer}
+.toggle input:checked+.toggle-slider{background:var(--accent);border-color:var(--accent)}
+.toggle-slider::before{content:'';position:absolute;height:15px;width:15px;left:2px;bottom:2px;background:#fff;border-radius:50%;transition:0.3s}
+.toggle input:checked+.toggle-slider::before{transform:translateX(17px)}
+
+/* NOTIFICATION TOAST */
+.toast{position:fixed;bottom:28px;right:28px;background:var(--bg1);border:1px solid var(--border2);border-radius:12px;padding:14px 18px;z-index:2000;display:flex;align-items:center;gap:10px;font-size:13.5px;box-shadow:0 16px 40px rgba(0,0,0,0.4);transform:translateY(80px);opacity:0;transition:all 0.3s ease}
+.toast.show{transform:translateY(0);opacity:1}
+.toast-icon{font-size:18px}
+
+/* AUTH SCREEN */
+.auth-screen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center}
+.auth-screen.hidden{display:none}
+.auth-box{width:420px;background:var(--bg1);border:1px solid var(--border2);border-radius:20px;padding:40px;position:relative;overflow:hidden}
+.auth-box::before{content:'';position:absolute;top:-80px;right:-80px;width:200px;height:200px;background:radial-gradient(circle,rgba(108,99,255,0.15),transparent 70%);pointer-events:none}
+.auth-logo{display:flex;align-items:center;gap:12px;margin-bottom:32px}
+.auth-logo-icon{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent3));display:flex;align-items:center;justify-content:center;font-size:19px}
+.auth-logo-text{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:#fff}
+.auth-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:6px;letter-spacing:-0.5px}
+.auth-sub{font-size:13.5px;color:var(--muted2);margin-bottom:28px;line-height:1.6}
+.auth-input{background:var(--bg2);border:1px solid var(--border2);border-radius:9px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:11px 14px;width:100%;outline:none;transition:border-color 0.2s,box-shadow 0.2s;margin-bottom:12px}
+.auth-input:focus{border-color:rgba(108,99,255,0.5);box-shadow:0 0 0 3px rgba(108,99,255,0.1)}
+.auth-btn{width:100%;padding:12px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-family:'Syne',sans-serif;font-size:14.5px;font-weight:700;cursor:pointer;transition:all 0.2s;margin-bottom:12px}
+.auth-btn:hover:not(:disabled){background:#7c74ff;transform:translateY(-1px);box-shadow:0 8px 28px rgba(108,99,255,0.35)}
+.auth-btn:disabled{opacity:0.5;cursor:not-allowed}
+.auth-divider{display:flex;align-items:center;gap:12px;margin:16px 0;color:var(--muted);font-size:12px;font-family:'DM Mono',monospace}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.auth-oauth-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.auth-oauth-btn{background:var(--bg2);border:1px solid var(--border2);border-radius:9px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 14px;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:8px}
+.auth-oauth-btn:hover{background:var(--bg3);border-color:rgba(255,255,255,0.2)}
+.auth-switch{text-align:center;font-size:13px;color:var(--muted2);margin-top:8px}
+.auth-switch span{color:var(--accent3);cursor:pointer;text-decoration:underline}
+.auth-error{background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.2);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--red);margin-bottom:12px;display:none}
+.auth-error.show{display:block}
+.auth-success{background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.2);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--green);margin-bottom:12px;display:none}
+.auth-success.show{display:block}
+.user-menu{display:flex;align-items:center;gap:8px;cursor:pointer;padding:4px 10px;border-radius:20px;background:var(--bg2);border:1px solid var(--border2);transition:all 0.15s}
+.user-menu:hover{background:var(--bg3)}
+.user-avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent3));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;font-family:'Syne',sans-serif}
+.user-email{font-size:11px;color:var(--muted2);font-family:'DM Mono',monospace;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.user-dropdown{position:absolute;top:100%;right:0;background:var(--bg1);border:1px solid var(--border2);border-radius:10px;padding:8px;min-width:160px;z-index:100;margin-top:6px;display:none}
+.user-dropdown.open{display:block}
+.user-dropdown-item{padding:8px 12px;border-radius:7px;font-size:13px;cursor:pointer;color:var(--muted2);transition:all 0.15s}
+.user-dropdown-item:hover{background:var(--bg2);color:var(--text)}
+.topbar-right{display:flex;align-items:center;gap:10px;position:relative}
+
+
+/* FILLER WORD DETECTOR */
+.filler-overlay{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:500;display:flex;gap:8px;align-items:center;pointer-events:none}
+.filler-badge-live{background:rgba(248,113,113,0.15);border:1px solid rgba(248,113,113,0.3);border-radius:20px;padding:6px 14px;font-size:12px;font-family:'DM Mono',monospace;color:var(--red);display:flex;align-items:center;gap:6px;transition:all 0.3s}
+.filler-badge-live.bump{transform:scale(1.15);background:rgba(248,113,113,0.25)}
+.filler-count-display{background:var(--bg1);border:1px solid var(--border2);border-radius:20px;padding:6px 14px;font-size:12px;font-family:'DM Mono',monospace;color:var(--muted2)}
+
+/* BEFORE/AFTER DIFF */
+.diff-layout{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+.diff-panel{background:var(--bg2);border-radius:10px;padding:16px;border:1px solid var(--border)}
+.diff-label{font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.diff-text{font-size:13.5px;line-height:1.7;color:var(--muted2)}
+.diff-text .added{background:rgba(52,211,153,0.15);color:var(--green);border-radius:3px;padding:0 2px}
+.diff-text .removed{background:rgba(248,113,113,0.12);color:var(--red);text-decoration:line-through;border-radius:3px;padding:0 2px}
+
+/* COACH NOTES */
+.coach-notes-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+.note-item{background:var(--bg2);border-radius:10px;padding:16px;border:1px solid var(--border);margin-bottom:10px;position:relative}
+.note-item:last-child{margin-bottom:0}
+.note-coach{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.note-coach .dot{width:6px;height:6px;border-radius:50%}
+.note-text{font-size:13.5px;color:var(--text);line-height:1.65}
+.note-date{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:8px}
+.note-pattern{font-size:11px;color:var(--accent3);font-family:'DM Mono',monospace;margin-top:6px;padding:3px 8px;background:rgba(167,139,250,0.08);border-radius:20px;display:inline-block}
+.notes-empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:13.5px}
+
+/* DAILY CHALLENGE */
+.daily-layout{display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:start}
+.daily-card{background:linear-gradient(135deg,rgba(108,99,255,0.12),rgba(167,139,250,0.06));border:1px solid rgba(108,99,255,0.2);border-radius:16px;padding:32px}
+.daily-eyebrow{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);font-family:'DM Mono',monospace;margin-bottom:12px}
+.daily-question{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;line-height:1.35;letter-spacing:-0.3px;margin-bottom:16px;color:var(--text)}
+.daily-meta{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px}
+.daily-streak-card{background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center}
+.daily-streak-num{font-family:'Syne',sans-serif;font-size:48px;font-weight:800;color:var(--amber);letter-spacing:-2px;line-height:1}
+.daily-focus-card{background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:20px}
+.daily-focus-title{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:12px}
+.daily-focus-item{font-size:13px;color:var(--muted2);padding:6px 0;border-bottom:1px solid var(--border);line-height:1.5;display:flex;gap:8px}
+.daily-focus-item:last-child{border-bottom:none}
+.daily-focus-item::before{content:'→';color:var(--accent3);font-weight:700;flex-shrink:0}
+.daily-completed{background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);border-radius:12px;padding:20px;text-align:center}
+
+/* SHARE SCORE CARD */
+.share-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:2000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+.share-modal-overlay.hidden{display:none}
+.share-modal{background:var(--bg1);border:1px solid var(--border2);border-radius:18px;padding:32px;width:480px;max-width:95vw}
+.share-card-preview{background:linear-gradient(135deg,#0f1118,#1e2130);border:1px solid rgba(108,99,255,0.2);border-radius:16px;padding:32px;margin-bottom:24px;position:relative;overflow:hidden}
+.share-card-preview::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;background:radial-gradient(circle,rgba(108,99,255,0.2),transparent 70%)}
+.share-card-logo{font-family:'Syne',sans-serif;font-size:13px;font-weight:800;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:20px;font-family:'DM Mono',monospace}
+.share-card-score{font-family:'Syne',sans-serif;font-size:72px;font-weight:800;letter-spacing:-4px;line-height:1;margin-bottom:4px}
+.share-card-grade{font-size:16px;font-weight:600;margin-bottom:20px}
+.share-card-bars{display:flex;flex-direction:column;gap:8px}
+.share-card-bar-row{display:flex;align-items:center;gap:10px;font-size:12px}
+.share-card-bar-label{color:rgba(160,170,191,0.7);width:80px;font-family:'DM Mono',monospace;font-size:11px}
+.share-card-bar-track{flex:1;height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden}
+.share-card-bar-fill{height:100%;border-radius:2px}
+.share-card-bar-val{color:rgba(160,170,191,0.7);font-family:'DM Mono',monospace;font-size:11px;width:24px;text-align:right}
+.share-actions{display:flex;gap:10px}
+.share-btn{flex:1;padding:11px;border-radius:9px;border:none;cursor:pointer;font-family:'Syne',sans-serif;font-size:13.5px;font-weight:700;transition:all 0.2s}
+.share-btn-primary{background:var(--accent);color:#fff}
+.share-btn-primary:hover{background:#7c74ff}
+.share-btn-ghost{background:var(--bg2);border:1px solid var(--border2);color:var(--text)}
+.share-btn-ghost:hover{background:var(--bg3)}
+
+/* FILLER DETECTOR IN PRACTICE */
+.filler-live-row{display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(248,113,113,0.06);border:1px solid rgba(248,113,113,0.15);border-radius:10px;margin-bottom:12px}
+.filler-live-dot{width:8px;height:8px;border-radius:50%;background:var(--red);animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+.filler-live-label{font-size:12px;color:var(--red);font-family:'DM Mono',monospace;flex:1}
+.filler-live-count{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--red)}
+
+</style>
+</head>
+<body>
+
+
+<!-- SHARE MODAL -->
+<div class="share-modal-overlay hidden" id="share-modal">
+  <div class="share-modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800">Share Your Score</div>
+      <button onclick="closeShareModal()" style="background:var(--bg2);border:1px solid var(--border2);border-radius:8px;color:var(--muted2);cursor:pointer;padding:5px 12px;font-size:13px">✕</button>
+    </div>
+    <div class="share-card-preview" id="share-card-preview">
+      <div class="share-card-logo">CONVER · AI COMMUNICATION SCORE</div>
+      <div class="share-card-score" id="sc-score" style="color:#a78bfa">—</div>
+      <div class="share-card-grade" id="sc-grade" style="color:#7b8299">Not yet rated</div>
+      <div class="share-card-bars">
+        <div class="share-card-bar-row"><span class="share-card-bar-label">Clarity</span><div class="share-card-bar-track"><div class="share-card-bar-fill" id="sc-bar-c" style="background:#4fc3f7;width:0%"></div></div><span class="share-card-bar-val" id="sc-val-c">—</span></div>
+        <div class="share-card-bar-row"><span class="share-card-bar-label">Confidence</span><div class="share-card-bar-track"><div class="share-card-bar-fill" id="sc-bar-co" style="background:#a78bfa;width:0%"></div></div><span class="share-card-bar-val" id="sc-val-co">—</span></div>
+        <div class="share-card-bar-row"><span class="share-card-bar-label">Persuasion</span><div class="share-card-bar-track"><div class="share-card-bar-fill" id="sc-bar-p" style="background:#34d399;width:0%"></div></div><span class="share-card-bar-val" id="sc-val-p">—</span></div>
+        <div class="share-card-bar-row"><span class="share-card-bar-label">Storytelling</span><div class="share-card-bar-track"><div class="share-card-bar-fill" id="sc-bar-s" style="background:#fbbf24;width:0%"></div></div><span class="share-card-bar-val" id="sc-val-s">—</span></div>
+      </div>
+    </div>
+    <div class="share-actions">
+      <button class="share-btn share-btn-ghost" onclick="copyShareText()">📋 Copy Text</button>
+      <button class="share-btn share-btn-primary" onclick="downloadScoreCard()">⬇ Download Card</button>
+    </div>
+  </div>
+</div>
+
+<!-- FILLER OVERLAY -->
+<div class="filler-overlay" id="filler-overlay" style="display:none">
+  <div class="filler-badge-live" id="filler-badge">🚨 <span id="filler-word-display">um</span></div>
+  <div class="filler-count-display">Fillers: <strong id="filler-total">0</strong></div>
+</div>
+
+<!-- REPORT MODAL -->
+<div class="modal-overlay hidden" id="report-modal">
+  <div class="report-modal">
+    <div class="rm-header">
+      <div>
+        <div class="rm-title" id="rm-title">Session Report</div>
+        <div class="rm-meta" id="rm-meta"></div>
+      </div>
+      <button class="rm-close" onclick="closeReport()">✕ Close</button>
+    </div>
+    <div id="rm-overall" class="rm-overall"></div>
+    <div class="rm-scores" id="rm-scores"></div>
+    <div class="rm-section">
+      <div class="rm-section-label">What worked</div>
+      <div id="rm-strengths"></div>
+    </div>
+    <div class="rm-section">
+      <div class="rm-section-label">Areas to improve</div>
+      <div id="rm-improvements"></div>
+    </div>
+    <div class="rm-section">
+      <div class="rm-section-label">Stronger version</div>
+      <div class="rm-rewrite" id="rm-rewrite"></div>
+    </div>
+    <div class="rm-actions">
+      <button class="rm-btn rm-btn-ghost" onclick="closeReport()">Close</button>
+      <button class="rm-btn rm-btn-primary" onclick="printReport()">⬇ Save as PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><span class="toast-icon" id="toast-icon">✓</span><span id="toast-msg"></span></div>
+
+
+<!-- AUTH SCREEN -->
+<div class="auth-screen" id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">🎤</div>
+      <div class="auth-logo-text">Conver</div>
+    </div>
+    <div id="auth-view-signin">
+      <div class="auth-title">Welcome back</div>
+      <div class="auth-sub">Sign in to your account to continue improving.</div>
+      <div class="auth-error" id="signin-error"></div>
+      <div class="auth-success" id="signin-success"></div>
+      <input class="auth-input" type="email" id="signin-email" placeholder="Email address"/>
+      <input class="auth-input" type="password" id="signin-password" placeholder="Password" onkeydown="if(event.key==='Enter')signIn()"/>
+      <button class="auth-btn" id="signin-btn" onclick="signIn()">Sign In</button>
+      <div class="auth-divider">or continue with</div>
+      <div class="auth-oauth-grid">
+        <button class="auth-oauth-btn" onclick="oauthLogin('google')">
+          <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Google
+        </button>
+        <button class="auth-oauth-btn" onclick="oauthLogin('github')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          GitHub
+        </button>
+      </div>
+      <div class="auth-switch">Don't have an account? <span onclick="showView('signup')">Sign up</span></div>
+      <div class="auth-switch" style="margin-top:8px"><span onclick="showView('reset')">Forgot password?</span></div>
+    </div>
+
+    <div id="auth-view-signup" style="display:none">
+      <div class="auth-title">Create account</div>
+      <div class="auth-sub">Join Conver and start communicating like you mean it.</div>
+      <div class="auth-error" id="signup-error"></div>
+      <div class="auth-success" id="signup-success"></div>
+      <input class="auth-input" type="email" id="signup-email" placeholder="Email address"/>
+      <input class="auth-input" type="password" id="signup-password" placeholder="Password (min 6 chars)" onkeydown="if(event.key==='Enter')signUp()"/>
+      <button class="auth-btn" id="signup-btn" onclick="signUp()">Create Account</button>
+      <div class="auth-divider">or continue with</div>
+      <div class="auth-oauth-grid">
+        <button class="auth-oauth-btn" onclick="oauthLogin('google')">
+          <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Google
+        </button>
+        <button class="auth-oauth-btn" onclick="oauthLogin('github')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          GitHub
+        </button>
+      </div>
+      <div class="auth-switch">Already have an account? <span onclick="showView('signin')">Sign in</span></div>
+    </div>
+
+    <div id="auth-view-reset" style="display:none">
+      <div class="auth-title">Reset password</div>
+      <div class="auth-sub">Enter your email and we'll send you a reset link.</div>
+      <div class="auth-error" id="reset-error"></div>
+      <div class="auth-success" id="reset-success"></div>
+      <input class="auth-input" type="email" id="reset-email" placeholder="Email address"/>
+      <button class="auth-btn" onclick="resetPassword()">Send Reset Link</button>
+      <div class="auth-switch"><span onclick="showView('signin')">← Back to sign in</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🎤</div>
+      <div><div class="logo-text">Conver</div><div class="logo-sub">Intelligence</div></div>
+    </div>
+    <div class="nav">
+      <div class="nav-section">Core</div>
+      <button class="nav-item active" data-page="home"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/></svg>Overview</button>
+      <button class="nav-item" data-page="warmup"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>Warmup</button>
+      <button class="nav-item" data-page="practice"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Practice Lab</button>
+      <button class="nav-item" data-page="voice"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>Voice Session</button>
+      <button class="nav-item" data-page="companion"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>AI Companion</button>
+      <div class="nav-section">Improve</div>
+      <button class="nav-item" data-page="skills"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Skills & Progress</button>
+      <button class="nav-item" data-page="daily"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>Daily Challenge</button>
+      <button class="nav-item" data-page="coachnotes"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Coach Notes</button>
+      <button class="nav-item" data-page="insights"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Insights</button>
+      <button class="nav-item" data-page="history"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>History</button>
+      <div class="nav-section">Setup</div>
+      <button class="nav-item" data-page="briefing"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Briefing</button>
+      <button class="nav-item" data-page="profiles"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 10-16 0"/></svg>AI Profiles</button>
+      <button class="nav-item" data-page="settings"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Settings</button>
+    </div>
+    <!-- Conver Score in sidebar -->
+    <div class="sidebar-score">
+      <div class="ss-label">Conver Score</div>
+      <div class="ss-score" id="sb-score">—</div>
+      <div class="ss-sub" id="sb-grade">Start practicing to unlock</div>
+      <div class="ss-bar"><div class="ss-bar-fill" id="sb-bar" style="width:0%"></div></div>
+    </div>
+    <div class="sidebar-footer"><p>v2.0 · Powered by Claude</p></div>
+  </nav>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="page-title" id="page-title">Overview</div>
+      <div class="topbar-right"><div class="chip-row">
+        <span class="chip hi" id="chip-scenario">Interview</span>
+        <span class="chip" id="chip-coach">Coach: Blaze</span>
+        <span class="streak-chip" id="streak-chip">🔥 0 day streak</span>
+      </div>
+      <div class="user-menu" id="user-menu-btn" onclick="toggleUserMenu()">
+        <div class="user-avatar" id="user-avatar">?</div>
+        <div class="user-email" id="user-email-display">Not signed in</div>
+      </div>
+      <div class="user-dropdown" id="user-dropdown">
+        <div class="user-dropdown-item" onclick="signOut()">🚪 Sign out</div>
+      </div>
+    </div>
+    </div>
+    <div class="content">
+
+      <!-- HOME -->
+      <div class="page active" id="page-home">
+        <div class="home-hero">
+          <div class="hero-main">
+            <div class="hero-eyebrow">AI Conversation Intelligence</div>
+            <h1 class="hero-h1">Communicate like<br>you <em>mean it.</em></h1>
+            <p class="hero-desc">Practice with AI coaches, analyze your responses, and track how your communication evolves over time. Built for interviews, pitches, debates, and high-stakes conversations.</p>
+            <div class="tag-row">
+              <span class="tag t-purple">Voice Sessions</span>
+              <span class="tag t-blue">AI Warmups</span>
+              <span class="tag t-green">Session Reports</span>
+              <span class="tag t-amber">Skills Tracking</span>
+            </div>
+          </div>
+          <div class="conver-score-card">
+            <div class="csc-label">Your Conver Score</div>
+            <div class="csc-ring">
+              <svg viewBox="0 0 120 120"><circle class="csc-ring-bg" cx="60" cy="60" r="52"/><circle class="csc-ring-fill" id="score-ring" cx="60" cy="60" r="52" stroke-dasharray="327" stroke-dashoffset="327" stroke="url(#scoreGrad)"/><defs><linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#6c63ff"/><stop offset="100%" stop-color="#a78bfa"/></linearGradient></defs></svg>
+              <div class="csc-num"><span id="home-conver-score">—</span><span>/100</span></div>
+            </div>
+            <div class="csc-grade" id="home-grade">Not yet rated</div>
+            <div class="csc-sub" id="home-grade-sub">Complete a session to get scored</div>
+            <button onclick="openShareModal()" style="margin-top:16px;background:transparent;border:1px solid rgba(108,99,255,0.3);border-radius:20px;color:var(--accent3);font-size:11px;padding:5px 14px;cursor:pointer;font-family:'DM Mono',monospace;transition:all 0.15s" onmouseover="this.style.background='rgba(108,99,255,0.1)'" onmouseout="this.style.background='transparent'">✨ Share Score</button>
+          </div>
+        </div>
+        <div class="home-grid">
+          <div class="hg-card" onclick="navTo('warmup')"><div class="hg-icon">⚡</div><div class="hg-title">Warmup</div><div class="hg-desc">AI generates targeted questions from your briefing.</div><span class="hg-link">Get warmed up →</span></div>
+          <div class="hg-card" onclick="navTo('practice')"><div class="hg-icon">✍️</div><div class="hg-title">Practice Lab</div><div class="hg-desc">Submit a draft, get scored + a rewrite.</div><span class="hg-link">Open Lab →</span></div>
+          <div class="hg-card" onclick="navTo('voice')"><div class="hg-icon">🎙️</div><div class="hg-title">Voice Session</div><div class="hg-desc">Speak with your coach. They listen and talk back.</div><span class="hg-link">Go live →</span></div>
+          <div class="hg-card" onclick="navTo('skills')"><div class="hg-icon">📊</div><div class="hg-title">Skills & Progress</div><div class="hg-desc">Radar chart of your communication skills.</div><span class="hg-link">View progress →</span></div>
+        </div>
+        <div class="home-bottom">
+          <div class="hb-card"><div class="hb-label">Sessions</div><div class="hb-value" id="home-sessions">0</div><div class="hb-sub">Analyzed this session</div></div>
+          <div class="hb-card"><div class="hb-label">Active Coach</div><div class="hb-value" id="home-coach">Blaze</div><div class="hb-sub">Shapes feedback style</div></div>
+          <div class="hb-card"><div class="hb-label">Scenario</div><div class="hb-value" id="home-scenario">Interview</div><div class="hb-sub">Current practice context</div></div>
+        </div>
+      </div>
+
+      <!-- WARMUP -->
+      <div class="page" id="page-warmup">
+        <div class="section-head"><h2>Warmup</h2><p>AI generates targeted practice questions based on your briefing and scenario. Pick one and go.</p></div>
+        <div class="warmup-layout">
+          <div>
+            <div class="panel" style="margin-bottom:16px">
+              <div class="panel-title">Generate Questions</div>
+              <div class="form-group"><label>Scenario</label>
+                <select id="wu-scenario"><option>Interview</option><option>Pitch</option><option>Debate</option><option>Casual Conversation</option><option>Leadership</option><option>Networking</option></select>
+              </div>
+              <div class="form-group"><label>Difficulty</label>
+                <select id="wu-difficulty"><option value="warm">Warm — build confidence</option><option value="standard" selected>Standard — realistic</option><option value="hard">Hard — pressure test</option></select>
+              </div>
+              <button class="btn-primary" id="warmup-btn" onclick="generateWarmup()">⚡ Generate Questions</button>
+            </div>
+            <div id="warmup-tip-area"></div>
+          </div>
+          <div>
+            <div class="panel-title" style="padding:0 0 12px;font-size:10px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;font-family:'DM Mono',monospace">Questions</div>
+            <div id="warmup-questions">
+              <div class="empty-state" style="padding:40px">
+                <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                <p>Hit Generate to get 3 targeted questions from your coach.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PRACTICE -->
+      <div class="page" id="page-practice">
+        <div class="section-head"><h2>Practice Lab</h2><p>Submit a response and get real AI analysis — scores, feedback, and a rewritten stronger version.</p></div>
+        <div class="practice-layout">
+          <div>
+            <div class="panel" style="margin-bottom:16px">
+              <div class="panel-title">Scenario</div>
+              <div class="scenario-cards" id="scenario-cards"></div>
+            </div>
+            <div class="panel">
+              <div class="panel-title">Your Response</div>
+              <div class="form-group"><label>Question / Context <span style="color:var(--muted)">(optional)</span></label><input type="text" id="p-question" placeholder="e.g. Tell me about yourself..."/></div>
+              <div class="form-group"><label>Your Response Draft</label><textarea id="p-text" placeholder="Type or paste what you'd say here..."></textarea></div>
+              <button class="btn-primary" id="analyze-btn" onclick="analyzeResponse()">Analyze Response</button>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-title">Session Analysis</div>
+            <div id="results-area"><div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg><p>Your analysis appears after you submit.</p></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VOICE -->
+      <div class="page" id="page-voice">
+        <div class="section-head"><h2>Voice Session</h2><p>Hold the button to speak. Your coach listens and responds out loud.</p></div>
+        <div class="voice-layout">
+          <div class="voice-stage">
+            <div class="coach-face-wrap"><canvas class="coach-face-canvas" id="face-canvas" width="170" height="170"></canvas><div class="coach-face-ring" id="face-ring"></div></div>
+            <div class="voice-coach-name" id="voice-coach-name">Blaze</div>
+            <div class="voice-status" id="voice-status">Hold the mic to speak</div>
+            <div class="waveform" id="waveform"></div>
+            <div class="voice-transcript" id="voice-transcript">Your words will appear here as you speak...</div>
+            <button class="hold-btn idle" id="hold-btn" onmousedown="startListening()" onmouseup="stopListening()" ontouchstart="startListening()" ontouchend="stopListening()">🎙️</button>
+            <div class="hold-hint">Hold to speak · Release to send</div>
+          </div>
+          <div class="voice-controls-side">
+            <div class="vc-card"><div class="vc-title">Switch Coach</div><div class="coach-picker" id="voice-coach-picker"></div></div>
+            <div class="vc-card"><div class="vc-title">Conversation Log</div><div class="voice-log" id="voice-log"><div style="font-size:13px;color:var(--muted);text-align:center;padding:16px 0">Conversation will appear here</div></div></div>
+            <div class="vc-card"><div class="vc-title">Tips</div><div style="font-size:12.5px;color:var(--muted2);line-height:1.9"><div>🎙️ Hold button while speaking</div><div>🔊 Coach speaks back to you</div><div>📋 Set a briefing for better context</div><div>🔄 Switch coaches mid-session</div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COMPANION -->
+      <div class="page" id="page-companion">
+        <div class="section-head"><h2>AI Companion</h2><p>Chat live with your coach — get advice, practice responses, or get challenged.</p></div>
+        <div class="companion-layout">
+          <div class="panel" style="display:flex;flex-direction:column">
+            <div class="chat-wrap">
+              <div class="chat-messages" id="chat-messages"><div class="msg msg-ai"><div class="msg-name" id="coach-label">Blaze</div><span id="coach-greeting">Hey. Ready to work? Tell me what you're preparing for.</span></div></div>
+              <div class="chat-input-row"><input type="text" id="chat-input" placeholder="Ask your coach anything..." onkeydown="if(event.key==='Enter'&&!event.shiftKey)sendChat()"/><button class="send-btn" id="send-btn" onclick="sendChat()">Send</button></div>
+            </div>
+          </div>
+          <div>
+            <div class="panel" style="margin-bottom:14px"><div class="panel-title">Session Context</div><div id="companion-ctx" style="font-size:13px;color:var(--muted2);line-height:1.7">No briefing. <span style="color:var(--accent3);cursor:pointer;text-decoration:underline" onclick="navTo('briefing')">Add one →</span></div></div>
+            <div class="panel"><div class="panel-title">Quick Prompts</div>
+              <div class="quick-prompts">
+                <button class="btn-ghost" onclick="injectPrompt('Give me a tough question to practice right now.')">🎤 Throw me a tough question</button>
+                <button class="btn-ghost" onclick="injectPrompt('What are my biggest communication weaknesses?')">⚡ What are my weak spots?</button>
+                <button class="btn-ghost" onclick="injectPrompt('Help me craft a punchy 30-second elevator pitch.')">🚀 Drill my elevator pitch</button>
+                <button class="btn-ghost" onclick="injectPrompt('Push back hard on my last answer and challenge me.')">🔥 Challenge me harder</button>
+                <button class="btn-ghost" onclick="injectPrompt('Give me one concrete thing to focus on to improve fast.')">🎯 One key focus area</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SKILLS & PROGRESS -->
+      <div class="page" id="page-skills">
+        <div class="section-head"><h2>Skills & Progress</h2><p>Your communication profile — updated after every session.</p></div>
+        <div class="skills-layout">
+          <div class="panel">
+            <div class="panel-title">Communication Radar</div>
+            <div style="display:flex;justify-content:center;margin-bottom:20px"><div class="radar-wrap"><canvas id="radar-canvas" width="200" height="200"></canvas></div></div>
+            <div id="skill-bars"></div>
+          </div>
+          <div>
+            <div class="panel" style="margin-bottom:14px">
+              <div class="panel-title">Practice Streak</div>
+              <div class="streak-display">
+                <div class="streak-num" id="streak-num">0</div>
+                <div class="streak-label">Day Streak</div>
+                <div class="streak-days" id="streak-days"></div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-title">Conver Score Breakdown</div>
+              <div id="score-breakdown">
+                <div class="empty-state" style="padding:28px"><p>Complete sessions to see your score breakdown.</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- INSIGHTS -->
+      <div class="page" id="page-insights">
+        <div class="section-head"><h2>Insights</h2><p>Patterns and trends across your practice sessions.</p></div>
+        <div id="insights-content"><div class="empty-state" style="padding:60px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><p>Complete at least one session to see your insights.</p></div></div>
+      </div>
+
+      <!-- HISTORY -->
+      <div class="page" id="page-history">
+        <div class="section-head"><h2>History</h2><p>All your practice sessions. Click any to view the full report.</p></div>
+        <div class="history-list" id="history-list"><div class="empty-state" style="padding:60px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><p>No sessions yet.</p></div></div>
+      </div>
+
+
+      <!-- DAILY CHALLENGE -->
+      <div class="page" id="page-daily">
+        <div class="section-head"><h2>Daily Challenge</h2><p>One targeted question every day based on your weak spots. Keep the streak alive.</p></div>
+        <div class="daily-layout">
+          <div>
+            <div class="daily-card" id="daily-card">
+              <div class="daily-eyebrow" id="daily-eyebrow">Today's Challenge</div>
+              <div class="daily-question" id="daily-question">Loading your challenge...</div>
+              <div class="daily-meta" id="daily-meta"></div>
+              <button class="btn-primary" id="daily-practice-btn" onclick="startDailyChallenge()" style="max-width:220px">Practice This →</button>
+            </div>
+            <div style="margin-top:16px" id="daily-completed-area"></div>
+          </div>
+          <div>
+            <div class="daily-streak-card" style="margin-bottom:14px">
+              <div style="font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;font-family:'DM Mono',monospace;margin-bottom:10px">Challenge Streak</div>
+              <div class="daily-streak-num" id="daily-streak">0</div>
+              <div style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:4px">days in a row</div>
+            </div>
+            <div class="daily-focus-card">
+              <div class="daily-focus-title">Your Focus Areas</div>
+              <div id="daily-focus-list">
+                <div class="daily-focus-item">Complete a session to unlock personalized focus areas</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COACH NOTES -->
+      <div class="page" id="page-coachnotes">
+        <div class="section-head"><h2>Coach Notes</h2><p>Patterns your coach has noticed across your sessions. Updated automatically.</p></div>
+        <div class="coach-notes-layout">
+          <div>
+            <div class="panel-title" style="font-size:10px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;font-family:'DM Mono',monospace;margin-bottom:14px">Observations</div>
+            <div id="coach-notes-list">
+              <div class="notes-empty">Complete at least 2 sessions to generate coach notes.</div>
+            </div>
+          </div>
+          <div>
+            <div class="panel" style="margin-bottom:14px">
+              <div class="panel-title">Generate Notes</div>
+              <p style="font-size:13px;color:var(--muted2);line-height:1.7;margin-bottom:16px">Ask your coach to analyze your patterns and leave observations about your communication style.</p>
+              <button class="btn-primary" onclick="generateCoachNotes()" id="gen-notes-btn">🧠 Generate Coach Notes</button>
+            </div>
+            <div class="panel">
+              <div class="panel-title">Share Your Score</div>
+              <p style="font-size:13px;color:var(--muted2);line-height:1.7;margin-bottom:16px">Share your Conver Score with the world — show people how you communicate.</p>
+              <button class="btn-primary" onclick="openShareModal()" style="background:linear-gradient(135deg,var(--accent),var(--accent3))">✨ Share My Score</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BRIEFING -->
+      <div class="page" id="page-briefing">
+        <div class="section-head"><h2>Briefing</h2><p>Give your coach context. It feeds into all AI analysis, warmups, and conversations.</p></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
+          <div class="panel">
+            <div class="panel-title">Session Context</div>
+            <div class="form-group"><label>What are you preparing for?</label><input type="text" id="b-preparing" placeholder="e.g. Google PM interview Thursday"/></div>
+            <div class="form-group"><label>Your role / background</label><input type="text" id="b-role" placeholder="e.g. 5 years product, B2B SaaS"/></div>
+            <div class="form-group"><label>What do you want to improve?</label><textarea id="b-improve" style="min-height:90px" placeholder="e.g. I over-explain under pressure..."></textarea></div>
+            <button class="btn-primary" onclick="saveBriefing()">Save Briefing</button>
+          </div>
+          <div class="panel"><div class="panel-title">Saved Briefing</div><div id="briefing-display"><div class="empty-state" style="padding:28px"><p>No briefing saved yet.</p></div></div></div>
+        </div>
+      </div>
+
+      <!-- PROFILES -->
+      <div class="page" id="page-profiles">
+        <div class="section-head"><h2>AI Profiles</h2><p>Choose your coach. Each has a distinct style and approach.</p></div>
+        <div class="profiles-grid" id="profiles-grid"></div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="page" id="page-settings">
+        <div class="section-head"><h2>Settings</h2><p>Customize your experience.</p></div>
+        <div class="settings-layout">
+          <div class="panel">
+            <div class="panel-title">Preferences</div>
+            <div class="toggle-row"><div class="toggle-info"><h4>Rewrite Suggestions</h4><p>Show stronger version after analysis</p></div><label class="toggle"><input type="checkbox" id="tog-rewrite" checked onchange="S.rewrite=this.checked"><span class="toggle-slider"></span></label></div>
+            <div class="toggle-row"><div class="toggle-info"><h4>Filler Word Feedback</h4><p>Include delivery quality notes</p></div><label class="toggle"><input type="checkbox" id="tog-filler" checked onchange="S.filler=this.checked"><span class="toggle-slider"></span></label></div>
+            <div class="toggle-row"><div class="toggle-info"><h4>Auto-open Report</h4><p>Show full report after each analysis</p></div><label class="toggle"><input type="checkbox" id="tog-report" checked onchange="S.autoReport=this.checked"><span class="toggle-slider"></span></label></div>
+            <div style="margin-top:18px;display:flex;flex-direction:column;gap:8px">
+              <button class="btn-ghost" onclick="clearHistory()" style="color:var(--red);border-color:rgba(248,113,113,0.2)">🗑 Clear All History</button>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-title">About</div>
+            <div style="font-size:13.5px;color:var(--muted2);line-height:1.9">
+              <p style="margin-bottom:10px">Conver is an AI-powered conversation intelligence platform. Practice, get coached, and track how your communication evolves.</p>
+              <p style="margin-bottom:10px">Powered by <strong style="color:var(--text)">Claude (claude-sonnet-4-5)</strong> — all analysis is real AI, no templates.</p>
+              <p>Voice uses the Web Speech API. Works best in Chrome.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────────
+const S={
+  scenario:'Interview',coach:'Blaze',rewrite:true,filler:true,autoReport:true,
+  sessions:0,history:[],briefing:null,chatHistory:[],
+  scores:{clarity:[],confidence:[],persuasion:[]},
+  skills:{clarity:0,confidence:0,persuasion:0,storytelling:0,conciseness:0},
+  converScore:null,streak:0,voiceChatHistory:[],warmupSelected:null
+};
+
+const SCENARIOS=[
+  {name:'Interview',icon:'💼',hint:'Focus on structure, specifics, and confidence'},
+  {name:'Pitch',icon:'🚀',hint:'Lead with value, handle objections, be memorable'},
+  {name:'Debate',icon:'⚖️',hint:'Logic, evidence, and staying calm under pressure'},
+  {name:'Casual',icon:'☕',hint:'Warmth, listening, and natural flow'},
+  {name:'Leadership',icon:'🏛️',hint:'Vision, decisiveness, and inspiring language'},
+  {name:'Networking',icon:'🤝',hint:'Authentic, memorable, and leave them curious'},
+];
+
+const COACHES={
+  Blaze:{color:'#f87171',accent:'rgba(248,113,113,0.8)',bg:'rgba(248,113,113,0.12)',greeting:"Hey. Ready to work? Tell me what you're preparing for.",style:"Direct, blunt, high-energy. No fluff. Push for sharper delivery.",voice:{pitch:1.1,rate:1.15}},
+  Echo:{color:'#4fc3f7',accent:'rgba(79,195,247,0.8)',bg:'rgba(79,195,247,0.1)',greeting:"Hi! I'm here to help. What are you working on today?",style:"Calm, empathetic, encouraging. Build confidence gently.",voice:{pitch:1.25,rate:0.95}},
+  Sage:{color:'#a78bfa',accent:'rgba(167,139,250,0.8)',bg:'rgba(167,139,250,0.12)',greeting:"Good. Let's begin. What is your goal for this session?",style:"Analytical, structured, logical. Precise and evidence-based.",voice:{pitch:0.9,rate:1.0}},
+  Nova:{color:'#34d399',accent:'rgba(52,211,153,0.8)',bg:'rgba(52,211,153,0.1)',greeting:"Hey! Every great speaker has a story. What's yours?",style:"Creative, warm, narrative-focused. Push for storytelling.",voice:{pitch:1.2,rate:1.05}},
+  Rex:{color:'#fbbf24',accent:'rgba(251,191,36,0.8)',bg:'rgba(251,191,36,0.1)',greeting:"You want battle-ready? Stop warming up. What's the challenge?",style:"Intense, adversarial. Challenge everything. Prepare for the worst.",voice:{pitch:0.8,rate:1.2}},
+  Luna:{color:'#6c63ff',accent:'rgba(108,99,255,0.8)',bg:'rgba(108,99,255,0.12)',greeting:"Welcome. What would be most useful for you right now?",style:"Balanced, adaptive. Read what they need and adjust.",voice:{pitch:1.05,rate:1.0}}
+};
+
+const PAGE_TITLES={home:'Overview',warmup:'Warmup',practice:'Practice Lab',voice:'Voice Session',companion:'AI Companion',skills:'Skills & Progress',daily:'Daily Challenge',coachnotes:'Coach Notes',insights:'Insights',history:'History',briefing:'Briefing',profiles:'AI Profiles',settings:'Settings'};
+
+const FACE_F={
+  Blaze:{eyeColor:'#f87171',irisColor:'#ff4444',browAngle:0.3,mouthCurve:-0.1},
+  Echo:{eyeColor:'#4fc3f7',irisColor:'#0ea5e9',browAngle:-0.1,mouthCurve:0.3},
+  Sage:{eyeColor:'#a78bfa',irisColor:'#7c3aed',browAngle:0.15,mouthCurve:0.0},
+  Nova:{eyeColor:'#34d399',irisColor:'#059669',browAngle:-0.2,mouthCurve:0.4},
+  Rex:{eyeColor:'#fbbf24',irisColor:'#d97706',browAngle:0.5,mouthCurve:-0.2},
+  Luna:{eyeColor:'#a78bfa',irisColor:'#6c63ff',browAngle:0.0,mouthCurve:0.2}
+};
+
+// ── Init UI ───────────────────────────────────────────────────────────────────
+function initUI(){
+  // Scenario cards in practice
+  const sc=document.getElementById('scenario-cards');
+  SCENARIOS.forEach(s=>{
+    const d=document.createElement('div');
+    d.className='sc-card'+(s.name===S.scenario||s.name==='Interview'?' active':'');
+    d.innerHTML=`<div class="sc-icon">${s.icon}</div><div class="sc-name">${s.name}</div><div class="sc-hint">${s.hint}</div>`;
+    d.onclick=()=>{document.querySelectorAll('.sc-card').forEach(c=>c.classList.remove('active'));d.classList.add('active');S.scenario=s.name;updateChips();};
+    sc.appendChild(d);
+  });
+  // Profile cards
+  const pg=document.getElementById('profiles-grid');
+  Object.entries(COACHES).forEach(([name,c])=>{
+    const d=document.createElement('div');
+    d.className='profile-card'+(name===S.coach?' selected':'');
+    d.id='card-'+name.toLowerCase();
+    d.innerHTML=`<div class="p-avatar" style="background:${c.bg};color:${c.color}">${name[0]}</div><div class="p-name">${name}</div><p class="p-desc">${{Blaze:'Direct & no-nonsense. Pushes you to be sharper and faster.',Echo:'Calm & empathetic. Builds confidence step by step.',Sage:'Analytical & structured. Logic and evidence first.',Nova:'Creative & narrative-driven. Tell better stories.',Rex:'Intense & adversarial. Stress-tests everything.',Luna:'Balanced & adaptive. Adjusts to what you need.'}[name]}</p><div class="p-tags">${{Blaze:'<span class="tag t-red">Decisive</span><span class="tag t-blue">High-energy</span>',Echo:'<span class="tag t-green">Supportive</span><span class="tag t-blue">Patient</span>',Sage:'<span class="tag t-purple">Analytical</span><span class="tag t-blue">Strategic</span>',Nova:'<span class="tag t-green">Storytelling</span><span class="tag t-purple">Creative</span>',Rex:'<span class="tag t-amber">Challenging</span><span class="tag t-blue">Rigorous</span>',Luna:'<span class="tag t-green">Adaptive</span><span class="tag t-blue">Balanced</span>'}[name]}</div>`;
+    d.onclick=()=>selectProfile(name);
+    pg.appendChild(d);
+  });
+  // Voice coach picker
+  const vcp=document.getElementById('voice-coach-picker');
+  Object.entries(COACHES).forEach(([name,c])=>{
+    const b=document.createElement('button');
+    b.className='cp-btn'+(name===S.coach?' active':'');
+    b.id='vcp-'+name.toLowerCase();
+    b.innerHTML=`<span class="cp-init" style="color:${c.color}">${name[0]}</span>${name}`;
+    b.onclick=()=>switchVoiceCoach(name);
+    vcp.appendChild(b);
+  });
+  // Waveform bars
+  const wf=document.getElementById('waveform');
+  for(let i=0;i<9;i++){const b=document.createElement('div');b.className='wave-bar';b.id='wb'+i;b.style.height='6px';wf.appendChild(b);}
+  // Streak days
+  renderStreakDays();
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+document.querySelectorAll('.nav-item[data-page]').forEach(btn=>{btn.addEventListener('click',()=>navTo(btn.dataset.page));});
+function navTo(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  const btn=document.querySelector(`.nav-item[data-page="${page}"]`);
+  if(btn)btn.classList.add('active');
+  document.getElementById('page-title').textContent=PAGE_TITLES[page]||page;
+  if(page==='insights')renderInsights();
+  if(page==='history')renderHistory();
+  if(page==='skills'){renderSkills();drawRadar();}
+  if(page==='voice'){if(!faceAnimFrame)drawFace();startWaveformIdle();}
+  if(page==='daily')renderDailyChallenge();
+  if(page==='coachnotes')renderCoachNotes();
+}
+
+function updateChips(){
+  document.getElementById('chip-scenario').textContent=S.scenario;
+  document.getElementById('chip-coach').textContent='Coach: '+S.coach;
+  document.getElementById('streak-chip').textContent='🔥 '+S.streak+' day streak';
+  document.getElementById('home-sessions').textContent=S.sessions;
+  document.getElementById('home-coach').textContent=S.coach;
+  document.getElementById('home-scenario').textContent=S.scenario;
+  updateConverScore();
+}
+
+// ── Conver Score ──────────────────────────────────────────────────────────────
+function calcConverScore(){
+  if(!S.sessions)return null;
+  const avg=arr=>arr.length?(arr.reduce((a,b)=>a+b,0)/arr.length):0;
+  const c=avg(S.scores.clarity),co=avg(S.scores.confidence),p=avg(S.scores.persuasion);
+  const raw=((c+co+p)/3)*10;
+  // Bonus for sessions
+  const sessionBonus=Math.min(10,S.sessions*2);
+  return Math.min(100,Math.round(raw+sessionBonus));
+}
+function scoreGrade(n){
+  if(!n)return{grade:'—',sub:'Start practicing',color:'var(--muted)'};
+  if(n>=90)return{grade:'Elite',sub:'Exceptional communicator',color:'var(--green)'};
+  if(n>=80)return{grade:'Advanced',sub:'Above average across all skills',color:'var(--accent2)'};
+  if(n>=70)return{grade:'Proficient',sub:'Solid foundation, room to grow',color:'var(--accent3)'};
+  if(n>=60)return{grade:'Developing',sub:'Good progress, keep going',color:'var(--amber)'};
+  return{grade:'Beginner',sub:'Building your foundation',color:'var(--red)'};
+}
+function updateConverScore(){
+  const score=calcConverScore();S.converScore=score;
+  const g=scoreGrade(score);
+  document.getElementById('home-conver-score').textContent=score||'—';
+  document.getElementById('home-grade').textContent=g.grade;
+  document.getElementById('home-grade').style.color=g.color;
+  document.getElementById('home-grade-sub').textContent=g.sub;
+  document.getElementById('sb-score').textContent=score||'—';
+  document.getElementById('sb-score').style.color=g.color;
+  document.getElementById('sb-grade').textContent=g.grade;
+  const pct=score?score/100:0;
+  document.getElementById('sb-bar').style.width=(pct*100)+'%';
+  const circ=327;
+  document.getElementById('score-ring').style.strokeDashoffset=circ-(circ*pct);
+}
+
+// ── Profile select ────────────────────────────────────────────────────────────
+function selectProfile(name){
+  S.coach=name;
+  document.querySelectorAll('.profile-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('card-'+name.toLowerCase()).classList.add('selected');
+  updateChips();
+  S.chatHistory=[];
+  const c=COACHES[name];
+  document.getElementById('coach-label').textContent=name;
+  document.getElementById('coach-greeting').textContent=c.greeting;
+  document.getElementById('chat-messages').innerHTML=`<div class="msg msg-ai"><div class="msg-name">${name}</div><span>${c.greeting}</span></div>`;
+  switchVoiceCoach(name);
+  showToast('✓','Switched to '+name);
+}
+
+// ── Briefing ──────────────────────────────────────────────────────────────────
+function saveBriefing(){
+  const p=document.getElementById('b-preparing').value.trim();
+  const r=document.getElementById('b-role').value.trim();
+  const i=document.getElementById('b-improve').value.trim();
+  if(!p&&!r&&!i)return;
+  S.briefing={preparing:p,role:r,improve:i};
+  document.getElementById('briefing-display').innerHTML=`<div class="result-block" style="margin-bottom:0"><h4>Active Briefing</h4>${p?`<div class="bullet"><span><strong style="color:var(--text)">Preparing for:</strong> ${p}</span></div>`:''} ${r?`<div class="bullet"><span><strong style="color:var(--text)">Background:</strong> ${r}</span></div>`:''} ${i?`<div class="bullet"><span><strong style="color:var(--text)">Focus:</strong> ${i}</span></div>`:''}</div>`;
+  document.getElementById('companion-ctx').innerHTML=`<strong style="color:var(--text)">${p||'Session briefed'}</strong><br>${r?`<span style="color:var(--muted2)">Role: ${r}</span><br>`:''}${i?`<span style="color:var(--muted2)">Focus: ${i}</span>`:''}`;
+  showToast('📋','Briefing saved');saveUserData();
+}
+
+// ── API ───────────────────────────────────────────────────────────────────────
+async function callAI(messages,system){
+  const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages,system})});
+  if(!res.ok){const e=await res.json().catch(()=>({error:res.statusText}));throw new Error(e.error||'Server error');}
+  const d=await res.json();return d.text;
+}
+
+// ── Warmup ────────────────────────────────────────────────────────────────────
+async function generateWarmup(){
+  const scenario=document.getElementById('wu-scenario').value;
+  const difficulty=document.getElementById('wu-difficulty').value;
+  const btn=document.getElementById('warmup-btn');
+  btn.disabled=true;btn.textContent='Generating…';
+  document.getElementById('warmup-questions').innerHTML=`<div class="loading-dots"><span></span><span></span><span></span></div>`;
+  document.getElementById('warmup-tip-area').innerHTML='';
+  const briefCtx=S.briefing?`Briefing: preparing for "${S.briefing.preparing}", role "${S.briefing.role}", improve "${S.briefing.improve}".`:'No briefing.';
+  const diffMap={warm:'gentle, confidence-building',standard:'realistic and challenging',hard:'very difficult, high-pressure'};
+  const prompt=`You are ${S.coach}, a communication coach. Generate exactly 3 ${diffMap[difficulty]} ${scenario} questions for this person. ${briefCtx}\n\nReturn ONLY valid JSON:\n{"questions":[{"text":"...","focus":"...","tip":"..."},{"text":"...","focus":"...","tip":"..."},{"text":"...","focus":"...","tip":"..."}]}\nEach question needs: text (the question), focus (2-3 word skill it tests), tip (one sentence coaching advice). No markdown.`;
+  try{
+    let raw=await callAI([{role:'user',content:prompt}]);
+    raw=raw.replace(/```json|```/g,'').trim();
+    const m=raw.match(/\{[\s\S]*\}/);if(!m)throw new Error('No JSON');
+    const d=JSON.parse(m[0]);
+    const focusColors=['t-purple','t-blue','t-green'];
+    document.getElementById('warmup-questions').innerHTML=d.questions.map((q,i)=>`
+      <div class="warmup-q" id="wq-${i}" onclick="selectWarmupQ(${i},'${escHtml(q.text)}')">
+        <div class="warmup-q-num">Question ${i+1}</div>
+        <div class="warmup-q-text">${q.text}</div>
+        <span class="warmup-q-tag tag ${focusColors[i]}">${q.focus}</span>
+      </div>`).join('');
+    // Show tips panel
+    document.getElementById('warmup-tip-area').innerHTML=`<div class="warmup-tip"><div class="warmup-tip-label">💡 ${S.coach}'s tip</div><div class="warmup-tip-text">${d.questions[0].tip}</div></div>`;
+    // Update tip on hover
+    d.questions.forEach((q,i)=>{
+      document.getElementById('wq-'+i).addEventListener('mouseenter',()=>{
+        document.querySelector('.warmup-tip-text').textContent=q.tip;
+      });
+    });
+  }catch(e){document.getElementById('warmup-questions').innerHTML=`<div class="empty-state"><p style="color:var(--red)">Failed: ${e.message}</p></div>`;}
+  btn.disabled=false;btn.textContent='⚡ Generate Questions';
+}
+
+function selectWarmupQ(idx,text){
+  document.querySelectorAll('.warmup-q').forEach(q=>q.classList.remove('selected'));
+  document.getElementById('wq-'+idx).classList.add('selected');
+  S.warmupSelected=text;
+  navTo('practice');
+  setTimeout(()=>{document.getElementById('p-question').value=text;document.getElementById('p-text').focus();},200);
+  showToast('⚡','Question loaded in Practice Lab');
+}
+
+// ── Practice ──────────────────────────────────────────────────────────────────
+async function analyzeResponse(){
+  const text=document.getElementById('p-text').value.trim();
+  const question=document.getElementById('p-question').value.trim();
+  if(!text){alert('Please enter a response.');return;}
+  const btn=document.getElementById('analyze-btn');
+  btn.disabled=true;btn.textContent='Analyzing…';
+  document.getElementById('results-area').innerHTML=`<div class="loading-dots"><span></span><span></span><span></span></div>`;
+  const c=COACHES[S.coach];
+  const briefCtx=S.briefing?`User briefing: preparing for "${S.briefing.preparing}", role "${S.briefing.role}", improve "${S.briefing.improve}".`:'No briefing.';
+  const prompt=`You are ${S.coach} on Conver. Style: ${c.style}\nAnalyze this ${S.scenario} response${question?` to: "${question}"`:''}.\n${briefCtx}\nResponse:\n"${text}"\n\nReturn ONLY valid JSON:\n{"clarity":<1-10>,"confidence":<1-10>,"persuasion":<1-10>,"storytelling":<1-10>,"conciseness":<1-10>,"strengths":["...","..."],"improvements":["...","..."],"filler_feedback":"...","rewrite":"...","overall":"<2 sentence overall assessment>"}\nNo markdown.`;
+  try{
+    let raw=await callAI([{role:'user',content:prompt}]);
+    raw=raw.replace(/```json|```/g,'').trim();
+    const m=raw.match(/\{[\s\S]*\}/);if(!m)throw new Error('No JSON');
+    const a=JSON.parse(m[0]);
+    S.sessions++;
+    S.scores.clarity.push(a.clarity);S.scores.confidence.push(a.confidence);S.scores.persuasion.push(a.persuasion);
+    // Update rolling skills
+    const lerp=(cur,next,t)=>cur+(next-cur)*t;const t=0.3;
+    S.skills.clarity=lerp(S.skills.clarity,a.clarity*10,t);
+    S.skills.confidence=lerp(S.skills.confidence,a.confidence*10,t);
+    S.skills.persuasion=lerp(S.skills.persuasion,a.persuasion*10,t);
+    S.skills.storytelling=lerp(S.skills.storytelling,(a.storytelling||5)*10,t);
+    S.skills.conciseness=lerp(S.skills.conciseness,(a.conciseness||5)*10,t);
+    S.streak=Math.min(S.streak+1,99);
+    const fillerData=analyzeTextFillers(text);
+    const newSession={scenario:S.scenario,coach:S.coach,question,text,analysis:a,time:new Date()};
+    S.history.unshift(newSession);
+    saveSessionToCloud(newSession);
+    saveUserData();
+    updateChips();renderResults(a);
+    if(fillerData.count>0){showToast('🚨',`${fillerData.count} filler word${fillerData.count>1?'s':''} detected: ${fillerData.found.slice(0,3).join(', ')}`);}
+    if(S.autoReport)setTimeout(()=>openReport(S.history[0]),600);
+    showToast('✓','Analysis complete');
+  }catch(e){document.getElementById('results-area').innerHTML=`<div class="empty-state"><p style="color:var(--red)">Failed: ${e.message}</p></div>`;}
+  btn.disabled=false;btn.textContent='Analyze Response';
+}
+
+function scoreClass(n){return n>=8?'good':n>=5?'mid':'low';}
+function renderResults(a){
+  document.getElementById('results-area').innerHTML=`
+    <div class="score-row">
+      <div class="score-box"><div class="score-num ${scoreClass(a.clarity)}">${a.clarity}</div><div class="score-lbl">Clarity</div></div>
+      <div class="score-box"><div class="score-num ${scoreClass(a.confidence)}">${a.confidence}</div><div class="score-lbl">Confidence</div></div>
+      <div class="score-box"><div class="score-num ${scoreClass(a.persuasion)}">${a.persuasion}</div><div class="score-lbl">Persuasion</div></div>
+    </div>
+    ${a.overall?`<div class="result-block"><h4>Overall Read</h4><p class="comm-read" style="color:var(--text)">${a.overall}</p></div>`:''}
+    <div class="result-block"><h4>What worked</h4>${a.strengths.map(s=>`<div class="bullet"><span>${s}</span></div>`).join('')}</div>
+    <div class="result-block"><h4>To improve</h4>${a.improvements.map(s=>`<div class="bullet"><span>${s}</span></div>`).join('')}</div>
+    ${S.filler?`<div class="result-block"><h4>Delivery read</h4><p class="comm-read">${a.filler_feedback}</p></div>`:''}
+    ${S.rewrite?`<div class="result-block"><h4>Stronger version · ${S.coach}</h4><div class="rewrite-box">${a.rewrite}</div></div><div style="margin-top:8px">${renderDiff(text,a.rewrite)}</div>`:''}
+    <button onclick="openReport(S.history[0])" style="width:100%;padding:10px;background:transparent;border:1px solid var(--border2);border-radius:9px;color:var(--muted2);cursor:pointer;font-size:13px;margin-top:4px;transition:all 0.15s" onmouseover="this.style.borderColor='rgba(108,99,255,0.4)';this.style.color='var(--accent3)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted2)'">📄 View Full Report</button>`;
+}
+
+// ── Report Modal ──────────────────────────────────────────────────────────────
+function openReport(h){
+  if(!h)return;const a=h.analysis;
+  document.getElementById('rm-title').textContent=h.scenario+' Session Report';
+  document.getElementById('rm-meta').textContent=`${h.coach} · ${h.time.toLocaleString([])}${h.question?' · "'+h.question.slice(0,50)+'"':''}`;
+  const g=scoreGrade(calcConverScore());
+  document.getElementById('rm-overall').innerHTML=`<div class="rm-overall-label">Overall Assessment</div><div class="rm-overall-text">${a.overall||'No overall assessment.'}</div>`;
+  document.getElementById('rm-scores').innerHTML=`
+    <div class="rm-score-box"><div class="rm-score-num ${scoreClass(a.clarity)}" style="font-size:32px;font-weight:800;letter-spacing:-1px">${a.clarity}</div><div class="rm-score-lbl">Clarity</div></div>
+    <div class="rm-score-box"><div class="rm-score-num ${scoreClass(a.confidence)}" style="font-size:32px;font-weight:800;letter-spacing:-1px">${a.confidence}</div><div class="rm-score-lbl">Confidence</div></div>
+    <div class="rm-score-box"><div class="rm-score-num ${scoreClass(a.persuasion)}" style="font-size:32px;font-weight:800;letter-spacing:-1px">${a.persuasion}</div><div class="rm-score-lbl">Persuasion</div></div>`;
+  document.getElementById('rm-strengths').innerHTML=a.strengths.map(s=>`<div class="bullet" style="font-size:13.5px"><span>${s}</span></div>`).join('');
+  document.getElementById('rm-improvements').innerHTML=a.improvements.map(s=>`<div class="bullet" style="font-size:13.5px"><span>${s}</span></div>`).join('');
+  document.getElementById('rm-rewrite').textContent=a.rewrite;
+  document.getElementById('report-modal').classList.remove('hidden');
+}
+function closeReport(){document.getElementById('report-modal').classList.add('hidden');}
+function printReport(){window.print();}
+
+// ── Companion ─────────────────────────────────────────────────────────────────
+async function sendChat(){
+  const input=document.getElementById('chat-input');const text=input.value.trim();if(!text)return;
+  const btn=document.getElementById('send-btn');btn.disabled=true;input.disabled=true;input.value='';
+  const msgs=document.getElementById('chat-messages');
+  msgs.innerHTML+=`<div class="msg msg-user"><div class="msg-name">You</div>${escHtml(text)}</div>`;
+  scrollChat();S.chatHistory.push({role:'user',content:text});
+  const c=COACHES[S.coach];
+  const briefCtx=S.briefing?`Briefing: "${S.briefing.preparing}", role "${S.briefing.role}", improve "${S.briefing.improve}".`:'No briefing.';
+  const lastScore=S.history.length?`Last scores: Clarity ${S.history[0].analysis.clarity}/10, Confidence ${S.history[0].analysis.confidence}/10, Persuasion ${S.history[0].analysis.persuasion}/10.`:'';
+  const system=`You are ${S.coach} on Conver. ${c.style} ${briefCtx} ${lastScore} 2-4 sentences. Specific. In character. No markdown.`;
+  const tid='t'+Date.now();
+  msgs.innerHTML+=`<div class="msg msg-ai" id="${tid}"><div class="msg-name">${S.coach}</div><span class="loading-dots" style="padding:2px 0;display:inline-flex"><span></span><span></span><span></span></span></div>`;
+  scrollChat();
+  try{
+    const reply=await callAI(S.chatHistory,system);
+    S.chatHistory.push({role:'assistant',content:reply});
+    const el=document.getElementById(tid);if(el)el.innerHTML=`<div class="msg-name">${S.coach}</div>${escHtml(reply)}`;
+  }catch(e){const el=document.getElementById(tid);if(el)el.innerHTML=`<div class="msg-name">${S.coach}</div><span style="color:var(--red)">Error: ${e.message}</span>`;}
+  scrollChat();btn.disabled=false;input.disabled=false;input.focus();
+}
+function injectPrompt(t){navTo('companion');setTimeout(()=>{document.getElementById('chat-input').value=t;document.getElementById('chat-input').focus();},100);}
+function scrollChat(){document.getElementById('chat-messages').scrollTop=999999;}
+
+// ── Skills & Radar ────────────────────────────────────────────────────────────
+function renderSkills(){
+  const skills=[
+    {name:'Clarity',key:'clarity',color:'var(--accent2)'},
+    {name:'Confidence',key:'confidence',color:'var(--accent3)'},
+    {name:'Persuasion',key:'persuasion',color:'var(--green)'},
+    {name:'Storytelling',key:'storytelling',color:'var(--amber)'},
+    {name:'Conciseness',key:'conciseness',color:'var(--red)'},
+  ];
+  document.getElementById('skill-bars').innerHTML=skills.map(s=>`
+    <div class="skill-row">
+      <div class="skill-name">${s.name}</div>
+      <div class="skill-bar-wrap"><div class="skill-bar-fill" style="width:${S.skills[s.key]}%;background:${s.color}"></div></div>
+      <div class="skill-val">${Math.round(S.skills[s.key])}</div>
+    </div>`).join('');
+  renderStreakDays();
+  // Score breakdown
+  const sc=calcConverScore();
+  if(sc){
+    const g=scoreGrade(sc);
+    document.getElementById('score-breakdown').innerHTML=`
+      <div style="text-align:center;padding:16px 0">
+        <div style="font-family:'Syne',sans-serif;font-size:48px;font-weight:800;color:${g.color};letter-spacing:-2px;line-height:1">${sc}</div>
+        <div style="font-size:13px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:4px">/100 · ${g.grade}</div>
+        <div style="font-size:13px;color:var(--muted2);margin-top:8px">${g.sub}</div>
+      </div>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:12.5px;color:var(--muted2);line-height:1.8">
+        <div>Sessions analyzed: <strong style="color:var(--text)">${S.sessions}</strong></div>
+        <div>Avg clarity: <strong style="color:var(--accent2)">${S.scores.clarity.length?(S.scores.clarity.reduce((a,b)=>a+b,0)/S.scores.clarity.length).toFixed(1):'-'}/10</strong></div>
+        <div>Avg confidence: <strong style="color:var(--accent3)">${S.scores.confidence.length?(S.scores.confidence.reduce((a,b)=>a+b,0)/S.scores.confidence.length).toFixed(1):'-'}/10</strong></div>
+        <div>Avg persuasion: <strong style="color:var(--green)">${S.scores.persuasion.length?(S.scores.persuasion.reduce((a,b)=>a+b,0)/S.scores.persuasion.length).toFixed(1):'-'}/10</strong></div>
+      </div>`;
+  }
+}
+
+function renderStreakDays(){
+  const days=['M','T','W','T','F','S','S'];
+  const today=new Date().getDay();
+  document.getElementById('streak-num').textContent=S.streak;
+  document.getElementById('streak-days').innerHTML=days.map((d,i)=>{
+    const isToday=(i+1)%7===today%7;
+    const done=S.streak>0&&i<Math.min(S.streak,7);
+    const cls=isToday?'sd-today':done?'sd-done':'sd-empty';
+    return`<div class="streak-day ${cls}">${d}</div>`;
+  }).join('');
+}
+
+function drawRadar(){
+  const canvas=document.getElementById('radar-canvas');
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  const W=200,H=200,cx=100,cy=100,maxR=80;
+  ctx.clearRect(0,0,W,H);
+  const skills=['clarity','confidence','persuasion','storytelling','conciseness'];
+  const labels=['Clarity','Confidence','Persuasion','Story','Concise'];
+  const colors=['#4fc3f7','#a78bfa','#34d399','#fbbf24','#f87171'];
+  const n=skills.length;
+  const angleStep=(Math.PI*2)/n;
+  // Grid
+  for(let r=1;r<=4;r++){
+    ctx.beginPath();
+    for(let i=0;i<n;i++){const a=-Math.PI/2+i*angleStep;const radius=(r/4)*maxR;if(i===0)ctx.moveTo(cx+Math.cos(a)*radius,cy+Math.sin(a)*radius);else ctx.lineTo(cx+Math.cos(a)*radius,cy+Math.sin(a)*radius);}
+    ctx.closePath();ctx.strokeStyle='rgba(255,255,255,0.07)';ctx.lineWidth=1;ctx.stroke();
+  }
+  // Axes
+  for(let i=0;i<n;i++){const a=-Math.PI/2+i*angleStep;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(a)*maxR,cy+Math.sin(a)*maxR);ctx.strokeStyle='rgba(255,255,255,0.1)';ctx.lineWidth=1;ctx.stroke();}
+  // Data
+  ctx.beginPath();
+  skills.forEach((s,i)=>{
+    const a=-Math.PI/2+i*angleStep;
+    const val=(S.skills[s]/100)*maxR;
+    if(i===0)ctx.moveTo(cx+Math.cos(a)*val,cy+Math.sin(a)*val);
+    else ctx.lineTo(cx+Math.cos(a)*val,cy+Math.sin(a)*val);
+  });
+  ctx.closePath();ctx.fillStyle='rgba(108,99,255,0.15)';ctx.fill();ctx.strokeStyle='rgba(108,99,255,0.6)';ctx.lineWidth=2;ctx.stroke();
+  // Dots + labels
+  skills.forEach((s,i)=>{
+    const a=-Math.PI/2+i*angleStep;const val=(S.skills[s]/100)*maxR;
+    ctx.beginPath();ctx.arc(cx+Math.cos(a)*val,cy+Math.sin(a)*val,4,0,Math.PI*2);
+    ctx.fillStyle=colors[i];ctx.fill();
+    // Label
+    const lx=cx+Math.cos(a)*(maxR+16);const ly=cy+Math.sin(a)*(maxR+16);
+    ctx.font='10px DM Mono, monospace';ctx.fillStyle='rgba(160,170,191,0.8)';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(labels[i],lx,ly);
+  });
+}
+
+// ── Voice Session ─────────────────────────────────────────────────────────────
+let voiceState='idle',recognition=null,waveInterval=null,faceAnimFrame=null,currentVoiceCoach=S.coach,blinkT=0,mouthOpen=0;
+
+function drawFace(){
+  const canvas=document.getElementById('face-canvas');if(!canvas)return;
+  const ctx=canvas.getContext('2d');const W=170,H=170,cx=85,cy=85,r=76;
+  const f=FACE_F[currentVoiceCoach]||FACE_F.Luna;const c=COACHES[currentVoiceCoach]||COACHES.Luna;
+  ctx.clearRect(0,0,W,H);
+  const grd=ctx.createRadialGradient(cx,cy,20,cx,cy,r);grd.addColorStop(0,c.bg);grd.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=grd;ctx.fillRect(0,0,W,H);
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);
+  const fg=ctx.createRadialGradient(cx,cy-18,8,cx,cy,r);fg.addColorStop(0,'#1e2130');fg.addColorStop(1,'#0f1118');
+  ctx.fillStyle=fg;ctx.fill();ctx.strokeStyle=c.accent.replace('0.8','0.25');ctx.lineWidth=1.5;ctx.stroke();
+  blinkT+=0.02;const blinkVal=Math.abs(Math.sin(blinkT*0.7));
+  const eyeH=voiceState==='idle'?(blinkVal>0.97?0.05:1):1;
+  const eyeY=cy-10;
+  [[cx-20,eyeY],[cx+20,eyeY]].forEach(([ex,ey],idx)=>{
+    ctx.beginPath();ctx.ellipse(ex,ey,10,10*eyeH,0,0,Math.PI*2);ctx.fillStyle='rgba(235,235,250,0.9)';ctx.fill();
+    ctx.beginPath();ctx.ellipse(ex,ey,6.5,6.5*eyeH,0,0,Math.PI*2);ctx.fillStyle=f.irisColor;ctx.fill();
+    ctx.beginPath();ctx.ellipse(ex,ey,3,3*eyeH,0,0,Math.PI*2);ctx.fillStyle='#000';ctx.fill();
+    ctx.beginPath();ctx.arc(ex+2,ey-2,1.4,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,0.75)';ctx.fill();
+    const bx=f.browAngle*(idx===0?1:-1);
+    ctx.beginPath();ctx.moveTo(ex-9,ey-14+bx*7);ctx.quadraticCurveTo(ex,ey-17,ex+9,ey-14-bx*7);
+    ctx.strokeStyle=f.eyeColor;ctx.lineWidth=2.2;ctx.lineCap='round';ctx.stroke();
+  });
+  const mx=cx,my=cy+28;const mo=voiceState==='speaking'?mouthOpen:0;
+  ctx.beginPath();ctx.moveTo(mx-16,my+f.mouthCurve*5);ctx.quadraticCurveTo(mx,my+f.mouthCurve*12+mo*9,mx+16,my+f.mouthCurve*5);
+  ctx.strokeStyle=f.eyeColor;ctx.lineWidth=2.2;ctx.lineCap='round';ctx.stroke();
+  if(mo>0.2){ctx.beginPath();ctx.moveTo(mx-14,my+f.mouthCurve*5+2);ctx.quadraticCurveTo(mx,my+f.mouthCurve*12+mo*9+7,mx+14,my+f.mouthCurve*5+2);ctx.fillStyle='rgba(0,0,0,0.45)';ctx.fill();}
+  if(voiceState==='listening'){ctx.beginPath();ctx.arc(cx,cy,r+3,0,Math.PI*2);ctx.strokeStyle=`rgba(79,195,247,${0.3+0.25*Math.sin(Date.now()/280)})`;ctx.lineWidth=3;ctx.stroke();}
+  else if(voiceState==='speaking'){ctx.beginPath();ctx.arc(cx,cy,r+3,0,Math.PI*2);ctx.strokeStyle=`rgba(167,139,250,${0.3+0.25*Math.sin(Date.now()/190)})`;ctx.lineWidth=3;ctx.stroke();}
+  faceAnimFrame=requestAnimationFrame(drawFace);
+}
+
+function startWaveformIdle(){
+  if(waveInterval)clearInterval(waveInterval);
+  waveInterval=setInterval(()=>{
+    for(let i=0;i<9;i++){
+      const el=document.getElementById('wb'+i);if(!el)continue;
+      let h=voiceState==='listening'?4+Math.random()*26:voiceState==='speaking'?6+Math.random()*20+Math.sin(Date.now()/80+i)*7:4+Math.sin(Date.now()/600+i*0.7)*2.5;
+      el.style.height=Math.max(4,h)+'px';
+      el.style.background=voiceState==='listening'?'var(--accent2)':voiceState==='speaking'?'var(--accent3)':'rgba(108,99,255,0.35)';
+    }
+  },80);
+}
+
+function setVoiceState(state){
+  voiceState=state;const btn=document.getElementById('hold-btn');const status=document.getElementById('voice-status');const ring=document.getElementById('face-ring');
+  btn.className='hold-btn '+state;ring.className='coach-face-ring '+state;
+  if(state==='idle'){btn.textContent='🎙️';status.textContent='Hold the mic to speak';status.className='voice-status';}
+  else if(state==='listening'){btn.textContent='🔴';status.textContent='Listening...';status.className='voice-status listening';}
+  else if(state==='processing'){btn.textContent='⏳';status.textContent='Processing...';status.className='voice-status';}
+  else if(state==='speaking'){btn.textContent='🔊';status.textContent=currentVoiceCoach+' is speaking...';status.className='voice-status speaking';}
+}
+
+function switchVoiceCoach(name){
+  currentVoiceCoach=name;
+  document.getElementById('voice-coach-name').textContent=name;
+  document.querySelectorAll('.cp-btn').forEach(b=>b.classList.remove('active'));
+  const btn=document.getElementById('vcp-'+name.toLowerCase());if(btn)btn.classList.add('active');
+  S.voiceChatHistory=[];addVoiceLog(name,COACHES[name].greeting,'ai');speakText(COACHES[name].greeting);
+}
+
+function addVoiceLog(who,text,type){
+  const log=document.getElementById('voice-log');
+  const placeholder=log.querySelector('div[style]');if(placeholder)placeholder.remove();
+  const dot=type==='ai'?COACHES[who]?.color||'var(--accent3)':'var(--muted2)';
+  const item=document.createElement('div');item.className='vlog-item';
+  item.innerHTML=`<div class="vlog-who"><span class="dot" style="background:${dot}"></span>${who}</div><div class="vlog-text">${escHtml(text)}</div>`;
+  log.appendChild(item);log.scrollTop=log.scrollHeight;
+}
+
+async function speakText(text){
+  setVoiceState('speaking');
+  // Animate mouth while loading
+  const mouthInterval=setInterval(()=>{mouthOpen=0.2+Math.random()*0.6;setTimeout(()=>mouthOpen=0,100);},180);
+  try{
+    const res=await fetch('/api/speak',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({text,coach:currentVoiceCoach})
+    });
+    if(!res.ok){
+      // Fallback to browser TTS if ElevenLabs fails
+      clearInterval(mouthInterval);
+      fallbackSpeak(text);
+      return;
+    }
+    const blob=await res.blob();
+    const url=URL.createObjectURL(blob);
+    const audio=new Audio(url);
+    audio.onended=()=>{
+      clearInterval(mouthInterval);
+      mouthOpen=0;
+      setVoiceState('idle');
+      URL.revokeObjectURL(url);
+    };
+    audio.onerror=()=>{
+      clearInterval(mouthInterval);
+      setVoiceState('idle');
+    };
+    // Animate mouth in sync with audio
+    audio.ontimeupdate=()=>{mouthOpen=0.2+Math.random()*0.5;setTimeout(()=>mouthOpen=Math.random()*0.2,90);};
+    audio.play();
+  }catch(e){
+    clearInterval(mouthInterval);
+    console.error('ElevenLabs speak error:',e);
+    fallbackSpeak(text);
+  }
+}
+
+function fallbackSpeak(text){
+  if(!window.speechSynthesis)return;
+  window.speechSynthesis.cancel();
+  const clean=text.replace(/\*\*/g,'').replace(/\*/g,'').replace(/_/g,'').replace(/`/g,'').trim();
+  const utt=new SpeechSynthesisUtterance(clean);
+  utt.pitch=COACHES[currentVoiceCoach]?.voice?.pitch||1;
+  utt.rate=COACHES[currentVoiceCoach]?.voice?.rate||1;
+  const voices=window.speechSynthesis.getVoices();
+  const match=voices.find(v=>v.lang.startsWith('en'))||voices[0];
+  if(match)utt.voice=match;
+  utt.onstart=()=>setVoiceState('speaking');
+  utt.onend=()=>{setVoiceState('idle');mouthOpen=0;};
+  utt.onboundary=()=>{mouthOpen=0.3+Math.random()*0.5;setTimeout(()=>mouthOpen=0,110);};
+  window.speechSynthesis.speak(utt);
+}
+
+function startListening(){
+  if(voiceState!=='idle')return;window.speechSynthesis.cancel();setVoiceState('listening');
+  document.getElementById('voice-transcript').textContent='Listening...';
+  if(!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)){alert('Please use Chrome for voice.');setVoiceState('idle');return;}
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  recognition=new SR();recognition.continuous=true;recognition.interimResults=true;recognition.lang='en-US';
+  // Accumulate ALL final results so long sentences are never cut off
+  let finalTranscript='';
+  recognition.onresult=(e)=>{
+    let interim='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal){finalTranscript+=e.results[i][0].transcript+' ';}
+      else{interim+=e.results[i][0].transcript;}
+    }
+    const display=(finalTranscript+interim).trim();
+    document.getElementById('voice-transcript').textContent=display||'Listening...';
+  };
+  recognition.onerror=(e)=>{if(e.error==='no-speech')return;console.warn('Speech error:',e.error);};
+  recognition.onend=()=>{
+    // Auto-restart if user is still holding the button, so long pauses don't cut off
+    if(voiceState==='listening'){try{recognition.start();}catch(err){}}
+  };
+  recognition.start();
+}
+
+async function stopListening(){
+  if(voiceState!=='listening')return;if(recognition){recognition.stop();recognition=null;}
+  const t=document.getElementById('voice-transcript').textContent;
+  if(!t||t==='Listening...'||t.trim().length<2){setVoiceState('idle');return;}
+  setVoiceState('processing');addVoiceLog('You',t,'user');S.voiceChatHistory.push({role:'user',content:t});
+  const c=COACHES[currentVoiceCoach];
+  const briefCtx=S.briefing?`Briefing: "${S.briefing.preparing}", role "${S.briefing.role}".`:'';
+  const system=`You are ${currentVoiceCoach} on Conver. ${c.style} ${briefCtx} VOICE conversation — 1-3 sentences max. Natural spoken language. No markdown.`;
+  try{
+    const reply=await callAI(S.voiceChatHistory,system);
+    S.voiceChatHistory.push({role:'assistant',content:reply});
+    addVoiceLog(currentVoiceCoach,reply,'ai');
+    document.getElementById('voice-transcript').textContent='Your words will appear here as you speak...';
+    speakText(reply);
+  }catch(e){setVoiceState('idle');document.getElementById('voice-transcript').textContent='Error: '+e.message;}
+}
+
+// ── Insights ──────────────────────────────────────────────────────────────────
+function renderInsights(){
+  const el=document.getElementById('insights-content');
+  if(!S.history.length){el.innerHTML=`<div class="empty-state" style="padding:60px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><p>Complete at least one session.</p></div>`;return;}
+  const avg=arr=>arr.length?(arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1):0;
+  const ac=avg(S.scores.clarity),aco=avg(S.scores.confidence),ap=avg(S.scores.persuasion);
+  const scenarios={};S.history.forEach(h=>{scenarios[h.scenario]=(scenarios[h.scenario]||0)+1;});
+  const top=Object.entries(scenarios).sort((a,b)=>b[1]-a[1])[0];
+  const allNums=[...S.scores.clarity,...S.scores.confidence,...S.scores.persuasion];
+  el.innerHTML=`<div class="insights-grid">
+    <div class="insight-card"><div class="insight-title">Average Scores — ${S.sessions} sessions</div>
+      <div class="bar-group"><div class="bar-label"><span>Clarity</span><span>${ac}/10</span></div><div class="bar-track"><div class="bar-fill" style="width:${ac*10}%;background:var(--accent2)"></div></div></div>
+      <div class="bar-group"><div class="bar-label"><span>Confidence</span><span>${aco}/10</span></div><div class="bar-track"><div class="bar-fill" style="width:${aco*10}%;background:var(--accent3)"></div></div></div>
+      <div class="bar-group"><div class="bar-label"><span>Persuasion</span><span>${ap}/10</span></div><div class="bar-track"><div class="bar-fill" style="width:${ap*10}%;background:var(--green)"></div></div></div>
+    </div>
+    <div class="insight-card"><div class="insight-title">Session Breakdown</div>
+      <div style="font-size:13.5px;color:var(--muted2);line-height:2.1">
+        <div>📊 Total: <strong style="color:var(--text)">${S.sessions}</strong></div>
+        <div>🎯 Top scenario: <strong style="color:var(--text)">${top[0]}</strong></div>
+        <div>🧑‍🏫 Coach: <strong style="color:var(--text)">${S.coach}</strong></div>
+        <div>⭐ Best score: <strong style="color:var(--green)">${Math.max(...allNums)}/10</strong></div>
+        <div>🔥 Streak: <strong style="color:var(--amber)">${S.streak} days</strong></div>
+      </div>
+    </div>
+    <div class="insight-card" style="grid-column:span 2"><div class="insight-title">Score trend — last ${Math.min(S.history.length,10)} sessions</div>
+      <div style="display:flex;gap:8px;align-items:flex-end;height:80px;margin-top:4px">
+        ${S.history.slice(0,10).reverse().map(h=>{const a=((h.analysis.clarity+h.analysis.confidence+h.analysis.persuasion)/3).toFixed(1);const c=COACHES[h.coach];return`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px"><div style="font-size:9.5px;color:var(--muted);font-family:'DM Mono',monospace">${a}</div><div style="width:100%;background:${c.bg};border:1px solid ${c.accent.replace('0.8','0.3')};border-radius:4px 4px 0 0;height:${(a/10)*66}px;min-height:4px"></div><div style="font-size:9.5px;color:var(--muted)">${h.scenario.slice(0,3)}</div></div>`;}).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── History ───────────────────────────────────────────────────────────────────
+function renderHistory(){
+  const el=document.getElementById('history-list');
+  if(!S.history.length){el.innerHTML=`<div class="empty-state" style="padding:60px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><p>No sessions yet.</p></div>`;return;}
+  el.innerHTML=S.history.map(h=>`<div class="history-item" onclick='openReport(${JSON.stringify(h).replace(/'/g,"&#39;")})'>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:13px;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:8px">${h.scenario}<span style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace">· ${h.coach}</span>${h.question?`<span style="font-size:10.5px;color:var(--muted2)">· "${h.question.slice(0,35)}${h.question.length>35?'…':''}"</span>`:''}</div>
+      <div style="font-size:12.5px;color:var(--muted2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h.text.slice(0,110)}${h.text.length>110?'…':''}</div>
+      <div class="h-scores"><span class="ms ms-c">C: ${h.analysis.clarity}</span><span class="ms ms-co">Co: ${h.analysis.confidence}</span><span class="ms ms-p">P: ${h.analysis.persuasion}</span><span class="ms" style="background:rgba(79,195,247,0.06);color:var(--muted2)">Avg: ${((h.analysis.clarity+h.analysis.confidence+h.analysis.persuasion)/3).toFixed(1)}</span></div>
+    </div>
+    <div style="font-size:10.5px;color:var(--muted);font-family:'DM Mono',monospace;white-space:nowrap;flex-shrink:0">${h.time.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+  </div>`).join('');
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function clearHistory(){if(!confirm('Clear all history?'))return;S.history=[];S.sessions=0;S.scores={clarity:[],confidence:[],persuasion:[]};S.skills={clarity:0,confidence:0,persuasion:0,storytelling:0,conciseness:0};S.streak=0;updateChips();renderHistory();}
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function showToast(icon,msg){const t=document.getElementById('toast');document.getElementById('toast-icon').textContent=icon;document.getElementById('toast-msg').textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
+
+
+// ── FILLER WORD DETECTOR ──────────────────────────────────────────────────────
+const FILLERS = ['um','uh','like','you know','basically','literally','actually','so','right','okay','kind of','sort of','i mean','you see','well','anyway'];
+let fillerCount = 0;
+let fillerDetecting = false;
+let fillerRecognition = null;
+
+function startFillerDetector() {
+  if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) return;
+  fillerCount = 0;
+  fillerDetecting = true;
+  document.getElementById('filler-overlay').style.display = 'flex';
+  document.getElementById('filler-total').textContent = '0';
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  fillerRecognition = new SR();
+  fillerRecognition.continuous = true;
+  fillerRecognition.interimResults = true;
+  fillerRecognition.lang = 'en-US';
+  let lastProcessed = '';
+  fillerRecognition.onresult = (e) => {
+    let transcript = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      transcript += e.results[i][0].transcript.toLowerCase();
+    }
+    const newText = transcript.replace(lastProcessed, '');
+    if (newText) {
+      FILLERS.forEach(f => {
+        const regex = new RegExp('\\b' + f + '\\b', 'gi');
+        const matches = newText.match(regex);
+        if (matches) {
+          fillerCount += matches.length;
+          document.getElementById('filler-total').textContent = fillerCount;
+          document.getElementById('filler-word-display').textContent = f;
+          const badge = document.getElementById('filler-badge');
+          badge.classList.add('bump');
+          setTimeout(() => badge.classList.remove('bump'), 300);
+        }
+      });
+      lastProcessed = transcript;
+    }
+  };
+  fillerRecognition.start();
+}
+
+function stopFillerDetector() {
+  fillerDetecting = false;
+  if (fillerRecognition) { fillerRecognition.stop(); fillerRecognition = null; }
+  document.getElementById('filler-overlay').style.display = 'none';
+  return fillerCount;
+}
+
+// Hook into practice textarea — detect fillers while typing too
+function analyzeTextFillers(text) {
+  let count = 0;
+  const found = [];
+  FILLERS.forEach(f => {
+    const regex = new RegExp('\\b' + f + '\\b', 'gi');
+    const matches = text.match(regex);
+    if (matches) { count += matches.length; found.push(f); }
+  });
+  return { count, found };
+}
+
+// ── DAILY CHALLENGE ───────────────────────────────────────────────────────────
+let dailyChallenge = null;
+let dailyCompleted = false;
+
+async function renderDailyChallenge() {
+  document.getElementById('daily-streak').textContent = S.streak;
+  
+  // Check if already generated today
+  const today = new Date().toDateString();
+  const stored = localStorage.getItem('conver_daily_' + today);
+  if (stored) {
+    dailyChallenge = JSON.parse(stored);
+    dailyCompleted = localStorage.getItem('conver_daily_done_' + today) === 'true';
+    displayDailyChallenge();
+    return;
+  }
+
+  // Generate new challenge
+  const btn = document.getElementById('daily-practice-btn');
+  document.getElementById('daily-question').textContent = 'Generating your challenge...';
+  
+  const weakSpots = getWeakSpots();
+  const briefCtx = S.briefing ? `Briefing: preparing for "${S.briefing.preparing}", role "${S.briefing.role}".` : '';
+  const prompt = `You are ${S.coach}, a communication coach. Generate a daily practice challenge for this person.
+${briefCtx}
+Their weak spots: ${weakSpots.join(', ') || 'not yet determined'}.
+Scenario: ${S.scenario}.
+
+Return ONLY valid JSON:
+{"question":"<one specific, challenging practice question>","skill":"<primary skill this tests, 2-3 words>","tip":"<one sentence coaching tip>","difficulty":"<Easy|Medium|Hard>"}
+No markdown.`;
+
+  try {
+    let raw = await callAI([{role:'user',content:prompt}]);
+    raw = raw.replace(/\`\`\`json|\`\`\`/g,'').trim();
+    const m = raw.match(/\{[\s\S]*\}/);
+    if (!m) throw new Error('No JSON');
+    dailyChallenge = JSON.parse(m[0]);
+    localStorage.setItem('conver_daily_' + today, JSON.stringify(dailyChallenge));
+    displayDailyChallenge();
+  } catch(e) {
+    document.getElementById('daily-question').textContent = 'Could not generate challenge. Try again.';
+  }
+
+  // Update focus areas
+  renderDailyFocus(weakSpots);
+}
+
+function displayDailyChallenge() {
+  if (!dailyChallenge) return;
+  document.getElementById('daily-eyebrow').textContent = dailyCompleted ? '✓ Completed Today' : "Today's Challenge";
+  document.getElementById('daily-question').textContent = dailyChallenge.question;
+  document.getElementById('daily-meta').innerHTML = `
+    <span class="tag t-purple">${dailyChallenge.skill}</span>
+    <span class="tag ${dailyChallenge.difficulty==='Hard'?'t-red':dailyChallenge.difficulty==='Easy'?'t-green':'t-amber'}">${dailyChallenge.difficulty}</span>`;
+  if (dailyCompleted) {
+    document.getElementById('daily-practice-btn').textContent = '✓ Completed';
+    document.getElementById('daily-practice-btn').disabled = true;
+    document.getElementById('daily-completed-area').innerHTML = `<div class="daily-completed"><div style="font-size:24px;margin-bottom:8px">🔥</div><div style="font-family:'Syne',sans-serif;font-weight:700;color:var(--green)">Challenge Complete!</div><div style="font-size:13px;color:var(--muted2);margin-top:4px">Come back tomorrow for a new one.</div></div>`;
+  }
+  const weakSpots = getWeakSpots();
+  renderDailyFocus(weakSpots);
+}
+
+function renderDailyFocus(weakSpots) {
+  const tips = weakSpots.length ? weakSpots.map(w => `Work on your ${w}`) : ['Complete sessions to unlock personalized focus'];
+  document.getElementById('daily-focus-list').innerHTML = tips.slice(0,4).map(t => `<div class="daily-focus-item">${t}</div>`).join('');
+}
+
+function getWeakSpots() {
+  const spots = [];
+  if (S.skills.clarity < 60) spots.push('clarity');
+  if (S.skills.confidence < 60) spots.push('confidence');
+  if (S.skills.persuasion < 60) spots.push('persuasion');
+  if (S.skills.storytelling < 60) spots.push('storytelling');
+  if (S.skills.conciseness < 60) spots.push('conciseness');
+  return spots.length ? spots : ['all-around communication'];
+}
+
+function startDailyChallenge() {
+  if (!dailyChallenge) return;
+  const today = new Date().toDateString();
+  localStorage.setItem('conver_daily_done_' + today, 'true');
+  dailyCompleted = true;
+  navTo('practice');
+  setTimeout(() => {
+    document.getElementById('p-question').value = dailyChallenge.question;
+    document.getElementById('p-text').focus();
+    showToast('⚡', 'Daily challenge loaded — go!');
+  }, 200);
+}
+
+// ── COACH NOTES ───────────────────────────────────────────────────────────────
+let coachNotes = JSON.parse(localStorage.getItem('conver_coach_notes') || '[]');
+
+function renderCoachNotes() {
+  const el = document.getElementById('coach-notes-list');
+  if (!coachNotes.length) {
+    el.innerHTML = '<div class="notes-empty">No coach notes yet. Complete sessions and hit Generate.</div>';
+    return;
+  }
+  el.innerHTML = coachNotes.map(n => {
+    const c = COACHES[n.coach] || COACHES.Luna;
+    return `<div class="note-item">
+      <div class="note-coach"><span class="dot" style="background:${c.color}"></span>${n.coach} · Coach Note</div>
+      <div class="note-text">${n.text}</div>
+      ${n.pattern ? `<span class="note-pattern">${n.pattern}</span>` : ''}
+      <div class="note-date">${new Date(n.date).toLocaleDateString()}</div>
+    </div>`;
+  }).join('');
+}
+
+async function generateCoachNotes() {
+  if (S.history.length < 2) { showToast('⚠️', 'Need at least 2 sessions first'); return; }
+  const btn = document.getElementById('gen-notes-btn');
+  btn.disabled = true; btn.textContent = 'Analyzing patterns...';
+  
+  const recentSessions = S.history.slice(0, 8).map(h => 
+    `Scenario: ${h.scenario}, Scores: C${h.analysis.clarity} Co${h.analysis.confidence} P${h.analysis.persuasion}, Strengths: ${h.analysis.strengths?.join(', ')}, Issues: ${h.analysis.improvements?.join(', ')}`
+  ).join('\n');
+  
+  const prompt = `You are ${S.coach}, an AI communication coach reviewing this person's recent sessions.
+
+Sessions:
+${recentSessions}
+
+Write 3 coach observations about their communication patterns. Each should be specific, actionable, and based on what you see across sessions.
+
+Return ONLY valid JSON:
+{"notes":[{"text":"<observation>","pattern":"<1-3 word pattern label>"},{"text":"<observation>","pattern":"<label>"},{"text":"<observation>","pattern":"<label>"}]}
+No markdown.`;
+
+  try {
+    let raw = await callAI([{role:'user',content:prompt}]);
+    raw = raw.replace(/\`\`\`json|\`\`\`/g,'').trim();
+    const m = raw.match(/\{[\s\S]*\}/);
+    if (!m) throw new Error('No JSON');
+    const data = JSON.parse(m[0]);
+    const newNotes = data.notes.map(n => ({...n, coach: S.coach, date: new Date().toISOString()}));
+    coachNotes = [...newNotes, ...coachNotes].slice(0, 20);
+    localStorage.setItem('conver_coach_notes', JSON.stringify(coachNotes));
+    renderCoachNotes();
+    showToast('🧠', 'Coach notes generated');
+  } catch(e) {
+    showToast('⚠️', 'Failed: ' + e.message);
+  }
+  btn.disabled = false; btn.textContent = '🧠 Generate Coach Notes';
+}
+
+// ── SHARE SCORE CARD ──────────────────────────────────────────────────────────
+function openShareModal() {
+  const score = calcConverScore();
+  const g = scoreGrade(score);
+  const avg = arr => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : 0;
+  
+  document.getElementById('sc-score').textContent = score || '—';
+  document.getElementById('sc-score').style.color = g.color;
+  document.getElementById('sc-grade').textContent = g.grade;
+  document.getElementById('sc-grade').style.color = g.color;
+  
+  const ac = avg(S.scores.clarity), aco = avg(S.scores.confidence), ap = avg(S.scores.persuasion);
+  document.getElementById('sc-bar-c').style.width = (ac * 10) + '%';
+  document.getElementById('sc-val-c').textContent = ac;
+  document.getElementById('sc-bar-co').style.width = (aco * 10) + '%';
+  document.getElementById('sc-val-co').textContent = aco;
+  document.getElementById('sc-bar-p').style.width = (ap * 10) + '%';
+  document.getElementById('sc-val-p').textContent = ap;
+  document.getElementById('sc-bar-s').style.width = (S.skills.storytelling) + '%';
+  document.getElementById('sc-val-s').textContent = Math.round(S.skills.storytelling / 10);
+  
+  document.getElementById('share-modal').classList.remove('hidden');
+}
+
+function closeShareModal() {
+  document.getElementById('share-modal').classList.add('hidden');
+}
+
+function copyShareText() {
+  const score = calcConverScore();
+  const g = scoreGrade(score);
+  const avg = arr => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : 0;
+  const text = `My Conver Score: ${score}/100 (${g.grade})\n\nClarity: ${avg(S.scores.clarity)}/10\nConfidence: ${avg(S.scores.confidence)}/10\nPersuasion: ${avg(S.scores.persuasion)}/10\n\nPracticed ${S.sessions} sessions with AI coach ${S.coach}.\n\nconver.ai`;
+  navigator.clipboard.writeText(text).then(() => showToast('📋', 'Copied to clipboard'));
+}
+
+function downloadScoreCard() {
+  // Use canvas to render the card as an image
+  const canvas = document.createElement('canvas');
+  canvas.width = 600; canvas.height = 400;
+  const ctx = canvas.getContext('2d');
+  const score = calcConverScore();
+  const g = scoreGrade(score);
+  const avg = arr => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : 0;
+  
+  // Background
+  const grad = ctx.createLinearGradient(0,0,600,400);
+  grad.addColorStop(0,'#0f1118'); grad.addColorStop(1,'#1e2130');
+  ctx.fillStyle = grad; ctx.fillRect(0,0,600,400);
+  
+  // Glow
+  const glow = ctx.createRadialGradient(500,50,10,500,50,180);
+  glow.addColorStop(0,'rgba(108,99,255,0.25)'); glow.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle = glow; ctx.fillRect(0,0,600,400);
+  
+  // Border
+  ctx.strokeStyle = 'rgba(108,99,255,0.25)'; ctx.lineWidth = 1;
+  ctx.strokeRect(1,1,598,398);
+  
+  // Logo
+  ctx.font = '11px monospace'; ctx.fillStyle = 'rgba(123,130,153,0.8)';
+  ctx.fillText('CONVER · AI COMMUNICATION SCORE', 40, 50);
+  
+  // Score
+  ctx.font = 'bold 96px Arial'; ctx.fillStyle = g.color;
+  ctx.fillText(score || '—', 40, 160);
+  
+  // Grade
+  ctx.font = 'bold 20px Arial'; ctx.fillStyle = g.color;
+  ctx.fillText(g.grade, 40, 195);
+  
+  // Bars
+  const bars = [
+    {label:'Clarity', val:avg(S.scores.clarity), color:'#4fc3f7'},
+    {label:'Confidence', val:avg(S.scores.confidence), color:'#a78bfa'},
+    {label:'Persuasion', val:avg(S.scores.persuasion), color:'#34d399'},
+    {label:'Storytelling', val:Math.round(S.skills.storytelling/10), color:'#fbbf24'},
+  ];
+  bars.forEach((b,i) => {
+    const y = 240 + i * 36;
+    ctx.font = '11px monospace'; ctx.fillStyle = 'rgba(160,170,191,0.7)';
+    ctx.fillText(b.label, 40, y);
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.fillRect(140, y-12, 340, 6);
+    ctx.fillStyle = b.color;
+    ctx.fillRect(140, y-12, Math.min(340, (b.val/10)*340), 6);
+    ctx.font = '11px monospace'; ctx.fillStyle = 'rgba(160,170,191,0.7)';
+    ctx.fillText(b.val+'/10', 490, y);
+  });
+  
+  // Footer
+  ctx.font = '11px monospace'; ctx.fillStyle = 'rgba(123,130,153,0.5)';
+  ctx.fillText('conver.ai', 40, 380);
+  
+  const link = document.createElement('a');
+  link.download = 'conver-score.png';
+  link.href = canvas.toDataURL();
+  link.click();
+  showToast('⬇', 'Score card downloaded');
+}
+
+// ── BEFORE/AFTER DIFF ─────────────────────────────────────────────────────────
+function renderDiff(original, rewrite) {
+  const origWords = original.split(' ');
+  const rewWords = rewrite.split(' ');
+  // Simple word-level diff highlight
+  return `<div class="diff-layout">
+    <div class="diff-panel">
+      <div class="diff-label">📝 Your original</div>
+      <div class="diff-text">${escHtml(original)}</div>
+    </div>
+    <div class="diff-panel">
+      <div class="diff-label" style="color:var(--green)">✨ Stronger version</div>
+      <div class="diff-text" style="color:var(--text)">${escHtml(rewrite)}</div>
+    </div>
+  </div>`;
+}
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+const SUPABASE_URL = 'https://cxvxiljzaldufonioiyt.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4dnhpbGp6YWxkdWZvbmlvaXl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNDI1NTYsImV4cCI6MjA5NTkxODU1Nn0.SZp-NtyxcOijwL2noC_VYCR-vGPVXaPoIkBDwVbmot8';
+let sbClient = null;
+let currentUser = null;
+let authToken = null;
+
+async function initAuth() {
+  // Try to get token from localStorage (set by OAuth callback)
+  const storedToken = localStorage.getItem('conver_token');
+  if (storedToken) {
+    authToken = storedToken;
+    localStorage.removeItem('conver_token');
+  }
+  if (authToken) {
+    await loadUserData();
+  } else {
+    showAuthScreen();
+  }
+}
+
+function showAuthScreen() {
+  document.getElementById('auth-screen').classList.remove('hidden');
+}
+
+function hideAuthScreen() {
+  document.getElementById('auth-screen').classList.add('hidden');
+}
+
+function showView(view) {
+  ['signin','signup','reset'].forEach(v => {
+    document.getElementById('auth-view-'+v).style.display = v === view ? 'block' : 'none';
+  });
+}
+
+function setAuthError(id, msg) {
+  const el = document.getElementById(id+'-error');
+  el.textContent = msg;
+  el.classList.toggle('show', !!msg);
+}
+
+function setAuthSuccess(id, msg) {
+  const el = document.getElementById(id+'-success');
+  el.textContent = msg;
+  el.classList.toggle('show', !!msg);
+}
+
+async function signIn() {
+  const email = document.getElementById('signin-email').value.trim();
+  const password = document.getElementById('signin-password').value;
+  if (!email || !password) { setAuthError('signin', 'Please fill in all fields.'); return; }
+  const btn = document.getElementById('signin-btn');
+  btn.disabled = true; btn.textContent = 'Signing in...';
+  setAuthError('signin', '');
+  try {
+    const res = await fetch('/api/auth/signin', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    authToken = data.session.access_token;
+    currentUser = data.user;
+    await afterSignIn();
+  } catch(e) {
+    setAuthError('signin', e.message);
+  }
+  btn.disabled = false; btn.textContent = 'Sign In';
+}
+
+async function signUp() {
+  const email = document.getElementById('signup-email').value.trim();
+  const password = document.getElementById('signup-password').value;
+  if (!email || !password) { setAuthError('signup', 'Please fill in all fields.'); return; }
+  if (password.length < 6) { setAuthError('signup', 'Password must be at least 6 characters.'); return; }
+  const btn = document.getElementById('signup-btn');
+  btn.disabled = true; btn.textContent = 'Creating account...';
+  setAuthError('signup', '');
+  try {
+    const res = await fetch('/api/auth/signup', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    if (data.session) {
+      authToken = data.session.access_token;
+      currentUser = data.user;
+      await afterSignIn();
+    } else {
+      setAuthSuccess('signup', 'Check your email to verify your account, then sign in.');
+      btn.disabled = false; btn.textContent = 'Create Account';
+    }
+  } catch(e) {
+    setAuthError('signup', e.message);
+    btn.disabled = false; btn.textContent = 'Create Account';
+  }
+}
+
+async function resetPassword() {
+  const email = document.getElementById('reset-email').value.trim();
+  if (!email) { setAuthError('reset', 'Please enter your email.'); return; }
+  setAuthError('reset', '');
+  try {
+    const res = await fetch('/api/auth/signup', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email, password: 'RESET_PLACEHOLDER_NOT_REAL' })
+    });
+    setAuthSuccess('reset', 'If an account exists, a reset link has been sent.');
+  } catch(e) {
+    setAuthSuccess('reset', 'If an account exists, a reset link has been sent.');
+  }
+}
+
+async function oauthLogin(provider) {
+  try {
+    const res = await fetch('/api/auth/oauth', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ provider })
+    });
+    const data = await res.json();
+    if (data.url) window.location.href = data.url;
+    else showToast('⚠️', 'OAuth not configured for '+provider);
+  } catch(e) {
+    showToast('⚠️', e.message);
+  }
+}
+
+async function afterSignIn() {
+  currentUser = currentUser || {};
+  // Create profile
+  await fetch('/api/user/profile', {
+    method: 'POST', headers: {'Content-Type':'application/json','Authorization':'Bearer '+authToken}
+  });
+  // Update UI
+  const email = currentUser.email || 'User';
+  document.getElementById('user-email-display').textContent = email;
+  document.getElementById('user-avatar').textContent = email[0].toUpperCase();
+  hideAuthScreen();
+  await loadUserData();
+  showToast('👋', 'Welcome back!');
+}
+
+async function loadUserData() {
+  if (!authToken) return;
+  try {
+    // Load stats
+    const statsRes = await fetch('/api/user/stats', {
+      headers: {'Authorization':'Bearer '+authToken}
+    });
+    if (statsRes.ok) {
+      const { stats } = await statsRes.json();
+      if (stats) {
+        S.sessions = stats.total_sessions || 0;
+        S.streak = stats.streak || 0;
+        S.converScore = stats.conver_score || null;
+        if (stats.skills) S.skills = stats.skills;
+        if (stats.briefing) {
+          S.briefing = stats.briefing;
+          // Populate briefing fields
+          if (stats.briefing.preparing) document.getElementById('b-preparing').value = stats.briefing.preparing;
+          if (stats.briefing.role) document.getElementById('b-role').value = stats.briefing.role;
+          if (stats.briefing.improve) document.getElementById('b-improve').value = stats.briefing.improve;
+          saveBriefing();
+        }
+        if (stats.selected_coach) selectProfile(stats.selected_coach);
+      }
+    }
+    // Load sessions
+    const sessRes = await fetch('/api/user/sessions', {
+      headers: {'Authorization':'Bearer '+authToken}
+    });
+    if (sessRes.ok) {
+      const { sessions } = await sessRes.json();
+      if (sessions && sessions.length) {
+        S.history = sessions.map(s => ({
+          scenario: s.scenario, coach: s.coach,
+          question: s.question || '', text: s.response || '',
+          analysis: {
+            clarity: s.clarity, confidence: s.confidence, persuasion: s.persuasion,
+            storytelling: s.storytelling, conciseness: s.conciseness,
+            strengths: s.strengths || [], improvements: s.improvements || [],
+            rewrite: s.rewrite || '', overall: s.overall || '',
+            filler_feedback: ''
+          },
+          time: new Date(s.created_at)
+        }));
+        S.scores.clarity = sessions.map(s=>s.clarity);
+        S.scores.confidence = sessions.map(s=>s.confidence);
+        S.scores.persuasion = sessions.map(s=>s.persuasion);
+      }
+    }
+    updateChips();
+  } catch(e) {
+    console.error('Load user data error:', e);
+  }
+}
+
+async function saveUserData() {
+  if (!authToken) return;
+  try {
+    await fetch('/api/user/stats', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','Authorization':'Bearer '+authToken},
+      body: JSON.stringify({
+        stats: {
+          total_sessions: S.sessions,
+          streak: S.streak,
+          conver_score: calcConverScore(),
+          skills: S.skills,
+          briefing: S.briefing,
+          selected_coach: S.coach
+        }
+      })
+    });
+  } catch(e) { console.error('Save stats error:', e); }
+}
+
+async function saveSessionToCloud(session) {
+  if (!authToken) return;
+  try {
+    await fetch('/api/user/session', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','Authorization':'Bearer '+authToken},
+      body: JSON.stringify({
+        session: {
+          scenario: session.scenario, coach: session.coach,
+          question: session.question || '', response: session.text,
+          clarity: session.analysis.clarity, confidence: session.analysis.confidence,
+          persuasion: session.analysis.persuasion,
+          storytelling: session.analysis.storytelling || 5,
+          conciseness: session.analysis.conciseness || 5,
+          strengths: session.analysis.strengths,
+          improvements: session.analysis.improvements,
+          rewrite: session.analysis.rewrite,
+          overall: session.analysis.overall || ''
+        }
+      })
+    });
+  } catch(e) { console.error('Save session error:', e); }
+}
+
+function toggleUserMenu() {
+  document.getElementById('user-dropdown').classList.toggle('open');
+}
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#user-menu-btn') && !e.target.closest('#user-dropdown')) {
+    document.getElementById('user-dropdown').classList.remove('open');
+  }
+});
+
+async function signOut() {
+  authToken = null; currentUser = null;
+  document.getElementById('user-dropdown').classList.remove('open');
+  document.getElementById('user-email-display').textContent = 'Not signed in';
+  document.getElementById('user-avatar').textContent = '?';
+  // Reset state
+  S.history = []; S.sessions = 0; S.scores = {clarity:[],confidence:[],persuasion:[]};
+  S.skills = {clarity:0,confidence:0,persuasion:0,storytelling:0,conciseness:0};
+  S.streak = 0; S.briefing = null;
+  updateChips();
+  showAuthScreen();
+  showView('signin');
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+initUI(); updateChips();
+if(window.speechSynthesis){window.speechSynthesis.onvoiceschanged=()=>window.speechSynthesis.getVoices();window.speechSynthesis.getVoices();}
+initAuth();
+</script>
+</body>
+</html>
