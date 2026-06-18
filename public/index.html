@@ -513,6 +513,22 @@ textarea{resize:vertical;min-height:150px;line-height:1.65}
 .back-btn{display:none;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--border2);border-radius:8px;color:var(--muted2);font-size:12.5px;padding:5px 12px;cursor:pointer;transition:all 0.15s;font-family:'DM Sans',sans-serif;white-space:nowrap;flex-shrink:0}
 .back-btn:hover{background:var(--bg3);color:var(--text);border-color:rgba(255,255,255,0.2)}
 .back-btn.visible{display:flex}
+
+/* VOICE TRANSCRIPT MODAL */
+.transcript-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:3000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px)}
+.transcript-modal-overlay.hidden{display:none}
+.transcript-modal{background:var(--bg1);border:1px solid var(--border2);border-radius:18px;width:640px;max-width:96vw;max-height:85vh;display:flex;flex-direction:column;overflow:hidden}
+.transcript-modal-head{display:flex;justify-content:space-between;align-items:center;padding:22px 24px 16px;border-bottom:1px solid var(--border)}
+.transcript-modal-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700}
+.transcript-modal-body{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:12px}
+.transcript-line{display:flex;flex-direction:column;gap:3px}
+.transcript-line-user{background:rgba(108,99,255,0.12);border:1px solid rgba(108,99,255,0.2);border-radius:12px 12px 3px 12px;padding:12px 14px;font-size:13.5px;color:var(--text);line-height:1.6;align-self:flex-end;max-width:82%}
+.transcript-line-coach{background:var(--bg2);border:1px solid var(--border);border-radius:12px 12px 12px 3px;padding:12px 14px;font-size:13.5px;color:var(--muted2);line-height:1.6;align-self:flex-start;max-width:82%}
+.transcript-speaker{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted)}
+.transcript-annotation{background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--amber);font-family:'DM Mono',monospace;display:flex;gap:6px;align-items:flex-start}
+.transcript-filler-summary-bar{background:rgba(248,113,113,0.07);border:1px solid rgba(248,113,113,0.18);border-radius:10px;padding:10px 14px;font-size:12.5px;color:var(--muted2);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.transcript-filler-chip{background:rgba(248,113,113,0.13);border:1px solid rgba(248,113,113,0.28);border-radius:20px;padding:2px 9px;font-size:11px;font-family:'DM Mono',monospace;color:var(--red)}
+.transcript-modal-foot{padding:14px 24px;border-top:1px solid var(--border);display:flex;gap:10px;align-items:center}
 </style>
 </head>
 <body>
@@ -522,7 +538,7 @@ textarea{resize:vertical;min-height:150px;line-height:1.65}
 <div class="share-modal-overlay hidden" id="share-modal">
   <div class="share-modal">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-      <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800">Share Your Score</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600">Share Your Score</div>
       <button onclick="closeShareModal()" style="background:var(--bg2);border:1px solid var(--border2);border-radius:8px;color:var(--muted2);cursor:pointer;padding:5px 12px;font-size:13px">✕</button>
     </div>
     <div class="share-card-preview" id="share-card-preview">
@@ -547,6 +563,24 @@ textarea{resize:vertical;min-height:150px;line-height:1.65}
 <div class="filler-overlay" id="filler-overlay" style="display:none">
   <div class="filler-badge-live" id="filler-badge">🚨 <span id="filler-word-display">um</span></div>
   <div class="filler-count-display">Fillers: <strong id="filler-total">0</strong></div>
+</div>
+
+<!-- VOICE TRANSCRIPT MODAL -->
+<div class="transcript-modal-overlay hidden" id="transcript-modal">
+  <div class="transcript-modal">
+    <div class="transcript-modal-head">
+      <div class="transcript-modal-title">Session Transcript</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button id="annotate-btn" onclick="annotateTranscript()" style="background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.25);border-radius:8px;color:var(--amber);font-size:12px;padding:5px 14px;cursor:pointer;font-family:'DM Sans',sans-serif">✦ AI Annotate</button>
+        <button onclick="closeVoiceTranscript()" style="background:var(--bg2);border:1px solid var(--border2);border-radius:8px;color:var(--muted2);cursor:pointer;padding:5px 12px;font-size:13px">✕</button>
+      </div>
+    </div>
+    <div class="transcript-modal-body" id="transcript-modal-body"></div>
+    <div class="transcript-modal-foot">
+      <div id="transcript-filler-summary" style="font-size:12px;color:var(--muted);font-family:'DM Mono',monospace;flex:1"></div>
+      <button onclick="closeVoiceTranscript()" style="background:var(--bg2);border:1px solid var(--border2);border-radius:8px;color:var(--muted2);cursor:pointer;padding:8px 18px;font-size:13px;font-family:'DM Sans',sans-serif">Close</button>
+    </div>
+  </div>
 </div>
 
 <!-- REPORT MODAL -->
@@ -657,6 +691,7 @@ textarea{resize:vertical;min-height:150px;line-height:1.65}
     <div class="nav">
       <div class="nav-section">Core</div>
       <button class="nav-item active" data-page="home"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/></svg>Overview</button>
+      <button class="nav-item" data-page="briefing"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Briefing</button>
       <button class="nav-item" data-page="warmup"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>Warmup</button>
       <button class="nav-item" data-page="practice"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Practice Lab</button>
       <button class="nav-item" data-page="voice"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>Voice Session</button>
@@ -671,7 +706,6 @@ textarea{resize:vertical;min-height:150px;line-height:1.65}
       <button class="nav-item" data-page="insights"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Insights</button>
       <button class="nav-item" data-page="history"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>History</button>
       <div class="nav-section">Setup</div>
-      <button class="nav-item" data-page="briefing"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Briefing</button>
       <button class="nav-item" data-page="profiles"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 10-16 0"/></svg>AI Profiles</button>
       <button class="nav-item" data-page="settings"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Settings</button>
     </div>
@@ -690,7 +724,7 @@ textarea{resize:vertical;min-height:150px;line-height:1.65}
       <button class="back-btn" id="back-btn" onclick="handleBackBtn()">← Back</button>
       <div class="page-title" id="page-title">Overview</div>
       <div class="topbar-right"><div class="chip-row">
-        <span class="chip hi" id="chip-scenario">Interview</span>
+        <span class="chip hi" id="chip-scenario">General</span>
         <span class="chip" id="chip-coach">Coach: Blaze</span>
         <span class="streak-chip" id="streak-chip">🔥 0 day streak</span>
       </div>
@@ -727,7 +761,7 @@ textarea{resize:vertical;min-height:150px;line-height:1.65}
             </div>
             <div class="csc-grade" id="home-grade">Not yet rated</div>
             <div class="csc-sub" id="home-grade-sub">Complete a session to get scored</div>
-            <button onclick="openShareModal()" style="margin-top:16px;background:transparent;border:1px solid rgba(108,99,255,0.3);border-radius:20px;color:var(--accent3);font-size:11px;padding:5px 14px;cursor:pointer;font-family:'DM Mono',monospace;transition:all 0.15s" onmouseover="this.style.background='rgba(108,99,255,0.1)'" onmouseout="this.style.background='transparent'">✨ Share Score</button>
+            <button onclick="openShareModal()" style="margin-top:16px;background:transparent;border:1px solid rgba(108,99,255,0.24);border-radius:20px;color:var(--accent3);font-size:11px;padding:5px 14px;cursor:pointer;font-family:'DM Mono',monospace;transition:all 0.15s" onmouseover="this.style.background='rgba(108,99,255,0.08)'" onmouseout="this.style.background='transparent'">✨ Share Score</button>
           </div>
         </div>
         <div class="home-grid">
@@ -739,7 +773,7 @@ textarea{resize:vertical;min-height:150px;line-height:1.65}
         <div class="home-bottom">
           <div class="hb-card"><div class="hb-label">Sessions</div><div class="hb-value" id="home-sessions">0</div><div class="hb-sub">Analyzed this session</div></div>
           <div class="hb-card"><div class="hb-label">Active Coach</div><div class="hb-value" id="home-coach">Blaze</div><div class="hb-sub">Shapes feedback style</div></div>
-          <div class="hb-card"><div class="hb-label">Scenario</div><div class="hb-value" id="home-scenario">Interview</div><div class="hb-sub">Current practice context</div></div>
+          <div class="hb-card"><div class="hb-label">Scenario</div><div class="hb-value" id="home-scenario">General</div><div class="hb-sub">Current practice context</div></div>
         </div>
       </div>
 
@@ -760,9 +794,9 @@ textarea{resize:vertical;min-height:150px;line-height:1.65}
 
           <!-- Question card - hidden until generated -->
           <div id="wu-question-card" style="display:none">
-            <div style="background:linear-gradient(135deg,rgba(108,99,255,0.1),rgba(167,139,250,0.05));border:1px solid rgba(108,99,255,0.2);border-radius:14px;padding:24px;margin-bottom:16px">
+            <div style="background:linear-gradient(135deg,rgba(108,99,255,0.08),rgba(108,99,255,0.08));border:1px solid rgba(108,99,255,0.16);border-radius:14px;padding:24px;margin-bottom:16px">
               <div style="font-size:10px;color:var(--accent);font-family:'DM Mono',monospace;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px">Your Warmup Question</div>
-              <div id="wu-question-text" style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;line-height:1.4;color:var(--text);margin-bottom:10px"></div>
+              <div id="wu-question-text" style="font-family:'DM Sans',sans-serif;font-size:18px;font-weight:600;line-height:1.4;color:var(--text);margin-bottom:10px"></div>
               <div id="wu-question-tip" style="font-size:12.5px;color:var(--muted2);line-height:1.6"></div>
             </div>
 
@@ -774,7 +808,7 @@ textarea{resize:vertical;min-height:150px;line-height:1.65}
                 <button class="hold-btn idle" id="wu-mic-btn" style="width:64px;height:64px;font-size:22px" onclick="toggleWarmupListening()">🎙️</button>
               </div>
               <div style="font-size:10.5px;color:var(--muted);font-family:'DM Mono',monospace">Click to speak · Click again to submit</div>
-              <button id="wu-submit-btn" onclick="submitWarmupAnswer()" style="display:none;background:var(--accent);border:none;border-radius:9px;color:#fff;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;padding:11px 28px;cursor:pointer;transition:all 0.2s">Submit Answer</button>
+              <button id="wu-submit-btn" onclick="submitWarmupAnswer()" style="display:none;background:var(--accent);border:none;border-radius:9px;color:#fff;font-family:'DM Sans',sans-serif;font-weight:600;font-size:14px;padding:11px 28px;cursor:pointer;transition:all 0.2s">Submit Answer</button>
             </div>
 
             <!-- Score panel -->
@@ -784,7 +818,7 @@ textarea{resize:vertical;min-height:150px;line-height:1.65}
                 <!-- Score bar -->
                 <div style="margin-bottom:20px">
                   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-                    <div style="font-family:'Syne',sans-serif;font-size:36px;font-weight:800;letter-spacing:-1px" id="wu-score-num">—</div>
+                    <div style="font-family:'DM Sans',sans-serif;font-size:36px;font-weight:600;letter-spacing:-1px" id="wu-score-num">—</div>
                     <div style="font-size:12px;color:var(--muted2);font-family:'DM Mono',monospace">/100</div>
                   </div>
                   <div style="background:var(--bg3);border-radius:6px;height:10px;overflow:hidden">
@@ -792,7 +826,7 @@ textarea{resize:vertical;min-height:150px;line-height:1.65}
                   </div>
                 </div>
                 <!-- One coaching line -->
-                <div style="background:rgba(108,99,255,0.07);border:1px solid rgba(108,99,255,0.15);border-radius:10px;padding:14px 16px;margin-bottom:16px">
+                <div style="background:rgba(108,99,255,0.06);border:1px solid rgba(108,99,255,0.12);border-radius:10px;padding:14px 16px;margin-bottom:16px">
                   <div style="font-size:10px;color:var(--accent3);font-family:'DM Mono',monospace;margin-bottom:6px">FOCUS FOR TODAY</div>
                   <div id="wu-coaching-line" style="font-size:14px;color:var(--text);line-height:1.65"></div>
                 </div>
@@ -841,11 +875,13 @@ textarea{resize:vertical;min-height:150px;line-height:1.65}
             <div class="voice-transcript" id="voice-transcript">Your words will appear here as you speak...</div>
             <button class="hold-btn idle" id="hold-btn" onclick="toggleListening()">🎙️</button>
             <div class="hold-hint" id="hold-hint">Click to speak</div>
+            <button id="stop-session-btn" onclick="stopVoiceSession()" style="display:none;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.25);border-radius:8px;color:var(--red);font-size:11.5px;padding:6px 18px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;margin-top:4px" onmouseover="this.style.background='rgba(248,113,113,0.2)'" onmouseout="this.style.background='rgba(248,113,113,0.1)'">⏹ Stop Session</button>
+            <button id="view-transcript-btn" onclick="openVoiceTranscript()" style="display:none;background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.25);border-radius:8px;color:var(--accent3);font-size:11.5px;padding:6px 18px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;margin-top:4px" onmouseover="this.style.background='rgba(108,99,255,0.2)'" onmouseout="this.style.background='rgba(108,99,255,0.1)'">📄 View Transcript</button>
           </div>
           <div class="voice-controls-side">
             <div class="vc-card"><div class="vc-title">Switch Coach</div><div class="coach-picker" id="voice-coach-picker"></div></div>
             <div class="vc-card"><div class="vc-title">Conversation Log</div><div class="voice-log" id="voice-log"><div style="font-size:13px;color:var(--muted);text-align:center;padding:16px 0">Conversation will appear here</div></div></div>
-            <div class="vc-card"><div class="vc-title">Tips</div><div style="font-size:12.5px;color:var(--muted2);line-height:1.9"><div>🎙️ Hold button while speaking</div><div>🔊 Coach speaks back to you</div><div>📋 Set a briefing for better context</div><div>🔄 Switch coaches mid-session</div></div></div>
+            <div class="vc-card"><div class="vc-title">Tips</div><div style="font-size:12.5px;color:var(--muted2);line-height:1.9"><div>🎙️ Click mic to speak, click again to send</div><div>🔊 Coach speaks back to you</div><div id="voice-briefing-tip">📋 <span style="color:var(--amber)">Set a Briefing first for personalized coaching</span></div><div>🔄 Switch coaches — session resets cleanly</div><div>⏹ Hit Stop to end session anytime</div></div></div>
           </div>
         </div>
       </div>
@@ -856,7 +892,7 @@ textarea{resize:vertical;min-height:150px;line-height:1.65}
         <div class="companion-layout">
           <div class="panel" style="display:flex;flex-direction:column">
             <div class="chat-wrap">
-              <div class="chat-messages" id="chat-messages"><div class="msg msg-ai"><div class="msg-name" id="coach-label">Blaze</div><span id="coach-greeting">Hey. Ready to work? Tell me what you're preparing for.</span></div></div>
+              <div class="chat-messages" id="chat-messages"><div class="msg msg-ai"><div class="msg-name" id="coach-label">Blaze</div><span id="coach-greeting">Alright, no warm-up. What are we fixing today and how bad is it?</span></div></div>
               <div class="chat-input-row"><input type="text" id="chat-input" placeholder="Ask your coach anything..." onkeydown="if(event.key==='Enter'&&!event.shiftKey)sendChat()"/><button class="send-btn" id="send-btn" onclick="sendChat()">Send</button></div>
             </div>
           </div>
@@ -979,7 +1015,7 @@ textarea{resize:vertical;min-height:150px;line-height:1.65}
           <!-- Setup screen -->
           <div id="debate-setup-screen" style="background:var(--bg1);border:1px solid var(--border);border-radius:16px;padding:40px;text-align:center">
             <div style="font-size:44px;margin-bottom:16px">⚔️</div>
-            <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:8px;letter-spacing:-0.3px">Voice Debate</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:22px;font-weight:600;margin-bottom:8px;letter-spacing:-0.3px">Voice Debate</div>
             <p style="font-size:14px;color:var(--muted2);max-width:440px;margin:0 auto 28px;line-height:1.7">Pick a topic, choose your side, and your coach will back you up. The opposition coach will challenge you hard. After 3 rounds you get scored on how well you argued.</p>
 
             <div style="max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:16px">
@@ -988,12 +1024,12 @@ textarea{resize:vertical;min-height:150px;line-height:1.65}
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
                 <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:14px;cursor:pointer;transition:all 0.15s;text-align:center" id="side-for-btn" onclick="selectDebateSide('for')">
                   <div style="font-size:20px;margin-bottom:6px">✅</div>
-                  <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--accent2)">I'm FOR it</div>
+                  <div style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:var(--accent2)">I'm FOR it</div>
                   <div style="font-size:12px;color:var(--muted2);margin-top:4px">Defend the topic</div>
                 </div>
                 <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:14px;cursor:pointer;transition:all 0.15s;text-align:center" id="side-against-btn" onclick="selectDebateSide('against')">
                   <div style="font-size:20px;margin-bottom:6px">❌</div>
-                  <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--red)">I'm AGAINST it</div>
+                  <div style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:var(--red)">I'm AGAINST it</div>
                   <div style="font-size:12px;color:var(--muted2);margin-top:4px">Oppose the topic</div>
                 </div>
               </div>
@@ -1021,7 +1057,7 @@ textarea{resize:vertical;min-height:150px;line-height:1.65}
           <div id="debate-live-screen" style="display:none">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
               <div style="display:flex;align-items:center;gap:10px">
-                <div id="debate-topic-display" style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--text)"></div>
+                <div id="debate-topic-display" style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:var(--text)"></div>
                 <span id="debate-side-badge" style="font-size:11px;padding:3px 10px;border-radius:20px;font-family:'DM Mono',monospace"></span>
               </div>
               <div style="display:flex;align-items:center;gap:8px">
@@ -1032,10 +1068,10 @@ textarea{resize:vertical;min-height:150px;line-height:1.65}
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
               <!-- Your coach -->
-              <div style="background:var(--bg1);border:1px solid rgba(108,99,255,0.2);border-radius:14px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:10px">
+              <div style="background:var(--bg1);border:1px solid rgba(108,99,255,0.16);border-radius:14px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:10px">
                 <div style="font-size:10px;color:var(--accent3);font-family:'DM Mono',monospace;letter-spacing:1.5px;text-transform:uppercase">Your Coach 🤝</div>
                 <canvas id="debate-face-a" width="100" height="100" style="width:100px;height:100px;border-radius:50%"></canvas>
-                <div id="debate-name-a" style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700"></div>
+                <div id="debate-name-a" style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600"></div>
                 <div id="debate-status-a" style="font-size:10.5px;color:var(--muted2);font-family:'DM Mono',monospace;min-height:14px;text-align:center"></div>
                 <div id="debate-log-a" style="width:100%;max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
               </div>
@@ -1043,7 +1079,7 @@ textarea{resize:vertical;min-height:150px;line-height:1.65}
               <div style="background:var(--bg1);border:1px solid rgba(248,113,113,0.2);border-radius:14px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:10px">
                 <div style="font-size:10px;color:var(--red);font-family:'DM Mono',monospace;letter-spacing:1.5px;text-transform:uppercase">Opposition ⚔️</div>
                 <canvas id="debate-face-b" width="100" height="100" style="width:100px;height:100px;border-radius:50%"></canvas>
-                <div id="debate-name-b" style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700"></div>
+                <div id="debate-name-b" style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600"></div>
                 <div id="debate-status-b" style="font-size:10.5px;color:var(--muted2);font-family:'DM Mono',monospace;min-height:14px;text-align:center"></div>
                 <div id="debate-log-b" style="width:100%;max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
               </div>
@@ -1085,7 +1121,7 @@ textarea{resize:vertical;min-height:150px;line-height:1.65}
         <div id="coldopen-container">
           <div id="coldopen-setup" style="background:var(--bg1);border:1px solid var(--border);border-radius:16px;padding:40px;text-align:center;max-width:640px;margin:0 auto">
             <div style="font-size:44px;margin-bottom:16px">🎲</div>
-            <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:10px;letter-spacing:-0.3px">Cold Open Trainer</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:22px;font-weight:600;margin-bottom:10px;letter-spacing:-0.3px">Cold Open Trainer</div>
             <p style="font-size:14px;color:var(--muted2);line-height:1.75;margin-bottom:28px">You get dropped into a real situation — no prep, no context. Just handle it. The AI plays the other person and responds naturally. At the end you get scored.</p>
             <div class="form-group" style="text-align:left;max-width:420px;margin:0 auto 20px">
               <label>Situation Type</label>
@@ -1122,7 +1158,7 @@ textarea{resize:vertical;min-height:150px;line-height:1.65}
               <div style="display:flex;flex-direction:column;gap:14px">
                 <div class="panel" style="text-align:center">
                   <canvas id="co-face" width="120" height="120" style="width:120px;height:120px;border-radius:50%;margin-bottom:10px"></canvas>
-                  <div id="co-person-name" style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:4px"></div>
+                  <div id="co-person-name" style="font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;margin-bottom:4px"></div>
                   <div id="co-person-role" style="font-size:12px;color:var(--muted2);font-family:'DM Mono',monospace"></div>
                   <div id="co-status" style="font-size:11px;color:var(--muted);margin-top:8px;min-height:14px"></div>
                 </div>
@@ -1351,7 +1387,7 @@ textarea{resize:vertical;min-height:150px;line-height:1.65}
 <script>
 // ── State ──────────────────────────────────────────────────────────────────────
 const S={
-  scenario:'Interview',coach:'Blaze',rewrite:true,filler:true,autoReport:true,
+  scenario:'General',coach:'Blaze',rewrite:true,filler:true,autoReport:true,
   sessions:0,history:[],briefing:null,chatHistory:[],
   scores:{clarity:[],confidence:[],persuasion:[]},
   skills:{clarity:0,confidence:0,persuasion:0,storytelling:0,conciseness:0},
@@ -1359,6 +1395,7 @@ const S={
 };
 
 const SCENARIOS=[
+  {name:'General',icon:'💬',hint:'Open practice — tell your coach what you need'},
   {name:'Interview',icon:'💼',hint:'Focus on structure, specifics, and confidence'},
   {name:'Pitch',icon:'🚀',hint:'Lead with value, handle objections, be memorable'},
   {name:'Debate',icon:'⚖️',hint:'Logic, evidence, and staying calm under pressure'},
@@ -1368,12 +1405,12 @@ const SCENARIOS=[
 ];
 
 const COACHES={
-  Blaze:{color:'#f87171',accent:'rgba(248,113,113,0.8)',bg:'rgba(248,113,113,0.12)',greeting:"Hey. Ready to work? Tell me what you're preparing for.",style:"Direct, blunt, high-energy. No fluff. Push for sharper delivery.",voice:{pitch:1.1,rate:1.15}},
-  Echo:{color:'#4fc3f7',accent:'rgba(79,195,247,0.8)',bg:'rgba(79,195,247,0.1)',greeting:"Hi! I'm here to help. What are you working on today?",style:"Calm, empathetic, encouraging. Build confidence gently.",voice:{pitch:1.25,rate:0.95}},
-  Sage:{color:'#a78bfa',accent:'rgba(167,139,250,0.8)',bg:'rgba(167,139,250,0.12)',greeting:"Good. Let's begin. What is your goal for this session?",style:"Analytical, structured, logical. Precise and evidence-based.",voice:{pitch:0.9,rate:1.0}},
-  Nova:{color:'#34d399',accent:'rgba(52,211,153,0.8)',bg:'rgba(52,211,153,0.1)',greeting:"Hey! Every great speaker has a story. What's yours?",style:"Creative, warm, narrative-focused. Push for storytelling.",voice:{pitch:1.2,rate:1.05}},
-  Rex:{color:'#fbbf24',accent:'rgba(251,191,36,0.8)',bg:'rgba(251,191,36,0.1)',greeting:"You want battle-ready? Stop warming up. What's the challenge?",style:"Intense, adversarial. Challenge everything. Prepare for the worst.",voice:{pitch:0.8,rate:1.2}},
-  Luna:{color:'#6c63ff',accent:'rgba(108,99,255,0.8)',bg:'rgba(108,99,255,0.12)',greeting:"Welcome. What would be most useful for you right now?",style:"Balanced, adaptive. Read what they need and adjust.",voice:{pitch:1.05,rate:1.0}}
+  Blaze:{color:'#f87171',accent:'rgba(248,113,113,0.8)',bg:'rgba(248,113,113,0.12)',greeting:"Hey. Ready to work? Tell me what you're preparing for.",style:"You are Blaze. Brutally direct, zero patience for vagueness, high energy. Speak in short punchy sentences. Push hard. Never sugarcoat. Call out weak answers immediately. Use phrases like: that landed flat, way too vague, say it like you mean it. You are relentless because you believe in them.",voice:{pitch:1.1,rate:1.15}},
+  Echo:{color:'#4fc3f7',accent:'rgba(79,195,247,0.8)',bg:'rgba(79,195,247,0.1)',greeting:"Hey, I am glad you are here. Take a breath — let us figure out what you actually need today.",style:"You are Echo. Warm, patient, deeply empathetic. Validate feelings before giving feedback. Speak gently and use encouraging language. Notice emotional subtext. Use phrases like: I hear you, that makes sense, here is what I noticed. Build confidence slowly and deliberately.",voice:{pitch:1.25,rate:0.95}},
+  Sage:{color:'#a78bfa',accent:'rgba(167,139,250,0.8)',bg:'rgba(167,139,250,0.12)',greeting:"Let us establish your baseline. What is the specific outcome you are optimizing for today?",style:"You are Sage. Analytical, precise, structured. Think in frameworks and evidence. Dissect answers methodically. Use phrases like: structurally speaking, the core issue is, let me break this down. Give numbered feedback. Never be vague. Every note must be specific and actionable.",voice:{pitch:0.9,rate:1.0}},
+  Nova:{color:'#34d399',accent:'rgba(52,211,153,0.8)',bg:'rgba(52,211,153,0.1)',greeting:"Ooh I love this — you have got a story in there somewhere. Let us find it together.",style:"You are Nova. Creative, narrative-obsessed, warm and expressive. See everything as a story. Get genuinely excited about interesting answers. Use phrases like: paint me that picture, that is your hook right there, where is the emotion in this. Push people to be vivid, specific, and memorable.",voice:{pitch:1.2,rate:1.05}},
+  Rex:{color:'#fbbf24',accent:'rgba(251,191,36,0.8)',bg:'rgba(251,191,36,0.1)',greeting:"Good. You showed up. Now prove you are ready for what is coming at you.",style:"You are Rex. Intense, adversarial, a relentless stress-tester. Challenge every claim. Play devil's advocate hard. Use phrases like: that will not hold up, your competitor would destroy that argument, why should I care. Prepare them for the absolute worst-case scenario.",voice:{pitch:0.8,rate:1.2}},
+  Luna:{color:'#6c63ff',accent:'rgba(108,99,255,0.8)',bg:'rgba(108,99,255,0.12)',greeting:"Welcome back. What kind of support do you need right now — structure, confidence, or both?",style:"You are Luna. Balanced, adaptive, perceptive. Read what someone needs and shift your style to match. Sometimes gentle, sometimes you push harder. Use phrases like: let me try a different angle, based on what I am hearing, here is what I think you actually need. You are the all-rounder.",voice:{pitch:1.05,rate:1.0}}
 };
 
 const PAGE_TITLES={home:'Overview',warmup:'Warmup',practice:'Practice Lab',voice:'Voice Session',debate:'Live Debate',coldopen:'Cold Open',qbank:'Question Bank',companion:'AI Companion',skills:'Skills & Progress',daily:'Daily Challenge',coachnotes:'Coach Notes',insights:'Insights',history:'History',briefing:'Briefing',profiles:'AI Profiles',settings:'Settings'};
@@ -1393,7 +1430,7 @@ function initUI(){
   const sc=document.getElementById('scenario-cards');
   SCENARIOS.forEach(s=>{
     const d=document.createElement('div');
-    d.className='sc-card'+(s.name===S.scenario||s.name==='Interview'?' active':'');
+    d.className='sc-card'+(s.name===S.scenario?' active':'');
     d.innerHTML=`<div class="sc-icon">${s.icon}</div><div class="sc-name">${s.name}</div><div class="sc-hint">${s.hint}</div>`;
     d.onclick=()=>{document.querySelectorAll('.sc-card').forEach(c=>c.classList.remove('active'));d.classList.add('active');S.scenario=s.name;updateChips();};
     sc.appendChild(d);
@@ -1404,7 +1441,7 @@ function initUI(){
     const d=document.createElement('div');
     d.className='profile-card'+(name===S.coach?' selected':'');
     d.id='card-'+name.toLowerCase();
-    d.innerHTML=`<div class="p-avatar" style="background:${c.bg};color:${c.color}">${name[0]}</div><div class="p-name">${name}</div><p class="p-desc">${{Blaze:'Direct & no-nonsense. Pushes you to be sharper and faster.',Echo:'Calm & empathetic. Builds confidence step by step.',Sage:'Analytical & structured. Logic and evidence first.',Nova:'Creative & narrative-driven. Tell better stories.',Rex:'Intense & adversarial. Stress-tests everything.',Luna:'Balanced & adaptive. Adjusts to what you need.'}[name]}</p><div class="p-tags">${{Blaze:'<span class="tag t-red">Decisive</span><span class="tag t-blue">High-energy</span>',Echo:'<span class="tag t-green">Supportive</span><span class="tag t-blue">Patient</span>',Sage:'<span class="tag t-purple">Analytical</span><span class="tag t-blue">Strategic</span>',Nova:'<span class="tag t-green">Storytelling</span><span class="tag t-purple">Creative</span>',Rex:'<span class="tag t-amber">Challenging</span><span class="tag t-blue">Rigorous</span>',Luna:'<span class="tag t-green">Adaptive</span><span class="tag t-blue">Balanced</span>'}[name]}</div>`;
+    d.innerHTML=`<div class="p-avatar" style="background:${c.bg};color:${c.color}">${name[0]}</div><div class="p-name">${name}</div><p class="p-desc">${{Blaze:'No sugarcoating, no filler. Blaze pushes until your answer is sharp enough to cut.',Echo:'Patient and warm. Echo builds your confidence through empathy and steady encouragement.',Sage:'Framework-first thinking. Sage breaks your answers apart and rebuilds them with precision.',Nova:'Story-obsessed and expressive. Nova will not stop until your answer is vivid and unforgettable.',Rex:'Pure adversarial pressure. Rex stress-tests everything so nothing surprises you in the real moment.',Luna:'Reads the room perfectly. Luna adapts between gentle and intense depending on what you actually need.'}[name]}</p><div class="p-tags">${{Blaze:'<span class="tag t-red">Decisive</span><span class="tag t-blue">High-energy</span>',Echo:'<span class="tag t-green">Supportive</span><span class="tag t-blue">Patient</span>',Sage:'<span class="tag t-purple">Analytical</span><span class="tag t-blue">Strategic</span>',Nova:'<span class="tag t-green">Storytelling</span><span class="tag t-purple">Creative</span>',Rex:'<span class="tag t-amber">Challenging</span><span class="tag t-blue">Rigorous</span>',Luna:'<span class="tag t-green">Adaptive</span><span class="tag t-blue">Balanced</span>'}[name]}</div>`;
     d.onclick=()=>selectProfile(name);
     pg.appendChild(d);
   });
@@ -1435,6 +1472,7 @@ function navTo(page){
   const btn=document.querySelector(`.nav-item[data-page="${page}"]`);
   if(btn)btn.classList.add('active');
   document.getElementById('page-title').textContent=PAGE_TITLES[page]||page;
+  document.getElementById('filler-overlay').style.display='none';
   if(page==='insights')renderInsights();
   if(page==='history')renderHistory();
   if(page==='skills'){renderSkills();drawRadar();}
@@ -1537,7 +1575,7 @@ async function analyzeResponse(){
   btn.disabled=true;btn.textContent='Analyzing…';
   document.getElementById('results-area').innerHTML=`<div class="loading-dots"><span></span><span></span><span></span></div>`;
   const c=COACHES[S.coach];
-  const briefCtx=S.briefing?`User briefing: preparing for "${S.briefing.preparing}", role "${S.briefing.role}", improve "${S.briefing.improve}".`:'No briefing.';
+  const briefCtx=S.briefing?`USER CONTEXT: They are preparing for "${S.briefing.preparing}". Their background: "${S.briefing.role}". They want to improve: "${S.briefing.improve}". Use this context to make feedback highly relevant and specific.`:'No briefing.';
   const settingsCtx=buildSystemPromptExtras();
   const prompt=`You are ${S.coach} on Conver. Style: ${c.style} ${settingsCtx}\nAnalyze this ${S.scenario} response${question?` to: "${question}"`:''}.\n${briefCtx}\nResponse:\n"${text}"\n\nReturn ONLY valid JSON:\n{"clarity":<1-10>,"confidence":<1-10>,"persuasion":<1-10>,"storytelling":<1-10>,"conciseness":<1-10>,"strengths":["...","..."],"improvements":["...","..."],"filler_feedback":"...","rewrite":"...","overall":"<2 sentence overall assessment>"}\nNo markdown.`;
   try{
@@ -1581,7 +1619,7 @@ function renderResults(a){
     <div class="result-block"><h4>To improve</h4>${a.improvements.map(s=>`<div class="bullet"><span>${s}</span></div>`).join('')}</div>
     ${S.filler?`<div class="result-block"><h4>Delivery read</h4><p class="comm-read">${a.filler_feedback}</p></div>`:''}
     ${S.rewrite?`<div class="result-block"><h4>Stronger version · ${S.coach}</h4><div class="rewrite-box">${a.rewrite}</div></div>${S.showDiff?`<div style="margin-top:8px">${renderDiff(text,a.rewrite)}</div>`:''}`:''}
-    <button onclick="openReport(S.history[0])" style="width:100%;padding:10px;background:transparent;border:1px solid var(--border2);border-radius:9px;color:var(--muted2);cursor:pointer;font-size:13px;margin-top:4px;transition:all 0.15s" onmouseover="this.style.borderColor='rgba(108,99,255,0.4)';this.style.color='var(--accent3)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted2)'">📄 View Full Report</button>`;
+    <button onclick="openReport(S.history[0])" style="width:100%;padding:10px;background:transparent;border:1px solid var(--border2);border-radius:9px;color:var(--muted2);cursor:pointer;font-size:13px;margin-top:4px;transition:all 0.15s" onmouseover="this.style.borderColor='rgba(108,99,255,0.32)';this.style.color='var(--accent3)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted2)'">📄 View Full Report</button>`;
 }
 
 // ── Report Modal ──────────────────────────────────────────────────────────────
@@ -1592,9 +1630,9 @@ function openReport(h){
   const g=scoreGrade(calcConverScore());
   document.getElementById('rm-overall').innerHTML=`<div class="rm-overall-label">Overall Assessment</div><div class="rm-overall-text">${a.overall||'No overall assessment.'}</div>`;
   document.getElementById('rm-scores').innerHTML=`
-    <div class="rm-score-box"><div class="rm-score-num ${scoreClass(a.clarity)}" style="font-size:32px;font-weight:800;letter-spacing:-1px">${a.clarity}</div><div class="rm-score-lbl">Clarity</div></div>
-    <div class="rm-score-box"><div class="rm-score-num ${scoreClass(a.confidence)}" style="font-size:32px;font-weight:800;letter-spacing:-1px">${a.confidence}</div><div class="rm-score-lbl">Confidence</div></div>
-    <div class="rm-score-box"><div class="rm-score-num ${scoreClass(a.persuasion)}" style="font-size:32px;font-weight:800;letter-spacing:-1px">${a.persuasion}</div><div class="rm-score-lbl">Persuasion</div></div>`;
+    <div class="rm-score-box"><div class="rm-score-num ${scoreClass(a.clarity)}" style="font-size:32px;font-weight:600;letter-spacing:-1px">${a.clarity}</div><div class="rm-score-lbl">Clarity</div></div>
+    <div class="rm-score-box"><div class="rm-score-num ${scoreClass(a.confidence)}" style="font-size:32px;font-weight:600;letter-spacing:-1px">${a.confidence}</div><div class="rm-score-lbl">Confidence</div></div>
+    <div class="rm-score-box"><div class="rm-score-num ${scoreClass(a.persuasion)}" style="font-size:32px;font-weight:600;letter-spacing:-1px">${a.persuasion}</div><div class="rm-score-lbl">Persuasion</div></div>`;
   document.getElementById('rm-strengths').innerHTML=a.strengths.map(s=>`<div class="bullet" style="font-size:13.5px"><span>${s}</span></div>`).join('');
   document.getElementById('rm-improvements').innerHTML=a.improvements.map(s=>`<div class="bullet" style="font-size:13.5px"><span>${s}</span></div>`).join('');
   document.getElementById('rm-rewrite').textContent=a.rewrite;
@@ -1613,7 +1651,7 @@ async function sendChat(){
   msgs.innerHTML+=`<div class="msg msg-user"><div class="msg-name">You</div>${escHtml(text)}</div>`;
   scrollChat();S.chatHistory.push({role:'user',content:text});
   const c=COACHES[S.coach];
-  const briefCtx=S.briefing?`Briefing: "${S.briefing.preparing}", role "${S.briefing.role}", improve "${S.briefing.improve}".`:'No briefing.';
+  const briefCtx=S.briefing?`CONTEXT: Preparing for "${S.briefing.preparing}". Background: "${S.briefing.role}". Wants to improve: "${S.briefing.improve}".`:'No briefing.';
   const lastScore=S.history.length?`Last scores: Clarity ${S.history[0].analysis.clarity}/10, Confidence ${S.history[0].analysis.confidence}/10, Persuasion ${S.history[0].analysis.persuasion}/10.`:'';
   const system=`You are ${S.coach} on Conver. ${c.style} ${briefCtx} ${lastScore} 2-4 sentences. Specific. In character. No markdown.`;
   const tid='t'+Date.now();
@@ -1651,7 +1689,7 @@ function renderSkills(){
     const g=scoreGrade(sc);
     document.getElementById('score-breakdown').innerHTML=`
       <div style="text-align:center;padding:16px 0">
-        <div style="font-family:'Syne',sans-serif;font-size:48px;font-weight:800;color:${g.color};letter-spacing:-2px;line-height:1">${sc}</div>
+        <div style="font-family:'DM Sans',sans-serif;font-size:48px;font-weight:600;color:${g.color};letter-spacing:-2px;line-height:1">${sc}</div>
         <div style="font-size:13px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:4px">/100 · ${g.grade}</div>
         <div style="font-size:13px;color:var(--muted2);margin-top:8px">${g.sub}</div>
       </div>
@@ -1703,7 +1741,7 @@ function drawRadar(){
     if(i===0)ctx.moveTo(cx+Math.cos(a)*val,cy+Math.sin(a)*val);
     else ctx.lineTo(cx+Math.cos(a)*val,cy+Math.sin(a)*val);
   });
-  ctx.closePath();ctx.fillStyle='rgba(108,99,255,0.15)';ctx.fill();ctx.strokeStyle='rgba(108,99,255,0.6)';ctx.lineWidth=2;ctx.stroke();
+  ctx.closePath();ctx.fillStyle='rgba(108,99,255,0.12)';ctx.fill();ctx.strokeStyle='rgba(108,99,255,0.48)';ctx.lineWidth=2;ctx.stroke();
   // Dots + labels
   skills.forEach((s,i)=>{
     const a=-Math.PI/2+i*angleStep;const val=(S.skills[s]/100)*maxR;
@@ -1786,26 +1824,59 @@ function startWaveformIdle(){
       const el=document.getElementById('wb'+i);if(!el)continue;
       let h=voiceState==='listening'?4+Math.random()*26:voiceState==='speaking'?6+Math.random()*20+Math.sin(Date.now()/80+i)*7:4+Math.sin(Date.now()/600+i*0.7)*2.5;
       el.style.height=Math.max(4,h)+'px';
-      el.style.background=voiceState==='listening'?'var(--accent2)':voiceState==='speaking'?'var(--accent3)':'rgba(108,99,255,0.35)';
+      el.style.background=voiceState==='listening'?'var(--accent2)':voiceState==='speaking'?'var(--accent3)':'rgba(108,99,255,0.28)';
     }
   },80);
 }
 
 function setVoiceState(state){
   voiceState=state;const btn=document.getElementById('hold-btn');const status=document.getElementById('voice-status');const ring=document.getElementById('face-ring');
+  const stopBtn=document.getElementById('stop-session-btn');
   btn.className='hold-btn '+state;ring.className='coach-face-ring '+state;
-  if(state==='idle'){btn.textContent='🎙️';status.textContent='Click to speak';status.className='voice-status';isListeningVoice=false;}
-  else if(state==='listening'){btn.textContent='🔴';status.textContent='Listening...';status.className='voice-status listening';showBackBtn(true,'Voice Session');}
-  else if(state==='processing'){btn.textContent='⏳';status.textContent='Processing...';status.className='voice-status';}
-  else if(state==='speaking'){btn.textContent='🔊';status.textContent=currentVoiceCoach+' is speaking...';status.className='voice-status speaking';}
+  if(state==='idle'){btn.textContent='🎙️';status.textContent='Click to speak';status.className='voice-status';isListeningVoice=false;if(stopBtn)stopBtn.style.display='none';}
+  else if(state==='listening'){btn.textContent='🔴';status.textContent='Listening...';status.className='voice-status listening';showBackBtn(true,'Voice Session');if(stopBtn)stopBtn.style.display='block';}
+  else if(state==='processing'){btn.textContent='⏳';status.textContent='Processing...';status.className='voice-status';if(stopBtn)stopBtn.style.display='block';}
+  else if(state==='speaking'){btn.textContent='🔊';status.textContent=currentVoiceCoach+' is speaking...';status.className='voice-status speaking';if(stopBtn)stopBtn.style.display='block';}
+}
+
+function stopVoiceSession(){
+  isListeningVoice=false;
+  if(recognition){try{recognition.stop();}catch(e){}recognition=null;}
+  window.speechSynthesis?.cancel();
+  if(window._currentVoiceAudio){window._currentVoiceAudio.pause();window._currentVoiceAudio.src='';window._currentVoiceAudio=null;}
+  mouthOpen=0;
+  // Snapshot session before clearing
+  voiceSessionSnapshot=[...S.voiceChatHistory];
+  voiceSessionCoachSnapshot=currentVoiceCoach;
+  document.getElementById('filler-overlay').style.display='none';
+  setVoiceState('idle');
+  document.getElementById('voice-transcript').textContent='Session stopped. Click the mic to start a new one.';
+  // Show transcript button if there was any conversation
+  const vtBtn=document.getElementById('view-transcript-btn');
+  if(vtBtn)vtBtn.style.display=voiceSessionSnapshot.length>0?'block':'none';
+  S.voiceChatHistory=[];
+  showBackBtn(false);
+  const fillerMsg=voiceFillerCount>0?` · ${voiceFillerCount} filler word${voiceFillerCount!==1?'s':''}`:'';
+  showToast('⏹','Voice session ended'+fillerMsg);
 }
 
 function switchVoiceCoach(name){
+  // Kill any active audio/recognition before switching to prevent overlap
+  if(window._currentVoiceAudio){window._currentVoiceAudio.pause();window._currentVoiceAudio.src='';window._currentVoiceAudio=null;}
+  window.speechSynthesis?.cancel();
+  if(recognition){try{recognition.stop();}catch(e){}recognition=null;}
+  isListeningVoice=false;
+  mouthOpen=0;
   currentVoiceCoach=name;
   document.getElementById('voice-coach-name').textContent=name;
   document.querySelectorAll('.cp-btn').forEach(b=>b.classList.remove('active'));
   const btn=document.getElementById('vcp-'+name.toLowerCase());if(btn)btn.classList.add('active');
-  S.voiceChatHistory=[];addVoiceLog(name,COACHES[name].greeting,'ai');speakText(COACHES[name].greeting);
+  S.voiceChatHistory=[];
+  // Brief pause so previous audio fully stops before new greeting plays
+  setTimeout(()=>{
+    addVoiceLog(name,COACHES[name].greeting,'ai');
+    speakText(COACHES[name].greeting);
+  },200);
 }
 
 function addVoiceLog(who,text,type){
@@ -1817,7 +1888,12 @@ function addVoiceLog(who,text,type){
   log.appendChild(item);log.scrollTop=log.scrollHeight;
 }
 
+function stripActionText(text){
+  return text.replace(/\*[^*]+\*/g,'').replace(/\([^)]*\b(laughs?|sighs?|pauses?|chuckles?|takes a sip|clears throat|smiles?|grins?|nods?)\b[^)]*\)/gi,'').replace(/\s{2,}/g,' ').trim();
+}
+
 async function speakText(text){
+  text=stripActionText(text);
   setVoiceState('speaking');
   // Animate mouth while loading
   const mouthInterval=setInterval(()=>{mouthOpen=0.2+Math.random()*0.6;setTimeout(()=>mouthOpen=0,100);},180);
@@ -1836,20 +1912,23 @@ async function speakText(text){
     const blob=await res.blob();
     const url=URL.createObjectURL(blob);
     const audio=new Audio(url);
+    window._currentVoiceAudio=audio;
     audio.onended=()=>{
       clearInterval(mouthInterval);
       mouthOpen=0;
+      window._currentVoiceAudio=null;
       setVoiceState('idle');
       URL.revokeObjectURL(url);
     };
     audio.onerror=()=>{
       clearInterval(mouthInterval);
+      window._currentVoiceAudio=null;
       setVoiceState('idle');
     };
     // Animate mouth in sync with audio
     audio.ontimeupdate=()=>{mouthOpen=0.2+Math.random()*0.5;setTimeout(()=>mouthOpen=Math.random()*0.2,90);};
     // Safety: if stuck in speaking state for >45s, force reset
-    const _safetyT = setTimeout(()=>{clearInterval(mouthInterval);mouthOpen=0;setVoiceState('idle');},45000);
+    const _safetyT = setTimeout(()=>{clearInterval(mouthInterval);mouthOpen=0;window._currentVoiceAudio=null;setVoiceState('idle');},45000);
     const _origEnd = audio.onended;
     audio.onended = ()=>{ clearTimeout(_safetyT); if(_origEnd) _origEnd(); };
     audio.play();
@@ -1877,6 +1956,10 @@ function fallbackSpeak(text){
 }
 
 let isListeningVoice = false;
+let voiceFillerCount = 0;
+let voiceFillerWords = {};
+let voiceSessionSnapshot = [];
+let voiceSessionCoachSnapshot = '';
 
 function toggleListening(){
   if(voiceState==='processing'||voiceState==='speaking')return;
@@ -1891,6 +1974,10 @@ function toggleListening(){
 
 function startListening(){
   window.speechSynthesis?.cancel();
+  // Reset filler tracking for this listening burst
+  voiceFillerCount=0; voiceFillerWords={};
+  document.getElementById('filler-overlay').style.display='flex';
+  document.getElementById('filler-total').textContent='0';
   setVoiceState('listening');
   document.getElementById('voice-transcript').textContent='Listening... click again to send';
   document.getElementById('hold-hint').textContent='Click to stop & send';
@@ -1898,6 +1985,7 @@ function startListening(){
     alert('Please use Chrome for voice.');
     setVoiceState('idle');isListeningVoice=false;
     document.getElementById('hold-hint').textContent='Click to speak';
+    document.getElementById('filler-overlay').style.display='none';
     return;
   }
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -1909,8 +1997,26 @@ function startListening(){
   recognition.onresult=(e)=>{
     let interim='';
     for(let i=e.resultIndex;i<e.results.length;i++){
-      if(e.results[i].isFinal){finalTranscript+=e.results[i][0].transcript+' ';}
-      else{interim+=e.results[i][0].transcript;}
+      if(e.results[i].isFinal){
+        const conf=e.results[i][0].confidence;
+        const t=e.results[i][0].transcript.trim();
+        // Accept if confidence ok OR multi-word (likely real speech not noise)
+        if(conf>0.35||t.split(' ').length>3||t.length>12){
+          finalTranscript+=t+' ';
+          // Inline filler detection on final transcripts
+          const tl=t.toLowerCase();
+          FILLERS.forEach(f=>{
+            const rx=new RegExp('\\b'+f+'\\b','gi');
+            const m=tl.match(rx);
+            if(m){voiceFillerCount+=m.length;voiceFillerWords[f]=(voiceFillerWords[f]||0)+m.length;}
+          });
+          document.getElementById('filler-total').textContent=voiceFillerCount;
+          if(voiceFillerCount>0){
+            const badge=document.getElementById('filler-badge');
+            badge.classList.add('bump');setTimeout(()=>badge.classList.remove('bump'),300);
+          }
+        }
+      } else{interim+=e.results[i][0].transcript;}
     }
     const display=(finalTranscript+interim).trim();
     if(display)document.getElementById('voice-transcript').textContent=display+' ... click to send';
@@ -1945,9 +2051,10 @@ async function stopListening(){
   addVoiceLog('You',t,'user');
   S.voiceChatHistory.push({role:'user',content:t});
   const c=COACHES[currentVoiceCoach];
-  const briefCtx=S.briefing?`Briefing: "${S.briefing.preparing}", role "${S.briefing.role}".`:'';
+  const briefCtx=S.briefing?`CONTEXT: Preparing for "${S.briefing.preparing}". Background: "${S.briefing.role}". Wants to improve: "${S.briefing.improve}". Reference this throughout the conversation when relevant.`:'No briefing — ask them what they are working on.';
   const settingsCtx=typeof buildSystemPromptExtras==='function'?buildSystemPromptExtras():'';
-  const system=`You are ${currentVoiceCoach} on Conver. ${c.style} ${briefCtx} ${settingsCtx} VOICE conversation — natural spoken language. No markdown. No bullet points.`;
+  const recentCtx=S.history.length>0?`Past sessions: ${S.history.slice(0,3).map(h=>`${h.scenario} scored clarity ${h.analysis.clarity} confidence ${h.analysis.confidence}`).join('; ')}.`:'';
+  const system=`You are ${currentVoiceCoach} on Conver. ${c.style} ${briefCtx} ${settingsCtx} ${recentCtx} VOICE — speak naturally, no markdown, no bullet points, no lists, no asterisks or stage directions like *laughs* — express emotion through actual words (e.g. "haha", "hmm"), not descriptions. Max 3 sentences per response.`;
   try{
     const reply=await callAI(S.voiceChatHistory,system);
     S.voiceChatHistory.push({role:'assistant',content:reply});
@@ -1967,8 +2074,11 @@ function renderInsights(){
   const avg=arr=>arr.length?(arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1):0;
   const ac=avg(S.scores.clarity),aco=avg(S.scores.confidence),ap=avg(S.scores.persuasion);
   const scenarios={};S.history.forEach(h=>{scenarios[h.scenario]=(scenarios[h.scenario]||0)+1;});
-  const top=Object.entries(scenarios).sort((a,b)=>b[1]-a[1])[0];
+  const top=Object.entries(scenarios).sort((a,b)=>b[1]-a[1])[0]||['None',0];
   const allNums=[...S.scores.clarity,...S.scores.confidence,...S.scores.persuasion];
+  const debateCount=S.history.filter(h=>h.scenario==='Debate').length;
+  const coCount=S.history.filter(h=>h.scenario==='Cold Open').length;
+  const practiceCount=S.history.filter(h=>!['Debate','Cold Open'].includes(h.scenario)).length;
   el.innerHTML=`<div class="insights-grid">
     <div class="insight-card"><div class="insight-title">Average Scores — ${S.sessions} sessions</div>
       <div class="bar-group"><div class="bar-label"><span>Clarity</span><span>${ac}/10</span></div><div class="bar-track"><div class="bar-fill" style="width:${ac*10}%;background:var(--accent2)"></div></div></div>
@@ -1977,19 +2087,26 @@ function renderInsights(){
     </div>
     <div class="insight-card"><div class="insight-title">Session Breakdown</div>
       <div style="font-size:13.5px;color:var(--muted2);line-height:2.1">
-        <div>📊 Total: <strong style="color:var(--text)">${S.sessions}</strong></div>
-        <div>🎯 Top scenario: <strong style="color:var(--text)">${top[0]}</strong></div>
-        <div>🧑‍🏫 Coach: <strong style="color:var(--text)">${S.coach}</strong></div>
-        <div>⭐ Best score: <strong style="color:var(--green)">${Math.max(...allNums)}/10</strong></div>
+        <div>📊 Total sessions: <strong style="color:var(--text)">${S.sessions}</strong></div>
+        <div>✍️ Practice Lab: <strong style="color:var(--text)">${practiceCount}</strong></div>
+        <div>⚔️ Debates: <strong style="color:var(--text)">${debateCount}</strong></div>
+        <div>🎲 Cold Opens: <strong style="color:var(--text)">${coCount}</strong></div>
+        <div>🧑‍🏫 Active Coach: <strong style="color:var(--text)">${S.coach}</strong></div>
+        <div>⭐ Best score: <strong style="color:var(--green)">${allNums.length?Math.max(...allNums):0}/10</strong></div>
         <div>🔥 Streak: <strong style="color:var(--amber)">${S.streak} days</strong></div>
       </div>
     </div>
-    <div class="insight-card" style="grid-column:span 2"><div class="insight-title">Score trend — last ${Math.min(S.history.length,10)} sessions</div>
-      <div style="display:flex;gap:8px;align-items:flex-end;height:80px;margin-top:4px">
-        ${S.history.slice(0,10).reverse().map(h=>{const a=((h.analysis.clarity+h.analysis.confidence+h.analysis.persuasion)/3).toFixed(1);const c=COACHES[h.coach];return`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px"><div style="font-size:9.5px;color:var(--muted);font-family:'DM Mono',monospace">${a}</div><div style="width:100%;background:${c.bg};border:1px solid ${c.accent.replace('0.8','0.3')};border-radius:4px 4px 0 0;height:${(a/10)*66}px;min-height:4px"></div><div style="font-size:9.5px;color:var(--muted)">${h.scenario.slice(0,3)}</div></div>`;}).join('')}
+    <div class="insight-card" style="grid-column:span 2">
+      <div class="insight-title" style="margin-bottom:12px">Score trends — last ${Math.min(S.history.length,10)} sessions</div>
+      <div style="display:flex;gap:16px;align-items:center;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted2);font-family:'DM Mono',monospace"><div style="width:24px;height:2px;background:#4fc3f7;border-radius:2px"></div>Clarity</div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted2);font-family:'DM Mono',monospace"><div style="width:24px;height:2px;background:#a78bfa;border-radius:2px"></div>Confidence</div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted2);font-family:'DM Mono',monospace"><div style="width:24px;height:2px;background:#34d399;border-radius:2px"></div>Persuasion</div>
       </div>
+      <canvas id="trend-chart" height="110" style="width:100%;display:block"></canvas>
     </div>
   </div>`;
+  setTimeout(drawTrendChart,0);
 }
 
 // ── History ───────────────────────────────────────────────────────────────────
@@ -2096,7 +2213,7 @@ async function renderDailyChallenge() {
   document.getElementById('daily-question').textContent = 'Generating your challenge...';
   
   const weakSpots = getWeakSpots();
-  const briefCtx = S.briefing ? `Briefing: preparing for "${S.briefing.preparing}", role "${S.briefing.role}".` : '';
+  const briefCtx = S.briefing ? `CONTEXT: This person is preparing for "${S.briefing.preparing}". Background: "${S.briefing.role}". Focus area: "${S.briefing.improve}". Generate a question specifically relevant to their situation.` : '';
   const prompt = `You are ${S.coach}, a communication coach. Generate a daily practice challenge for this person.
 ${briefCtx}
 Their weak spots: ${weakSpots.join(', ') || 'not yet determined'}.
@@ -2132,7 +2249,7 @@ function displayDailyChallenge() {
   if (dailyCompleted) {
     document.getElementById('daily-practice-btn').textContent = '✓ Completed';
     document.getElementById('daily-practice-btn').disabled = true;
-    document.getElementById('daily-completed-area').innerHTML = `<div class="daily-completed"><div style="font-size:24px;margin-bottom:8px">🔥</div><div style="font-family:'Syne',sans-serif;font-weight:700;color:var(--green)">Challenge Complete!</div><div style="font-size:13px;color:var(--muted2);margin-top:4px">Come back tomorrow for a new one.</div></div>`;
+    document.getElementById('daily-completed-area').innerHTML = `<div class="daily-completed"><div style="font-size:24px;margin-bottom:8px">🔥</div><div style="font-family:'DM Sans',sans-serif;font-weight:600;color:var(--green)">Challenge Complete!</div><div style="font-size:13px;color:var(--muted2);margin-top:4px">Come back tomorrow for a new one.</div></div>`;
   }
   const weakSpots = getWeakSpots();
   renderDailyFocus(weakSpots);
@@ -2157,7 +2274,9 @@ function startDailyChallenge() {
   if (!dailyChallenge) return;
   const today = new Date().toDateString();
   localStorage.setItem('conver_daily_done_' + today, 'true');
+  localStorage.setItem('conver_last_daily', today);
   dailyCompleted = true;
+  saveUserData();
   navTo('practice');
   setTimeout(() => {
     document.getElementById('p-question').value = dailyChallenge.question;
@@ -2191,8 +2310,8 @@ async function generateCoachNotes() {
   const btn = document.getElementById('gen-notes-btn');
   btn.disabled = true; btn.textContent = 'Analyzing patterns...';
   
-  const recentSessions = S.history.slice(0, 8).map(h => 
-    `Scenario: ${h.scenario}, Scores: C${h.analysis.clarity} Co${h.analysis.confidence} P${h.analysis.persuasion}, Strengths: ${h.analysis.strengths?.join(', ')}, Issues: ${h.analysis.improvements?.join(', ')}`
+  const recentSessions = S.history.slice(0, 10).map(h => 
+    `[${h.scenario}] Clarity:${h.analysis.clarity} Confidence:${h.analysis.confidence} Persuasion:${h.analysis.persuasion}. Strengths: ${(h.analysis.strengths||[]).join(', ')}. Issues: ${(h.analysis.improvements||[]).join(', ')}. Summary: ${(h.analysis.overall||'').slice(0,100)}`
   ).join('\n');
   
   const prompt = `You are ${S.coach}, an AI communication coach reviewing this person's recent sessions.
@@ -2216,6 +2335,7 @@ No markdown.`;
     coachNotes = [...newNotes, ...coachNotes].slice(0, 20);
     localStorage.setItem('conver_coach_notes', JSON.stringify(coachNotes));
     renderCoachNotes();
+    saveUserData();
     showToast('🧠', 'Coach notes generated');
   } catch(e) {
     showToast('⚠️', 'Failed: ' + e.message);
@@ -2275,11 +2395,11 @@ function downloadScoreCard() {
   
   // Glow
   const glow = ctx.createRadialGradient(500,50,10,500,50,180);
-  glow.addColorStop(0,'rgba(108,99,255,0.25)'); glow.addColorStop(1,'rgba(0,0,0,0)');
+  glow.addColorStop(0,'rgba(108,99,255,0.20)'); glow.addColorStop(1,'rgba(0,0,0,0)');
   ctx.fillStyle = glow; ctx.fillRect(0,0,600,400);
   
   // Border
-  ctx.strokeStyle = 'rgba(108,99,255,0.25)'; ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(108,99,255,0.20)'; ctx.lineWidth = 1;
   ctx.strokeRect(1,1,598,398);
   
   // Logo
@@ -2385,8 +2505,8 @@ No markdown.`;
     if (!m) return;
     const data = JSON.parse(m[0]);
     const colorMap = {green:'var(--green)',amber:'var(--amber)',red:'var(--red)',blue:'var(--accent2)',purple:'var(--accent3)'};
-    const bgMap = {green:'rgba(52,211,153,0.1)',amber:'rgba(251,191,36,0.08)',red:'rgba(248,113,113,0.08)',blue:'rgba(79,195,247,0.08)',purple:'rgba(167,139,250,0.1)'};
-    const borderMap = {green:'rgba(52,211,153,0.25)',amber:'rgba(251,191,36,0.2)',red:'rgba(248,113,113,0.2)',blue:'rgba(79,195,247,0.2)',purple:'rgba(167,139,250,0.2)'};
+    const bgMap = {green:'rgba(52,211,153,0.1)',amber:'rgba(251,191,36,0.08)',red:'rgba(248,113,113,0.08)',blue:'rgba(79,195,247,0.08)',purple:'rgba(108,99,255,0.08)'};
+    const borderMap = {green:'rgba(52,211,153,0.25)',amber:'rgba(251,191,36,0.2)',red:'rgba(248,113,113,0.2)',blue:'rgba(79,195,247,0.2)',purple:'rgba(108,99,255,0.08)'};
     document.getElementById('tone-pills').innerHTML = data.tones.map(t => `
       <span class="tone-pill" style="color:${colorMap[t.color]||'var(--muted2)'};background:${bgMap[t.color]||'var(--bg2)'};border-color:${borderMap[t.color]||'var(--border2)'}">
         <span style="width:6px;height:6px;border-radius:50%;background:${colorMap[t.color]||'var(--muted2)'};flex-shrink:0;display:inline-block"></span>
@@ -2449,8 +2569,8 @@ async function startDebate() {
   const sideBadge = document.getElementById('debate-side-badge');
   sideBadge.textContent = debateSide === 'for' ? 'You: FOR ✓' : 'You: AGAINST ✗';
   sideBadge.style.cssText = debateSide === 'for'
-    ? 'font-size:11px;padding:3px 10px;border-radius:20px;font-family:DM Mono,monospace;background:rgba(79,195,247,0.1);color:var(--accent2);border:1px solid rgba(79,195,247,0.25)'
-    : 'font-size:11px;padding:3px 10px;border-radius:20px;font-family:DM Mono,monospace;background:rgba(248,113,113,0.1);color:var(--red);border:1px solid rgba(248,113,113,0.25)';
+    ? 'font-size:11px;padding:3px 10px;border-radius:20px;font-family:monospace;background:rgba(79,195,247,0.1);color:var(--accent2);border:1px solid rgba(79,195,247,0.25)'
+    : 'font-size:11px;padding:3px 10px;border-radius:20px;font-family:monospace;background:rgba(248,113,113,0.1);color:var(--red);border:1px solid rgba(248,113,113,0.25)';
 
   document.getElementById('debate-name-a').textContent = debateCoachA;
   document.getElementById('debate-name-b').textContent = debateCoachB;
@@ -2534,7 +2654,7 @@ function drawDebateFace(side) {
   if(state==='speaking'){
     ctx.beginPath(); ctx.arc(cx,cy,r+2,0,Math.PI*2);
     const col = side==='a'
-      ? `rgba(108,99,255,${0.3+0.25*Math.sin(Date.now()/200)})`
+      ? `rgba(108,99,255,${0.25+0.2*Math.sin(Date.now()/200)})`
       : `rgba(248,113,113,${0.3+0.25*Math.sin(Date.now()/200)})`;
     ctx.strokeStyle=col; ctx.lineWidth=2; ctx.stroke();
   }
@@ -2550,7 +2670,7 @@ function startDebateWaveform(){
       const el=document.getElementById('dwb'+i); if(!el)continue;
       const h=isListening?4+Math.random()*24:4+Math.sin(Date.now()/600+i*0.7)*2.5;
       el.style.height=Math.max(4,h)+'px';
-      el.style.background=isListening?'var(--accent2)':'rgba(108,99,255,0.35)';
+      el.style.background=isListening?'var(--accent2)':'rgba(108,99,255,0.28)';
     }
   },80);
 }
@@ -2558,12 +2678,13 @@ function startDebateWaveform(){
 function addDebateLogMsg(side, who, text, isUser=false){
   const log=document.getElementById('debate-log-'+side);
   const div=document.createElement('div');
-  div.style.cssText=`padding:8px 10px;border-radius:8px;font-size:12px;line-height:1.6;${isUser?'background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.15);color:var(--text);':'background:var(--bg2);border:1px solid var(--border);color:var(--muted2);'}`;
+  div.style.cssText=`padding:8px 10px;border-radius:8px;font-size:12px;line-height:1.6;${isUser?'background:rgba(108,99,255,0.06);border:1px solid rgba(108,99,255,0.12);color:var(--text);':'background:var(--bg2);border:1px solid var(--border);color:var(--muted2);'}`;
   div.innerHTML=`<div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:3px">${who}</div>${escHtml(text)}`;
   log.appendChild(div); log.scrollTop=log.scrollHeight;
 }
 
 async function speakDebate(text, side){
+  text=stripActionText(text);
   const coach = side==='a'?debateCoachA:debateCoachB;
   if(side==='a'){debateStateA='speaking';document.getElementById('debate-status-a').textContent='Speaking...';}
   else{debateStateB='speaking';document.getElementById('debate-status-b').textContent='Speaking...';}
@@ -2595,8 +2716,8 @@ async function getDebateOpenings(){
   document.getElementById('debate-mic-btn').disabled=true;
   const yourSide=debateSide==='for'?'FOR':'AGAINST';
   const oppSide=debateSide==='for'?'AGAINST':'FOR';
-  const sysA=`You are ${debateCoachA}, the user's debate coach. The topic is: "${debateTopic}". The user is arguing ${yourSide}. Give a quick 2-sentence pep talk and opening argument they can use. Encouraging and tactical. Spoken language only.`;
-  const sysB=`You are ${debateCoachB}, the opposition in a debate. The topic is: "${debateTopic}". You are arguing ${oppSide}. Give your strongest 2-sentence opening attack. Sharp and challenging. Spoken language only.`;
+  const sysA=`You are ${debateCoachA}, the user's debate coach. The topic is: "${debateTopic}". The user is arguing ${yourSide}. Give a quick 2-sentence pep talk and opening argument they can use. Encouraging and tactical. Spoken language only, no stage directions or asterisk actions.`;
+  const sysB=`You are ${debateCoachB}, the opposition in a debate. The topic is: "${debateTopic}". You are arguing ${oppSide}. Give your strongest 2-sentence opening attack. Sharp and challenging. Spoken language only, no stage directions or asterisk actions.`;
   try{
     const[replyA,replyB]=await Promise.all([
       callAI([{role:'user',content:'Give your opening.'}],sysA),
@@ -2709,7 +2830,7 @@ async function scoreDebate(){
         <div class="score-box"><div class="score-num ${scoreClass(r.persuasion)}">${r.persuasion}</div><div class="score-lbl">Persuasion</div></div>
         <div class="score-box"><div class="score-num ${scoreClass(r.confidence)}">${r.confidence}</div><div class="score-lbl">Confidence</div></div>
       </div>
-      <div style="background:rgba(108,99,255,0.07);border:1px solid rgba(108,99,255,0.15);border-radius:10px;padding:14px;margin-bottom:12px">
+      <div style="background:rgba(108,99,255,0.06);border:1px solid rgba(108,99,255,0.12);border-radius:10px;padding:14px;margin-bottom:12px">
         <div style="font-size:10px;color:var(--accent3);font-family:'DM Mono',monospace;margin-bottom:6px">VERDICT</div>
         <div style="font-size:13.5px;color:var(--text);line-height:1.7">${r.verdict}</div>
       </div>
@@ -2832,7 +2953,7 @@ function applySettingsToUI() {
       const d = document.createElement('div');
       d.className = 'sc-card' + (s.name === S.scenario ? ' active' : '');
       d.style.cssText = 'padding:10px;text-align:center';
-      d.innerHTML = `<div style="font-size:16px">${s.icon}</div><div style="font-size:11px;margin-top:4px;font-family:'Syne',sans-serif;font-weight:600">${s.name}</div>`;
+      d.innerHTML = `<div style="font-size:16px">${s.icon}</div><div style="font-size:11px;margin-top:4px;font-family:'DM Sans',sans-serif;font-weight:600">${s.name}</div>`;
       d.onclick = () => {
         document.querySelectorAll('#settings-scenario-cards .sc-card').forEach(c=>c.classList.remove('active'));
         d.classList.add('active');
@@ -2864,6 +2985,7 @@ function saveSettings() {
   };
   localStorage.setItem('conver_settings', JSON.stringify(settings));
   loadSettings();
+  saveUserData();
   showToast('✓', 'Settings saved');
 }
 
@@ -3164,6 +3286,7 @@ function startColdOpen() {
   document.getElementById('co-person-role').textContent=scenario.role;
   document.getElementById('co-messages').innerHTML='';
   document.getElementById('co-transcript').textContent='Click the mic to respond...';
+  const _micBtn=document.getElementById('co-mic-btn');if(_micBtn){_micBtn.disabled=false;_micBtn.className='hold-btn idle';_micBtn.textContent='🎙️';}
   if(coState.faceAnim)cancelAnimationFrame(coState.faceAnim);
   drawCOFace();
   addCOMsg(scenario.person, scenario.opener, false);
@@ -3215,6 +3338,7 @@ function addCOMsg(who,text,isUser){
 }
 
 async function speakCO(text){
+  text=stripActionText(text);
   coFaceState='speaking';document.getElementById('co-status').textContent='Speaking...';
   const mi=setInterval(()=>{coMouth=0.2+Math.random()*0.6;setTimeout(()=>coMouth=0,100);},160);
   return new Promise(async resolve=>{
@@ -3244,7 +3368,14 @@ function startCOListening(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   coRecognition=new SR();coRecognition.continuous=true;coRecognition.interimResults=true;coRecognition.lang='en-US';
   let finalT='';
-  coRecognition.onresult=(e)=>{let int='';for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)finalT+=e.results[i][0].transcript+' ';else int+=e.results[i][0].transcript;}const txt=(finalT+int).trim();if(txt)document.getElementById('co-transcript').textContent=txt+' ... click to send';};
+  coRecognition.onresult=(e)=>{let int='';for(let i=e.resultIndex;i<e.results.length;i++){
+    if(e.results[i].isFinal){
+      const conf=e.results[i][0].confidence;
+      const t=e.results[i][0].transcript.trim();
+      // Accept if confidence is ok OR it's a multi-word result (likely real speech)
+      if(conf>0.4||t.split(' ').length>3||t.length>15){finalT+=t+' ';}
+    } else {int+=e.results[i][0].transcript;}
+  }const txt=(finalT+int).trim();if(txt)document.getElementById('co-transcript').textContent=txt+' ... click to send';};
   coRecognition.onerror=(e)=>{if(e.error==='not-allowed'){showToast('⚠️','Mic blocked');isCOListening=false;}};
   coRecognition.onend=()=>{if(isCOListening){try{coRecognition.start();}catch(e){}}};
   coRecognition.start();
@@ -3259,7 +3390,7 @@ async function stopCOListening(){
   coState.turns++;
   addCOMsg(S.userName||'You',text,true);
   coState.history.push({role:'user',content:text});
-  const sys=`You are ${coState.scenario.person}, ${coState.scenario.role}. Context: ${coState.scenario.setup} Stay in character. 1-2 sentences max. No feedback, just be a real person.`;
+  const sys=`You are ${coState.scenario.person}, ${coState.scenario.role}. Context: ${coState.scenario.setup} Stay in character. 1-2 sentences max. No feedback, just be a real person. Spoken language only — no asterisks or stage directions like *laughs*.`;
   try{
     const reply=await callAI(coState.history,sys);
     coState.history.push({role:'assistant',content:reply});
@@ -3276,7 +3407,8 @@ async function endColdOpen(){
   document.getElementById('co-mic-btn').disabled=true;
   document.getElementById('co-status').textContent='Scoring your cold open...';
   const convText=coState.history.map((m,i)=>`${i%2===0?'You':'Them'}: ${m.content}`).join('\n');
-  const prompt=`You are ${S.coach}, a communication coach. Analyze this cold open:\n\nContext: ${coState.scenario.setup}\nOpener: "${coState.scenario.opener}"\n\nConversation:\n${convText}\n\nReturn ONLY valid JSON:\n{"naturalness":<1-10>,"warmth":<1-10>,"impact":<1-10>,"verdict":"<2-3 sentence assessment>","best_moment":"<one thing>","missed_opportunity":"<one thing>"}\nNo markdown.`;
+  const briefNote=S.briefing?`Note: this person is preparing for "${S.briefing.preparing}" and wants to improve "${S.briefing.improve}". Factor this into your scoring and feedback.`:``;
+  const prompt=`You are ${S.coach}, a communication coach. Analyze this cold open:\n\nContext: ${coState.scenario.setup}\nOpener: "${coState.scenario.opener}"\n\nConversation:\n${convText}\n\n${briefNote}\n\nReturn ONLY valid JSON:\n{"naturalness":<1-10>,"warmth":<1-10>,"impact":<1-10>,"verdict":"<2-3 sentence assessment>","best_moment":"<one thing>","missed_opportunity":"<one thing>"}\nNo markdown.`;
   try{
     let raw=await callAI([{role:'user',content:prompt}]);
     raw=raw.replace(/\`\`\`json|\`\`\`/g,'').trim();
@@ -3289,7 +3421,7 @@ async function endColdOpen(){
         <div class="score-box"><div class="score-num ${scoreClass(r.warmth)}">${r.warmth}</div><div class="score-lbl">Warmth</div></div>
         <div class="score-box"><div class="score-num ${scoreClass(r.impact)}">${r.impact}</div><div class="score-lbl">Impact</div></div>
       </div>
-      <div style="background:rgba(108,99,255,0.07);border:1px solid rgba(108,99,255,0.15);border-radius:10px;padding:14px;margin-bottom:12px">
+      <div style="background:rgba(108,99,255,0.06);border:1px solid rgba(108,99,255,0.12);border-radius:10px;padding:14px;margin-bottom:12px">
         <div style="font-size:10px;color:var(--accent3);font-family:'DM Mono',monospace;margin-bottom:6px">ASSESSMENT</div>
         <div style="font-size:13.5px;color:var(--text);line-height:1.7">${r.verdict}</div>
       </div>
@@ -3603,14 +3735,18 @@ let currentUser = null;
 let authToken = null;
 
 async function initAuth() {
-  // Try to get token from localStorage (set by OAuth callback)
+  // Restore session from localStorage (persisted across page loads)
   const storedToken = localStorage.getItem('conver_token');
+  const storedEmail = localStorage.getItem('conver_email');
   if (storedToken) {
     authToken = storedToken;
-    localStorage.removeItem('conver_token');
-  }
-  if (authToken) {
+    currentUser = { email: storedEmail || '' };
+    const email = storedEmail || 'User';
+    document.getElementById('user-email-display').textContent = email;
+    document.getElementById('user-avatar').textContent = email[0].toUpperCase();
+    hideAuthScreen();
     await loadUserData();
+    showToast('👋', 'Welcome back, ' + email.split('@')[0] + '!');
   } else {
     showAuthScreen();
   }
@@ -3725,6 +3861,9 @@ async function oauthLogin(provider) {
 
 async function afterSignIn() {
   currentUser = currentUser || {};
+  // Persist token + email so session survives page reload
+  if (authToken) localStorage.setItem('conver_token', authToken);
+  if (currentUser.email) localStorage.setItem('conver_email', currentUser.email);
   // Create profile
   await fetch('/api/user/profile', {
     method: 'POST', headers: {'Content-Type':'application/json','Authorization':'Bearer '+authToken}
@@ -3735,7 +3874,7 @@ async function afterSignIn() {
   document.getElementById('user-avatar').textContent = email[0].toUpperCase();
   hideAuthScreen();
   await loadUserData();
-  showToast('👋', 'Welcome back!');
+  showToast('👋', 'Welcome back, ' + email.split('@')[0] + '!');
 }
 
 async function loadUserData() {
@@ -3747,24 +3886,31 @@ async function loadUserData() {
     });
     if (statsRes.ok) {
       const { stats } = await statsRes.json();
+      console.log('[Conver] Stats loaded:', JSON.stringify({
+        sessions: stats?.total_sessions,
+        streak: stats?.streak,
+        score: stats?.conver_score,
+        hasSkills: !!stats?.skills,
+        hasScores: !!(stats?.skills?.sc),
+        scLen: stats?.skills?.sc?.length
+      }));
       if (stats) {
         S.sessions = stats.total_sessions || 0;
         S.streak = stats.streak || 0;
         S.converScore = stats.conver_score || null;
         // Restore skills
         if (stats.skills) S.skills = { ...S.skills, ...stats.skills };
-        // Restore scores arrays so calcConverScore works immediately
-        if (stats.scores_clarity && stats.scores_clarity.length) {
-          S.scores.clarity = stats.scores_clarity;
-          S.scores.confidence = stats.scores_confidence || [];
-          S.scores.persuasion = stats.scores_persuasion || [];
-        }
-        // If no scores arrays, reconstruct from conver_score so ring shows something
-        if (!S.scores.clarity.length && stats.conver_score) {
-          S.converScore = stats.conver_score;
-          // Fake scores array so calcConverScore returns the stored value
-          const approx = Math.max(1, Math.min(10, (stats.conver_score - Math.min(10, (stats.total_sessions||0)*2)) / 10));
-          S.scores.clarity = [approx]; S.scores.confidence = [approx]; S.scores.persuasion = [approx];
+        // Restore scores arrays from skills jsonb
+        if (stats.skills && stats.skills.sc && stats.skills.sc.length) {
+          S.scores.clarity = stats.skills.sc;
+          S.scores.confidence = stats.skills.sco || [];
+          S.scores.persuasion = stats.skills.sp || [];
+        } else if (stats.conver_score) {
+          // Fallback: reconstruct approximate scores from stored conver_score
+          const approx = Math.max(1, Math.min(10, stats.conver_score / 10));
+          S.scores.clarity = [approx];
+          S.scores.confidence = [approx];
+          S.scores.persuasion = [approx];
         }
         // Update score display immediately — don't wait for sessions to load
         updateChips();
@@ -3777,6 +3923,22 @@ async function loadUserData() {
           saveBriefing();
         }
         if (stats.selected_coach) selectProfile(stats.selected_coach);
+        // Restore coach notes
+        if (stats.coach_notes && stats.coach_notes.length) {
+          localStorage.setItem('conver_coach_notes', JSON.stringify(stats.coach_notes));
+          coachNotes = stats.coach_notes;
+        }
+        // Restore settings
+        if (stats.settings && Object.keys(stats.settings).length) {
+          localStorage.setItem('conver_settings', JSON.stringify(stats.settings));
+          loadSettings();
+        }
+        // Restore daily data
+        if (stats.daily_data) {
+          if (stats.daily_data.lastDaily) {
+            localStorage.setItem('conver_last_daily', stats.daily_data.lastDaily);
+          }
+        }
       }
     }
     // Load sessions
@@ -3801,6 +3963,7 @@ async function loadUserData() {
         S.scores.clarity = sessions.map(s=>s.clarity);
         S.scores.confidence = sessions.map(s=>s.confidence);
         S.scores.persuasion = sessions.map(s=>s.persuasion);
+        console.log('[Conver] Sessions loaded:', sessions.length, 'scores:', S.scores.clarity.length);
         // Always restore session count and recalculate from actual session data
         S.sessions = sessions.length;
         // Reset skills and rebuild from scratch from session history
@@ -3837,11 +4000,17 @@ async function saveUserData() {
             confidence: S.skills.confidence,
             persuasion: S.skills.persuasion,
             storytelling: S.skills.storytelling,
-            conciseness: S.skills.conciseness
+            conciseness: S.skills.conciseness,
+            sc: S.scores.clarity,
+            sco: S.scores.confidence,
+            sp: S.scores.persuasion
           },
-          scores_clarity: S.scores.clarity,
-          scores_confidence: S.scores.confidence,
-          scores_persuasion: S.scores.persuasion,
+          coach_notes: JSON.parse(localStorage.getItem('conver_coach_notes') || '[]'),
+          settings: JSON.parse(localStorage.getItem('conver_settings') || '{}'),
+          daily_data: {
+            streak: S.streak,
+            lastDaily: localStorage.getItem('conver_last_daily') || null
+          },
           briefing: S.briefing,
           selected_coach: S.coach
         }
@@ -3886,6 +4055,8 @@ document.addEventListener('click', (e) => {
 
 async function signOut() {
   authToken = null; currentUser = null;
+  localStorage.removeItem('conver_token');
+  localStorage.removeItem('conver_email');
   document.getElementById('user-dropdown').classList.remove('open');
   document.getElementById('user-email-display').textContent = 'Not signed in';
   document.getElementById('user-avatar').textContent = '?';
@@ -3893,6 +4064,10 @@ async function signOut() {
   S.history = []; S.sessions = 0; S.scores = {clarity:[],confidence:[],persuasion:[]};
   S.skills = {clarity:0,confidence:0,persuasion:0,storytelling:0,conciseness:0};
   S.streak = 0; S.briefing = null;
+  coachNotes = [];
+  localStorage.removeItem('conver_coach_notes');
+  localStorage.removeItem('conver_settings');
+  localStorage.removeItem('conver_last_daily');
   updateChips();
   showAuthScreen();
   showView('signin');
@@ -3930,6 +4105,134 @@ function handleBackBtn() {
   if (activePage && BACK_PAGES[activePage]) {
     BACK_PAGES[activePage]();
   }
+}
+
+// ── TREND CHART ───────────────────────────────────────────────────────────────
+function drawTrendChart(){
+  const canvas=document.getElementById('trend-chart');
+  if(!canvas)return;
+  const sessions=S.history.slice(0,10).reverse();
+  if(!sessions.length)return;
+  const dpr=window.devicePixelRatio||1;
+  const W=canvas.offsetWidth||canvas.parentElement.offsetWidth||600;
+  const H=110;
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  canvas.style.width=W+'px'; canvas.style.height=H+'px';
+  const ctx=canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  const pad={l:28,r:16,t:10,b:24};
+  const cw=W-pad.l-pad.r, ch=H-pad.t-pad.b;
+  const n=sessions.length;
+  // Grid lines
+  ctx.strokeStyle='rgba(255,255,255,0.06)'; ctx.lineWidth=1;
+  [0,2.5,5,7.5,10].forEach(v=>{
+    const y=pad.t+ch-(v/10)*ch;
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+cw,y);ctx.stroke();
+    ctx.fillStyle='rgba(123,130,153,0.6)';ctx.font='9px DM Mono,monospace';ctx.textAlign='right';
+    ctx.fillText(v,pad.l-4,y+3);
+  });
+  // X labels
+  ctx.fillStyle='rgba(123,130,153,0.7)';ctx.font='9px DM Mono,monospace';ctx.textAlign='center';
+  sessions.forEach((h,i)=>{
+    const x=n===1?pad.l+cw/2:pad.l+(i/(n-1))*cw;
+    ctx.fillText(h.scenario.slice(0,3),x,H-pad.b+13);
+  });
+  // Draw line for each metric
+  const metrics=[
+    {key:'clarity',color:'#4fc3f7'},
+    {key:'confidence',color:'#a78bfa'},
+    {key:'persuasion',color:'#34d399'}
+  ];
+  metrics.forEach(({key,color})=>{
+    const pts=sessions.map((h,i)=>({
+      x:n===1?pad.l+cw/2:pad.l+(i/(n-1))*cw,
+      y:pad.t+ch-((h.analysis[key]||0)/10)*ch
+    }));
+    // Gradient fill under line
+    const gradAlpha={'#4fc3f7':'rgba(79,195,247,0.15)','#a78bfa':'rgba(167,139,250,0.15)','#34d399':'rgba(52,211,153,0.15)'};
+    const grad=ctx.createLinearGradient(0,pad.t,0,pad.t+ch);
+    grad.addColorStop(0,gradAlpha[color]||'rgba(108,99,255,0.1)');
+    grad.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x,pts[0].y);
+    pts.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));
+    ctx.lineTo(pts[pts.length-1].x,pad.t+ch);
+    ctx.lineTo(pts[0].x,pad.t+ch);
+    ctx.closePath();
+    ctx.fillStyle=grad;ctx.fill();
+    // Line
+    ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=2;ctx.lineJoin='round';
+    pts.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));
+    ctx.stroke();
+    // Dots
+    pts.forEach(p=>{
+      ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);
+      ctx.fillStyle=color;ctx.fill();
+      ctx.strokeStyle='#0f1118';ctx.lineWidth=1.5;ctx.stroke();
+    });
+  });
+}
+
+// ── VOICE TRANSCRIPT ──────────────────────────────────────────────────────────
+function openVoiceTranscript(){
+  if(!voiceSessionSnapshot.length){showToast('📄','No transcript available');return;}
+  const body=document.getElementById('transcript-modal-body');
+  const fillerEl=document.getElementById('transcript-filler-summary');
+  // Build filler summary bar
+  if(voiceFillerCount>0){
+    const chips=Object.entries(voiceFillerWords).sort((a,b)=>b[1]-a[1])
+      .map(([w,c])=>`<span class="transcript-filler-chip">${w} ×${c}</span>`).join('');
+    fillerEl.innerHTML=`<div class="transcript-filler-summary-bar"><span style="color:var(--red);margin-right:4px">🚨 ${voiceFillerCount} filler word${voiceFillerCount!==1?'s':''}</span>${chips}</div>`;
+  } else {
+    fillerEl.innerHTML='<span style="color:var(--green)">✓ No filler words detected</span>';
+  }
+  // Build conversation lines
+  body.innerHTML=voiceSessionSnapshot.map(msg=>{
+    const isUser=msg.role==='user';
+    const speaker=isUser?'You':voiceSessionCoachSnapshot;
+    return `<div class="transcript-line">
+      <div class="transcript-speaker">${speaker}</div>
+      <div class="${isUser?'transcript-line-user':'transcript-line-coach'}">${escHtml(msg.content)}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('annotate-btn').disabled=false;
+  document.getElementById('annotate-btn').textContent='✦ AI Annotate';
+  document.getElementById('transcript-modal').classList.remove('hidden');
+}
+
+function closeVoiceTranscript(){
+  document.getElementById('transcript-modal').classList.add('hidden');
+}
+
+async function annotateTranscript(){
+  const btn=document.getElementById('annotate-btn');
+  btn.disabled=true; btn.textContent='Analyzing…';
+  const text=voiceSessionSnapshot.map(m=>`${m.role==='user'?'User':'Coach'}: ${m.content}`).join('\n');
+  try{
+    const res=await fetch('/api/chat',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        messages:[{role:'user',content:'Analyze this conversation transcript and return ONLY a JSON array (no markdown, no explanation). Each object must have: {"turn": NUMBER_0_BASED, "note": "SHORT_COACHING_NOTE_MAX_12_WORDS"}. Pick 2-4 key moments.\n\nTranscript:\n'+text}],
+        system:'You are a communication coach analyst. Return raw JSON array only.'
+      })
+    });
+    const d=await res.json();
+    let annotations=[];
+    try{annotations=JSON.parse(d.content);}catch(e){btn.textContent='✦ AI Annotate';btn.disabled=false;showToast('⚠️','Could not parse annotations');return;}
+    // Inject annotations into body
+    const body=document.getElementById('transcript-modal-body');
+    const lines=body.querySelectorAll('.transcript-line');
+    annotations.forEach(a=>{
+      const target=lines[a.turn];
+      if(!target)return;
+      const ann=document.createElement('div');
+      ann.className='transcript-annotation';
+      ann.innerHTML=`<span>✦</span><span>${escHtml(a.note)}</span>`;
+      target.after(ann);
+    });
+    btn.textContent='✓ Annotated';
+  }catch(e){btn.textContent='✦ AI Annotate';btn.disabled=false;showToast('⚠️','Annotation failed');}
 }
 
 initUI(); updateChips(); setTimeout(initToneDetector, 500); loadSettings();
