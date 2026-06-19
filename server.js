@@ -12,11 +12,35 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Supabase admin client (service role for server-side ops)
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
-);
+// ── Validate env vars loudly at startup ─────────────────────────────────────
+const rawUrl = (process.env.SUPABASE_URL || '').trim();
+const rawKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || '').trim();
+
+console.log('\n── Supabase config check ──────────────────────');
+console.log('SUPABASE_URL:', rawUrl ? `"${rawUrl}"` : '❌ MISSING');
+console.log('Using key type:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SERVICE_ROLE' : (process.env.SUPABASE_ANON_KEY ? 'ANON (fallback)' : '❌ MISSING'));
+console.log('Key length:', rawKey.length, rawKey.length > 0 ? `(starts "${rawKey.slice(0,15)}...")` : '');
+if (!rawUrl.startsWith('https://') || !rawUrl.includes('.supabase.co')) {
+  console.log('⚠️  SUPABASE_URL looks malformed! Expected format: https://xxxxx.supabase.co');
+}
+console.log('────────────────────────────────────────────────\n');
+
+// Supabase admin client (service role for server-side ops, bypasses RLS)
+const supabase = createClient(rawUrl, rawKey, {
+  auth: { autoRefreshToken: false, persistSession: false },
+  db: { schema: 'public' },
+});
+
+// Quick connectivity test at boot so failures show up immediately, not on first user request
+(async () => {
+  try {
+    const { error } = await supabase.from('profiles').select('id').limit(1);
+    if (error) console.log('⚠️  Supabase test query failed:', error.message);
+    else console.log('✓ Supabase connection OK\n');
+  } catch (e) {
+    console.log('⚠️  Supabase connection failed at boot:', e.message, '\n');
+  }
+})();
 
 // Cache of assigned coach voices
 let assignedVoices = null;
@@ -109,10 +133,14 @@ app.get('/api/user/stats', requireAuth, async (req, res) => {
 // Save user stats
 app.post('/api/user/stats', requireAuth, async (req, res) => {
   const { stats } = req.body;
+  const payload = { user_id: req.user.id, ...stats, updated_at: new Date().toISOString() };
   const { error } = await supabase
     .from('user_stats')
-    .upsert({ user_id: req.user.id, ...stats, updated_at: new Date().toISOString() });
-  if (error) return res.status(400).json({ error: error.message });
+    .upsert(payload, { onConflict: 'user_id' });
+  if (error) {
+    console.error('Stats save error:', error);
+    return res.status(400).json({ error: error.message });
+  }
   res.json({ success: true });
 });
 
@@ -122,7 +150,10 @@ app.post('/api/user/session', requireAuth, async (req, res) => {
   const { error } = await supabase
     .from('sessions')
     .insert({ user_id: req.user.id, ...session });
-  if (error) return res.status(400).json({ error: error.message });
+  if (error) {
+    console.error('Session save error:', error);
+    return res.status(400).json({ error: error.message });
+  }
   res.json({ success: true });
 });
 
