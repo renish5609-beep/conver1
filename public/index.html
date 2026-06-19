@@ -1271,6 +1271,27 @@ textarea{resize:vertical;min-height:150px;line-height:1.65}
             </div>
 
             <div class="panel">
+              <div class="settings-section-title">Phone Verification</div>
+              <div id="phone-unverified-view">
+                <div class="form-group">
+                  <label>Phone Number <span style="color:var(--muted)">(optional)</span></label>
+                  <input type="text" id="phone-input" placeholder="+1 555 123 4567"/>
+                </div>
+                <button class="btn-primary" onclick="sendPhoneCode()" id="send-code-btn">Send Verification Code</button>
+              </div>
+              <div id="phone-otp-view" style="display:none">
+                <div class="form-group">
+                  <label>Enter 6-digit code</label>
+                  <input type="text" id="phone-otp-input" placeholder="123456" maxlength="6"/>
+                </div>
+                <button class="btn-primary" onclick="verifyPhoneCode()" id="verify-code-btn">Verify</button>
+              </div>
+              <div id="phone-verified-view" style="display:none">
+                <div style="display:flex;align-items:center;gap:8px;color:var(--green);font-size:13.5px">✓ Phone Verified</div>
+              </div>
+            </div>
+
+            <div class="panel">
               <div class="settings-section-title">Coaching Style</div>
               <div class="setting-row">
                 <div class="setting-info"><h4>Feedback Intensity</h4><p>How direct and harsh your feedback gets</p></div>
@@ -1311,7 +1332,7 @@ textarea{resize:vertical;min-height:150px;line-height:1.65}
                 </div>
               </div>
               <div class="setting-row">
-                <div class="setting-info"><h4>Voice Session Rounds</h4><p>How many rounds in Live Debate</p></div>
+                <div class="setting-info"><h4>Debate Rounds</h4><p>How many rounds in Live Debate</p></div>
                 <div class="setting-control">
                   <select id="set-debate-rounds" onchange="S.debateRounds=parseInt(this.value);saveSettings()">
                     <option value="2">2 rounds</option>
@@ -1598,16 +1619,17 @@ async function analyzeResponse(){
     S.history.unshift(newSession);
     if(S.autosave !== false) saveSessionToCloud(newSession);
     saveUserData();
-    updateChips();renderResults(a);
+    updateChips();
     if(fillerData.count>0){showToast('🚨',`${fillerData.count} filler word${fillerData.count>1?'s':''} detected: ${fillerData.found.slice(0,3).join(', ')}`);}
     if(S.autoReport)setTimeout(()=>openReport(S.history[0]),600);
     showToast('✓','Analysis complete');
+    renderResults(a,text);
   }catch(e){document.getElementById('results-area').innerHTML=`<div class="empty-state"><p style="color:var(--red)">Failed: ${e.message}</p></div>`;}
   btn.disabled=false;btn.textContent='Analyze Response';
 }
 
 function scoreClass(n){return n>=8?'good':n>=5?'mid':'low';}
-function renderResults(a){
+function renderResults(a,text){
   document.getElementById('results-area').innerHTML=`
     <div class="score-row">
       <div class="score-box"><div class="score-num ${scoreClass(a.clarity)}">${a.clarity}</div><div class="score-lbl">Clarity</div></div>
@@ -1849,6 +1871,7 @@ function stopVoiceSession(){
   voiceSessionSnapshot=[...S.voiceChatHistory];
   voiceSessionCoachSnapshot=currentVoiceCoach;
   document.getElementById('filler-overlay').style.display='none';
+  document.getElementById('hold-hint').textContent='Click to speak';
   setVoiceState('idle');
   document.getElementById('voice-transcript').textContent='Session stopped. Click the mic to start a new one.';
   // Show transcript button if there was any conversation
@@ -2808,7 +2831,7 @@ async function stopDebateListening(){
     else{document.getElementById('debate-global-status').textContent=`Round ${debateRound+1} — keep pushing!`;}
   }catch(e){document.getElementById('debate-global-status').textContent='Error: '+e.message;}
   btn.className='hold-btn idle';btn.textContent='🎙️';
-  if(debateRound>=debateMaxRounds)btn.disabled=true;
+  if(debateRound>=(S.debateRounds||3))btn.disabled=true;
   else btn.disabled=false;
 }
 
@@ -2879,7 +2902,7 @@ async function scoreDebate(){
 }
 
 function resetDebate(){
-  debateRunning=false;debateRound=0;debateSide='for';
+  debateRunning=false;debateRound=0;debateSide='for';isDebateListening=false;
   if(debateRecognition){debateRecognition.stop();debateRecognition=null;}
   if(debateFaceAnimA){cancelAnimationFrame(debateFaceAnimA);debateFaceAnimA=null;}
   if(debateFaceAnimB){cancelAnimationFrame(debateFaceAnimB);debateFaceAnimB=null;}
@@ -2887,6 +2910,8 @@ function resetDebate(){
   document.getElementById('debate-setup-screen').style.display='block';
   document.getElementById('debate-live-screen').style.display='none';
   document.getElementById('debate-topic').value='';
+  const dBtn=document.getElementById('debate-mic-btn');
+  if(dBtn){dBtn.disabled=false;dBtn.className='hold-btn idle';dBtn.textContent='🎙️';}
   showBackBtn(false);
   // Reset side buttons
   document.getElementById('side-for-btn').style.cssText='background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:14px;cursor:pointer;transition:all 0.15s;text-align:center';
@@ -2947,20 +2972,46 @@ function applySettingsToUI() {
   setChk('tog-report', settings.autoReport);
   setChk('tog-tone', settings.toneDetector);
   setChk('tog-autosave', settings.autosave);
+  // Phone verification status
+  sbClient.auth.getUser().then(({ data }) => {
+    const confirmed = data?.user?.phone_confirmed_at;
+    const hasPhone = !!data?.user?.phone;
+    if (confirmed) {
+      document.getElementById('phone-unverified-view').style.display = 'none';
+      document.getElementById('phone-otp-view').style.display = 'none';
+      document.getElementById('phone-verified-view').style.display = 'block';
+    } else if (hasPhone) {
+      document.getElementById('phone-unverified-view').style.display = 'none';
+      document.getElementById('phone-otp-view').style.display = 'block';
+      document.getElementById('phone-verified-view').style.display = 'none';
+    } else {
+      document.getElementById('phone-unverified-view').style.display = 'block';
+      document.getElementById('phone-otp-view').style.display = 'none';
+      document.getElementById('phone-verified-view').style.display = 'none';
+    }
+  }).catch(() => {});
   const sc = document.getElementById('settings-scenario-cards');
-  if (sc && sc.children.length === 0) {
-    SCENARIOS.forEach(s => {
-      const d = document.createElement('div');
-      d.className = 'sc-card' + (s.name === S.scenario ? ' active' : '');
-      d.style.cssText = 'padding:10px;text-align:center';
-      d.innerHTML = `<div style="font-size:16px">${s.icon}</div><div style="font-size:11px;margin-top:4px;font-family:'DM Sans',sans-serif;font-weight:600">${s.name}</div>`;
-      d.onclick = () => {
-        document.querySelectorAll('#settings-scenario-cards .sc-card').forEach(c=>c.classList.remove('active'));
-        d.classList.add('active');
-        S.scenario = s.name; updateChips(); saveSettings();
-      };
-      sc.appendChild(d);
-    });
+  if (sc) {
+    if (sc.children.length === 0) {
+      SCENARIOS.forEach(s => {
+        const d = document.createElement('div');
+        d.className = 'sc-card' + (s.name === S.scenario ? ' active' : '');
+        d.style.cssText = 'padding:10px;text-align:center';
+        d.dataset.scenario = s.name;
+        d.innerHTML = `<div style="font-size:16px">${s.icon}</div><div style="font-size:11px;margin-top:4px;font-family:'DM Sans',sans-serif;font-weight:600">${s.name}</div>`;
+        d.onclick = () => {
+          document.querySelectorAll('#settings-scenario-cards .sc-card').forEach(c=>c.classList.remove('active'));
+          d.classList.add('active');
+          S.scenario = s.name; updateChips(); saveSettings();
+        };
+        sc.appendChild(d);
+      });
+    } else {
+      // Sync active state in case scenario changed via Practice Lab
+      sc.querySelectorAll('.sc-card').forEach(c => {
+        c.classList.toggle('active', c.dataset.scenario === S.scenario);
+      });
+    }
   }
 }
 
@@ -3001,12 +3052,20 @@ function buildSystemPromptExtras() {
   if (S.detail === 'concise') parts.push('Keep feedback short and punchy. Bullet points over paragraphs.');
   if (S.detail === 'detailed') parts.push('Give thorough, detailed explanations for every piece of feedback.');
   if (S.coachMemory && S.history.length > 0) {
-    const patterns = [];
-    const avgC = (S.scores.clarity.reduce((a,b)=>a+b,0)/(S.scores.clarity.length||1)).toFixed(1);
-    const avgCo = (S.scores.confidence.reduce((a,b)=>a+b,0)/(S.scores.confidence.length||1)).toFixed(1);
-    if (avgC < 6) patterns.push('struggles with clarity');
-    if (avgCo < 6) patterns.push('needs confidence work');
-    if (patterns.length) parts.push(`Based on past sessions, this person ${patterns.join(' and ')}.`);
+    const weak = typeof getWeakSpots === 'function' ? getWeakSpots() : [];
+    if (weak.length && weak[0] !== 'all-around communication') {
+      const focusMap = {
+        clarity: 'being clear and direct rather than rambling or vague',
+        confidence: 'sounding sure of themselves instead of hedging or trailing off',
+        persuasion: 'making a compelling case instead of just stating facts',
+        storytelling: 'using specific, vivid detail instead of generic summary',
+        conciseness: 'cutting filler and getting to the point faster'
+      };
+      const focusLines = weak.map(w => focusMap[w] || w).join('; ');
+      parts.push(`Based on this person's recent sessions, their weakest areas are: ${weak.join(', ')}. Specifically push them on: ${focusLines}. Weave this into your feedback naturally — do not just list it back at them.`);
+    } else if (S.history.length >= 3) {
+      parts.push('This person has been fairly well-rounded across sessions so far — keep pushing all dimensions evenly rather than over-focusing on one area.');
+    }
   }
   return parts.join(' ');
 }
@@ -3404,7 +3463,11 @@ async function stopCOListening(){
 
 async function endColdOpen(){
   if(coState.turns<1){resetColdOpen();return;}
-  document.getElementById('co-mic-btn').disabled=true;
+  // Stop any active listening before scoring
+  isCOListening=false;
+  if(coRecognition){try{coRecognition.stop();}catch(e){}coRecognition=null;}
+  const coMicBtn=document.getElementById('co-mic-btn');
+  if(coMicBtn){coMicBtn.disabled=true;coMicBtn.className='hold-btn processing';coMicBtn.textContent='⏳';}
   document.getElementById('co-status').textContent='Scoring your cold open...';
   const convText=coState.history.map((m,i)=>`${i%2===0?'You':'Them'}: ${m.content}`).join('\n');
   const briefNote=S.briefing?`Note: this person is preparing for "${S.briefing.preparing}" and wants to improve "${S.briefing.improve}". Factor this into your scoring and feedback.`:``;
@@ -3461,12 +3524,20 @@ async function endColdOpen(){
     saveSessionToCloud(coSession);
     updateChips();saveUserData();showToast('📊','Cold Open score added to Conver Score!');
     panel.scrollIntoView({behavior:'smooth'});
-  }catch(e){document.getElementById('co-status').textContent='Scoring error: '+e.message;}
+  }catch(e){
+    document.getElementById('co-status').textContent='Scoring error: '+e.message;
+    // Re-enable mic so user isn't stuck
+    const _btn=document.getElementById('co-mic-btn');
+    if(_btn){_btn.disabled=false;_btn.className='hold-btn idle';_btn.textContent='🎙️';}
+  }
 }
 
 function resetColdOpen(){
   coState.running=false;
+  isCOListening=false;
+  if(coRecognition){try{coRecognition.stop();}catch(e){}coRecognition=null;}
   if(coState.faceAnim){cancelAnimationFrame(coState.faceAnim);coState.faceAnim=null;}
+  coFaceState='idle';coMouth=0;
   document.getElementById('coldopen-setup').style.display='block';
   document.getElementById('coldopen-live').style.display='none';
   showBackBtn(false);
@@ -3730,9 +3801,44 @@ function resetWarmup() {
 // ── Auth ──────────────────────────────────────────────────────────────────────
 const SUPABASE_URL = 'https://cxvxiljzaldufonioiyt.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4dnhpbGp6YWxkdWZvbmlvaXl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNDI1NTYsImV4cCI6MjA5NTkxODU1Nn0.SZp-NtyxcOijwL2noC_VYCR-vGPVXaPoIkBDwVbmot8';
-let sbClient = null;
+const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 let currentUser = null;
 let authToken = null;
+
+async function sendPhoneCode() {
+  const phone = document.getElementById('phone-input').value.trim();
+  if (!phone) { showToast('⚠️', 'Enter a phone number'); return; }
+  const btn = document.getElementById('send-code-btn');
+  btn.disabled = true; btn.textContent = 'Sending...';
+  try {
+    const { error } = await sbClient.auth.updateUser({ phone });
+    if (error) throw error;
+    document.getElementById('phone-unverified-view').style.display = 'none';
+    document.getElementById('phone-otp-view').style.display = 'block';
+    showToast('📱', 'Code sent');
+  } catch(e) {
+    showToast('⚠️', e.message);
+  }
+  btn.disabled = false; btn.textContent = 'Send Verification Code';
+}
+
+async function verifyPhoneCode() {
+  const phone = document.getElementById('phone-input').value.trim();
+  const token = document.getElementById('phone-otp-input').value.trim();
+  if (!token) { showToast('⚠️', 'Enter the code'); return; }
+  const btn = document.getElementById('verify-code-btn');
+  btn.disabled = true; btn.textContent = 'Verifying...';
+  try {
+    const { error } = await sbClient.auth.verifyOtp({ phone, token, type: 'sms' });
+    if (error) throw error;
+    document.getElementById('phone-otp-view').style.display = 'none';
+    document.getElementById('phone-verified-view').style.display = 'block';
+    showToast('✅', 'Phone verified!');
+  } catch(e) {
+    showToast('⚠️', e.message);
+  }
+  btn.disabled = false; btn.textContent = 'Verify';
+}
 
 async function initAuth() {
   // Restore session from localStorage (persisted across page loads)
@@ -4219,7 +4325,7 @@ async function annotateTranscript(){
     });
     const d=await res.json();
     let annotations=[];
-    try{annotations=JSON.parse(d.content);}catch(e){btn.textContent='✦ AI Annotate';btn.disabled=false;showToast('⚠️','Could not parse annotations');return;}
+    try{annotations=JSON.parse(d.text);}catch(e){btn.textContent='✦ AI Annotate';btn.disabled=false;showToast('⚠️','Could not parse annotations');return;}
     // Inject annotations into body
     const body=document.getElementById('transcript-modal-body');
     const lines=body.querySelectorAll('.transcript-line');
