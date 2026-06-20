@@ -741,6 +741,13 @@ textarea{resize:vertical;min-height:150px;line-height:1.65}
 
       <!-- HOME -->
       <div class="page active" id="page-home">
+        <div id="reengagement-banner" style="display:none;background:linear-gradient(135deg,rgba(108,99,255,0.12),rgba(167,139,250,0.05));border:1px solid rgba(108,99,255,0.22);border-radius:14px;padding:18px 22px;margin-bottom:16px;align-items:center;justify-content:space-between;gap:16px">
+          <div>
+            <div style="font-size:10px;color:var(--accent3);font-family:'DM Mono',monospace;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">Welcome back</div>
+            <div id="reengagement-text" style="font-size:14.5px;color:var(--text);line-height:1.6;max-width:560px"></div>
+          </div>
+          <button id="reengagement-cta" class="btn-primary" style="width:auto;white-space:nowrap;padding:10px 20px;flex-shrink:0">Continue →</button>
+        </div>
         <div class="home-hero">
           <div class="hero-main">
             <div class="hero-eyebrow">AI Conversation Intelligence</div>
@@ -1494,6 +1501,7 @@ function navTo(page){
   if(btn)btn.classList.add('active');
   document.getElementById('page-title').textContent=PAGE_TITLES[page]||page;
   document.getElementById('filler-overlay').style.display='none';
+  if(page==='home')renderReengagementBanner();
   if(page==='insights')renderInsights();
   if(page==='history')renderHistory();
   if(page==='skills'){renderSkills();drawRadar();}
@@ -2291,6 +2299,43 @@ function getWeakSpots() {
   if (S.skills.storytelling < 60) spots.push('storytelling');
   if (S.skills.conciseness < 60) spots.push('conciseness');
   return spots.length ? spots : ['all-around communication'];
+}
+
+function renderReengagementBanner() {
+  const banner = document.getElementById('reengagement-banner');
+  const textEl = document.getElementById('reengagement-text');
+  const ctaBtn = document.getElementById('reengagement-cta');
+  if (!S.history.length) { banner.style.display = 'none'; return; }
+  const lastSession = S.history[0];
+  const lastTime = lastSession.time instanceof Date ? lastSession.time : new Date(lastSession.time);
+  const daysSince = Math.floor((Date.now() - lastTime.getTime()) / 86400000);
+  if (daysSince < 2) { banner.style.display = 'none'; return; }
+  const weak = typeof getWeakSpots === 'function' ? getWeakSpots() : [];
+  const weakSpot = (weak.length && weak[0] !== 'all-around communication') ? weak[0] : null;
+  const gapPhrase = daysSince >= 14 ? `It's been a couple weeks`
+    : daysSince >= 7 ? `It's been about a week`
+    : `It's been ${daysSince} days`;
+  const lastScenario = lastSession.scenario || 'a session';
+  const lastCoach = lastSession.coach || S.coach;
+  let message = `${gapPhrase} since your last session (${lastScenario} with ${lastCoach}).`;
+  if (weakSpot) {
+    const focusMap = {
+      clarity: 'clarity', confidence: 'confidence', persuasion: 'persuasion',
+      storytelling: 'storytelling', conciseness: 'conciseness'
+    };
+    message += ` Your biggest opportunity right now is ${focusMap[weakSpot] || weakSpot} — want to pick that back up?`;
+  } else {
+    message += ` Ready to keep the momentum going?`;
+  }
+  textEl.textContent = message;
+  banner.style.display = 'flex';
+  ctaBtn.onclick = () => {
+    if (weakSpot) {
+      navTo('practice');
+    } else {
+      navTo(lastSession.scenario === 'Debate' ? 'debate' : lastSession.scenario === 'Cold Open' ? 'coldopen' : 'practice');
+    }
+  };
 }
 
 function startDailyChallenge() {
@@ -4085,6 +4130,7 @@ async function loadUserData() {
       }
     }
     updateChips();
+    renderReengagementBanner();
   } catch(e) {
     console.error('Load user data error:', e);
   }
@@ -4341,7 +4387,7 @@ async function annotateTranscript(){
   }catch(e){btn.textContent='✦ AI Annotate';btn.disabled=false;showToast('⚠️','Annotation failed');}
 }
 
-initUI(); updateChips(); setTimeout(initToneDetector, 500); loadSettings();
+initUI(); updateChips(); setTimeout(initToneDetector, 500); loadSettings(); renderReengagementBanner();
 if(window.speechSynthesis){window.speechSynthesis.onvoiceschanged=()=>window.speechSynthesis.getVoices();window.speechSynthesis.getVoices();}
 initAuth();
 </script>
