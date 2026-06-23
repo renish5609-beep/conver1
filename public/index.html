@@ -1356,7 +1356,7 @@ const S={
   sessions:0,history:[],briefing:null,chatHistory:[],
   scores:{clarity:[],confidence:[],persuasion:[]},
   skills:{clarity:0,confidence:0,persuasion:0,storytelling:0,conciseness:0},
-  converScore:null,streak:0,voiceChatHistory:[],warmupSelected:null,
+  converScore:null,streak:0,lastSessionDate:null,voiceChatHistory:[],warmupSelected:null,
   xp:0,level:1
 };
 
@@ -1516,6 +1516,35 @@ const LEVEL_THRESHOLDS = [
   89200, // Level 50 (Elite)
 ];
 
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+function yesterdayStr() {
+  return new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+}
+
+function updateStreak() {
+  const today = todayStr();
+  if (S.lastSessionDate === today) return; // already counted today
+  if (S.lastSessionDate === yesterdayStr()) {
+    S.streak = Math.min(S.streak + 1, 999);
+  } else {
+    S.streak = 1; // gap or first ever session
+  }
+  S.lastSessionDate = today;
+}
+
+function checkStreakOnLogin() {
+  if (!S.lastSessionDate) return; // no sessions ever, nothing to reset
+  const yesterday = yesterdayStr();
+  if (S.lastSessionDate < yesterday) {
+    // missed at least one day — streak is broken
+    S.streak = 0;
+    saveUserData();
+    updateChips();
+  }
+}
+
 function calcSessionXP(analysis, streak) {
   const avg = (analysis.clarity + analysis.confidence + analysis.persuasion) / 3;
   const baseXP = Math.round(avg * 7);
@@ -1653,7 +1682,7 @@ async function analyzeResponse(){
     S.skills.persuasion=lerp(S.skills.persuasion,a.persuasion*10,t);
     S.skills.storytelling=lerp(S.skills.storytelling,(a.storytelling||5)*10,t);
     S.skills.conciseness=lerp(S.skills.conciseness,(a.conciseness||5)*10,t);
-    S.streak=Math.min(S.streak+1,99);
+    updateStreak();
     const sessionXP = calcSessionXP(a, S.streak);
     const oldLevel = S.level;
     S.xp += sessionXP;
@@ -2896,7 +2925,7 @@ async function scoreDebate(){
     S.skills.clarity=lerp(S.skills.clarity,r.clarity*10,lt);
     S.skills.confidence=lerp(S.skills.confidence,r.confidence*10,lt);
     S.skills.persuasion=lerp(S.skills.persuasion,r.persuasion*10,lt);
-    S.streak=Math.min(S.streak+1,99);
+    updateStreak();
     const sessionXP = calcSessionXP(r, S.streak);
     const oldLevel = S.level;
     S.xp += sessionXP;
@@ -3519,7 +3548,7 @@ async function endColdOpen(){
     S.skills.clarity=lerp(S.skills.clarity,r.naturalness*10,0.3);
     S.skills.confidence=lerp(S.skills.confidence,r.warmth*10,0.3);
     S.skills.persuasion=lerp(S.skills.persuasion,r.impact*10,0.3);
-    S.streak=Math.min(S.streak+1,99);
+    updateStreak();
     const sessionXP = calcSessionXP({clarity: r.naturalness, confidence: r.warmth, persuasion: r.impact, storytelling: 5, conciseness: 5}, S.streak);
     const oldLevel = S.level;
     S.xp += sessionXP;
@@ -4113,6 +4142,9 @@ async function loadUserData() {
           if (stats.daily_data.lastDaily) {
             localStorage.setItem('conver_last_daily', stats.daily_data.lastDaily);
           }
+          if (stats.daily_data.lastSessionDate) {
+            S.lastSessionDate = stats.daily_data.lastSessionDate;
+          }
         }
       }
     }
@@ -4154,6 +4186,7 @@ async function loadUserData() {
       }
     }
     updateChips();
+    checkStreakOnLogin();
   } catch(e) {
     console.error('Load user data error:', e);
   }
@@ -4185,7 +4218,8 @@ async function saveUserData() {
           settings: JSON.parse(localStorage.getItem('conver_settings') || '{}'),
           daily_data: {
             streak: S.streak,
-            lastDaily: localStorage.getItem('conver_last_daily') || null
+            lastDaily: localStorage.getItem('conver_last_daily') || null,
+            lastSessionDate: S.lastSessionDate
           },
           briefing: S.briefing,
           selected_coach: S.coach
