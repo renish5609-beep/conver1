@@ -513,22 +513,6 @@ textarea{resize:vertical;min-height:150px;line-height:1.65}
 .back-btn{display:none;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--border2);border-radius:8px;color:var(--muted2);font-size:12.5px;padding:5px 12px;cursor:pointer;transition:all 0.15s;font-family:'DM Sans',sans-serif;white-space:nowrap;flex-shrink:0}
 .back-btn:hover{background:var(--bg3);color:var(--text);border-color:rgba(255,255,255,0.2)}
 .back-btn.visible{display:flex}
-
-/* VOICE TRANSCRIPT MODAL */
-.transcript-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:3000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px)}
-.transcript-modal-overlay.hidden{display:none}
-.transcript-modal{background:var(--bg1);border:1px solid var(--border2);border-radius:18px;width:640px;max-width:96vw;max-height:85vh;display:flex;flex-direction:column;overflow:hidden}
-.transcript-modal-head{display:flex;justify-content:space-between;align-items:center;padding:22px 24px 16px;border-bottom:1px solid var(--border)}
-.transcript-modal-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700}
-.transcript-modal-body{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:12px}
-.transcript-line{display:flex;flex-direction:column;gap:3px}
-.transcript-line-user{background:rgba(108,99,255,0.12);border:1px solid rgba(108,99,255,0.2);border-radius:12px 12px 3px 12px;padding:12px 14px;font-size:13.5px;color:var(--text);line-height:1.6;align-self:flex-end;max-width:82%}
-.transcript-line-coach{background:var(--bg2);border:1px solid var(--border);border-radius:12px 12px 12px 3px;padding:12px 14px;font-size:13.5px;color:var(--muted2);line-height:1.6;align-self:flex-start;max-width:82%}
-.transcript-speaker{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted)}
-.transcript-annotation{background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--amber);font-family:'DM Mono',monospace;display:flex;gap:6px;align-items:flex-start}
-.transcript-filler-summary-bar{background:rgba(248,113,113,0.07);border:1px solid rgba(248,113,113,0.18);border-radius:10px;padding:10px 14px;font-size:12.5px;color:var(--muted2);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.transcript-filler-chip{background:rgba(248,113,113,0.13);border:1px solid rgba(248,113,113,0.28);border-radius:20px;padding:2px 9px;font-size:11px;font-family:'DM Mono',monospace;color:var(--red)}
-.transcript-modal-foot{padding:14px 24px;border-top:1px solid var(--border);display:flex;gap:10px;align-items:center}
 </style>
 </head>
 <body>
@@ -563,24 +547,6 @@ textarea{resize:vertical;min-height:150px;line-height:1.65}
 <div class="filler-overlay" id="filler-overlay" style="display:none">
   <div class="filler-badge-live" id="filler-badge">🚨 <span id="filler-word-display">um</span></div>
   <div class="filler-count-display">Fillers: <strong id="filler-total">0</strong></div>
-</div>
-
-<!-- VOICE TRANSCRIPT MODAL -->
-<div class="transcript-modal-overlay hidden" id="transcript-modal">
-  <div class="transcript-modal">
-    <div class="transcript-modal-head">
-      <div class="transcript-modal-title">Session Transcript</div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button id="annotate-btn" onclick="annotateTranscript()" style="background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.25);border-radius:8px;color:var(--amber);font-size:12px;padding:5px 14px;cursor:pointer;font-family:'DM Sans',sans-serif">✦ AI Annotate</button>
-        <button onclick="closeVoiceTranscript()" style="background:var(--bg2);border:1px solid var(--border2);border-radius:8px;color:var(--muted2);cursor:pointer;padding:5px 12px;font-size:13px">✕</button>
-      </div>
-    </div>
-    <div class="transcript-modal-body" id="transcript-modal-body"></div>
-    <div class="transcript-modal-foot">
-      <div id="transcript-filler-summary" style="font-size:12px;color:var(--muted);font-family:'DM Mono',monospace;flex:1"></div>
-      <button onclick="closeVoiceTranscript()" style="background:var(--bg2);border:1px solid var(--border2);border-radius:8px;color:var(--muted2);cursor:pointer;padding:8px 18px;font-size:13px;font-family:'DM Sans',sans-serif">Close</button>
-    </div>
-  </div>
 </div>
 
 <!-- REPORT MODAL -->
@@ -741,13 +707,6 @@ textarea{resize:vertical;min-height:150px;line-height:1.65}
 
       <!-- HOME -->
       <div class="page active" id="page-home">
-        <div id="reengagement-banner" style="display:none;background:linear-gradient(135deg,rgba(108,99,255,0.12),rgba(167,139,250,0.05));border:1px solid rgba(108,99,255,0.22);border-radius:14px;padding:18px 22px;margin-bottom:16px;align-items:center;justify-content:space-between;gap:16px">
-          <div>
-            <div style="font-size:10px;color:var(--accent3);font-family:'DM Mono',monospace;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">Welcome back</div>
-            <div id="reengagement-text" style="font-size:14.5px;color:var(--text);line-height:1.6;max-width:560px"></div>
-          </div>
-          <button id="reengagement-cta" class="btn-primary" style="width:auto;white-space:nowrap;padding:10px 20px;flex-shrink:0">Continue →</button>
-        </div>
         <div class="home-hero">
           <div class="hero-main">
             <div class="hero-eyebrow">AI Conversation Intelligence</div>
@@ -883,7 +842,6 @@ textarea{resize:vertical;min-height:150px;line-height:1.65}
             <button class="hold-btn idle" id="hold-btn" onclick="toggleListening()">🎙️</button>
             <div class="hold-hint" id="hold-hint">Click to speak</div>
             <button id="stop-session-btn" onclick="stopVoiceSession()" style="display:none;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.25);border-radius:8px;color:var(--red);font-size:11.5px;padding:6px 18px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;margin-top:4px" onmouseover="this.style.background='rgba(248,113,113,0.2)'" onmouseout="this.style.background='rgba(248,113,113,0.1)'">⏹ Stop Session</button>
-            <button id="view-transcript-btn" onclick="openVoiceTranscript()" style="display:none;background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.25);border-radius:8px;color:var(--accent3);font-size:11.5px;padding:6px 18px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;margin-top:4px" onmouseover="this.style.background='rgba(108,99,255,0.2)'" onmouseout="this.style.background='rgba(108,99,255,0.1)'">📄 View Transcript</button>
           </div>
           <div class="voice-controls-side">
             <div class="vc-card"><div class="vc-title">Switch Coach</div><div class="coach-picker" id="voice-coach-picker"></div></div>
@@ -1278,27 +1236,6 @@ textarea{resize:vertical;min-height:150px;line-height:1.65}
             </div>
 
             <div class="panel">
-              <div class="settings-section-title">Phone Verification</div>
-              <div id="phone-unverified-view">
-                <div class="form-group">
-                  <label>Phone Number <span style="color:var(--muted)">(optional)</span></label>
-                  <input type="text" id="phone-input" placeholder="+1 555 123 4567"/>
-                </div>
-                <button class="btn-primary" onclick="sendPhoneCode()" id="send-code-btn">Send Verification Code</button>
-              </div>
-              <div id="phone-otp-view" style="display:none">
-                <div class="form-group">
-                  <label>Enter 6-digit code</label>
-                  <input type="text" id="phone-otp-input" placeholder="123456" maxlength="6"/>
-                </div>
-                <button class="btn-primary" onclick="verifyPhoneCode()" id="verify-code-btn">Verify</button>
-              </div>
-              <div id="phone-verified-view" style="display:none">
-                <div style="display:flex;align-items:center;gap:8px;color:var(--green);font-size:13.5px">✓ Phone Verified</div>
-              </div>
-            </div>
-
-            <div class="panel">
               <div class="settings-section-title">Coaching Style</div>
               <div class="setting-row">
                 <div class="setting-info"><h4>Feedback Intensity</h4><p>How direct and harsh your feedback gets</p></div>
@@ -1339,7 +1276,7 @@ textarea{resize:vertical;min-height:150px;line-height:1.65}
                 </div>
               </div>
               <div class="setting-row">
-                <div class="setting-info"><h4>Debate Rounds</h4><p>How many rounds in Live Debate</p></div>
+                <div class="setting-info"><h4>Voice Session Rounds</h4><p>How many rounds in Live Debate</p></div>
                 <div class="setting-control">
                   <select id="set-debate-rounds" onchange="S.debateRounds=parseInt(this.value);saveSettings()">
                     <option value="2">2 rounds</option>
@@ -1419,7 +1356,8 @@ const S={
   sessions:0,history:[],briefing:null,chatHistory:[],
   scores:{clarity:[],confidence:[],persuasion:[]},
   skills:{clarity:0,confidence:0,persuasion:0,storytelling:0,conciseness:0},
-  converScore:null,streak:0,voiceChatHistory:[],warmupSelected:null
+  converScore:null,streak:0,voiceChatHistory:[],warmupSelected:null,
+  xp:0,level:1
 };
 
 const SCENARIOS=[
@@ -1500,8 +1438,6 @@ function navTo(page){
   const btn=document.querySelector(`.nav-item[data-page="${page}"]`);
   if(btn)btn.classList.add('active');
   document.getElementById('page-title').textContent=PAGE_TITLES[page]||page;
-  document.getElementById('filler-overlay').style.display='none';
-  if(page==='home')renderReengagementBanner();
   if(page==='insights')renderInsights();
   if(page==='history')renderHistory();
   if(page==='skills'){renderSkills();drawRadar();}
@@ -1526,37 +1462,133 @@ function updateChips(){
 }
 
 // ── Conver Score ──────────────────────────────────────────────────────────────
-function calcConverScore(){
-  if(!S.sessions)return null;
-  const avg=arr=>arr.length?(arr.reduce((a,b)=>a+b,0)/arr.length):0;
-  const c=avg(S.scores.clarity),co=avg(S.scores.confidence),p=avg(S.scores.persuasion);
-  const raw=((c+co+p)/3)*10;
-  // Bonus for sessions
-  const sessionBonus=Math.min(10,S.sessions*2);
-  return Math.min(100,Math.round(raw+sessionBonus));
+// XP level thresholds array (index = level number, value = XP required to reach that level)
+const LEVEL_THRESHOLDS = [
+  0,     // Level 1
+  150,   // Level 2
+  350,   // Level 3
+  650,   // Level 4
+  1000,  // Level 5
+  1400,  // Level 6
+  1900,  // Level 7
+  2450,  // Level 8
+  3100,  // Level 9
+  3800,  // Level 10 (end of Beginner)
+  4550,  // Level 11
+  5400,  // Level 12
+  6300,  // Level 13
+  7300,  // Level 14
+  8350,  // Level 15
+  9500,  // Level 16
+  10650, // Level 17
+  11900, // Level 18
+  13250, // Level 19
+  14650, // Level 20 (end of Developing)
+  16100, // Level 21
+  17650, // Level 22
+  19250, // Level 23
+  20950, // Level 24
+  22700, // Level 25
+  24500, // Level 26
+  26400, // Level 27
+  28350, // Level 28
+  30400, // Level 29
+  32500, // Level 30 (end of Capable)
+  34700, // Level 31
+  36950, // Level 32
+  39250, // Level 33
+  41600, // Level 34
+  44050, // Level 35
+  46550, // Level 36
+  49200, // Level 37
+  51850, // Level 38
+  54600, // Level 39
+  57350, // Level 40 (end of Proficient)
+  60200, // Level 41
+  63150, // Level 42
+  66200, // Level 43
+  69300, // Level 44
+  72400, // Level 45
+  75600, // Level 46
+  78900, // Level 47
+  82300, // Level 48 (end of Advanced)
+  85750, // Level 49
+  89200, // Level 50 (Elite)
+];
+
+function calcSessionXP(analysis, streak) {
+  const avg = (analysis.clarity + analysis.confidence + analysis.persuasion) / 3;
+  const baseXP = Math.round(avg * 7);
+  const streakBonus = Math.min(20, streak * 4);
+  const excellenceBonus = avg >= 8.0 ? 15 : 0;
+  const breadthBonus = (analysis.storytelling >= 7 && analysis.conciseness >= 7) ? 10 : 0;
+  return baseXP + streakBonus + excellenceBonus + breadthBonus;
 }
-function scoreGrade(n){
-  if(!n)return{grade:'—',sub:'Start practicing',color:'var(--muted)'};
-  if(n>=90)return{grade:'Elite',sub:'Exceptional communicator',color:'var(--green)'};
-  if(n>=80)return{grade:'Advanced',sub:'Above average across all skills',color:'var(--accent2)'};
-  if(n>=70)return{grade:'Proficient',sub:'Solid foundation, room to grow',color:'var(--accent3)'};
-  if(n>=60)return{grade:'Developing',sub:'Good progress, keep going',color:'var(--amber)'};
-  return{grade:'Beginner',sub:'Building your foundation',color:'var(--red)'};
+
+function calcLevelFromXP(xp) {
+  let level = 1;
+  for (let i = 1; i < LEVEL_THRESHOLDS.length; i++) {
+    if (xp >= LEVEL_THRESHOLDS[i]) level = i + 1;
+    else break;
+  }
+  return Math.min(level, 50);
+}
+
+function calcXPProgressToNextLevel(xp) {
+  const level = calcLevelFromXP(xp);
+  if (level >= 50) return { current: 0, needed: 0, pct: 1 };
+  const currentLevelXP = LEVEL_THRESHOLDS[level - 1];
+  const nextLevelXP = LEVEL_THRESHOLDS[level];
+  const progressXP = xp - currentLevelXP;
+  const neededXP = nextLevelXP - currentLevelXP;
+  return { current: progressXP, needed: neededXP, pct: progressXP / neededXP };
+}
+
+function getLevelTier(level) {
+  if (level <= 10) return { name: 'Beginner',   color: '#f87171' };
+  if (level <= 20) return { name: 'Developing', color: '#fbbf24' };
+  if (level <= 30) return { name: 'Capable',    color: '#4fc3f7' };
+  if (level <= 40) return { name: 'Proficient', color: '#a78bfa' };
+  if (level <= 48) return { name: 'Advanced',   color: '#34d399' };
+  return             { name: 'Elite',       color: '#ffd700' };
+}
+
+function calcConverScore() {
+  return S.sessions ? Math.round((S.level / 50) * 100) : null;
+}
+
+function scoreGrade(n) {
+  const tier = getLevelTier(S.level);
+  const progress = calcXPProgressToNextLevel(S.xp);
+  return {
+    grade: S.level >= 50 ? 'Elite' : `Level ${S.level}`,
+    sub: S.sessions ? `${tier.name} · ${progress.current}/${progress.needed} XP to next level` : 'Start practicing to unlock',
+    color: tier.color
+  };
 }
 function updateConverScore(){
-  const score=calcConverScore();S.converScore=score;
-  const g=scoreGrade(score);
-  document.getElementById('home-conver-score').textContent=score||'—';
-  document.getElementById('home-grade').textContent=g.grade;
-  document.getElementById('home-grade').style.color=g.color;
-  document.getElementById('home-grade-sub').textContent=g.sub;
-  document.getElementById('sb-score').textContent=score||'—';
-  document.getElementById('sb-score').style.color=g.color;
-  document.getElementById('sb-grade').textContent=g.grade;
-  const pct=score?score/100:0;
-  document.getElementById('sb-bar').style.width=(pct*100)+'%';
-  const circ=327;
-  document.getElementById('score-ring').style.strokeDashoffset=circ-(circ*pct);
+  const level = S.level;
+  const tier = getLevelTier(level);
+  const progress = calcXPProgressToNextLevel(S.xp);
+  const pct = level / 50;
+  // Home page score card
+  document.getElementById('home-conver-score').textContent = S.sessions ? `Lv.${level}` : '—';
+  document.getElementById('home-grade').textContent = S.sessions ? tier.name : 'Not yet rated';
+  document.getElementById('home-grade').style.color = tier.color;
+  document.getElementById('home-grade-sub').textContent = S.sessions
+    ? (level >= 50 ? 'Maximum level reached — Elite communicator' : `${progress.current} / ${progress.needed} XP to Level ${level + 1}`)
+    : 'Complete a session to get scored';
+  // Sidebar score
+  document.getElementById('sb-score').textContent = S.sessions ? `Lv.${level}` : '—';
+  document.getElementById('sb-score').style.color = tier.color;
+  document.getElementById('sb-grade').textContent = S.sessions ? `${tier.name} · ${S.xp} XP` : 'Start practicing to unlock';
+  // XP progress bar (sidebar) — shows progress within current level, not overall
+  document.getElementById('sb-bar').style.width = (progress.pct * 100) + '%';
+  // Ring on home page — shows overall level progress out of 50
+  const circ = 327;
+  document.getElementById('score-ring').style.strokeDashoffset = circ - (circ * pct);
+  // Update S.converScore for any code that still reads it
+  S.converScore = S.sessions ? Math.round(pct * 100) : null;
 }
 
 // ── Profile select ────────────────────────────────────────────────────────────
@@ -1622,22 +1654,31 @@ async function analyzeResponse(){
     S.skills.storytelling=lerp(S.skills.storytelling,(a.storytelling||5)*10,t);
     S.skills.conciseness=lerp(S.skills.conciseness,(a.conciseness||5)*10,t);
     S.streak=Math.min(S.streak+1,99);
+    const sessionXP = calcSessionXP(a, S.streak);
+    const oldLevel = S.level;
+    S.xp += sessionXP;
+    S.level = calcLevelFromXP(S.xp);
+    if (S.level > oldLevel) {
+      const tier = getLevelTier(S.level);
+      showToast('⬆', `Level up! You're now Level ${S.level} — ${tier.name}`);
+    } else {
+      showToast('✓', `+${sessionXP} XP · Level ${S.level}`);
+    }
     const fillerData=analyzeTextFillers(text);
     const newSession={scenario:S.scenario,coach:S.coach,question,text,analysis:a,time:new Date()};
     S.history.unshift(newSession);
     if(S.autosave !== false) saveSessionToCloud(newSession);
     saveUserData();
-    updateChips();
+    updateChips();renderResults(a, text);
     if(fillerData.count>0){showToast('🚨',`${fillerData.count} filler word${fillerData.count>1?'s':''} detected: ${fillerData.found.slice(0,3).join(', ')}`);}
     if(S.autoReport)setTimeout(()=>openReport(S.history[0]),600);
     showToast('✓','Analysis complete');
-    renderResults(a,text);
   }catch(e){document.getElementById('results-area').innerHTML=`<div class="empty-state"><p style="color:var(--red)">Failed: ${e.message}</p></div>`;}
   btn.disabled=false;btn.textContent='Analyze Response';
 }
 
 function scoreClass(n){return n>=8?'good':n>=5?'mid':'low';}
-function renderResults(a,text){
+function renderResults(a, text){
   document.getElementById('results-area').innerHTML=`
     <div class="score-row">
       <div class="score-box"><div class="score-num ${scoreClass(a.clarity)}">${a.clarity}</div><div class="score-lbl">Clarity</div></div>
@@ -1714,22 +1755,29 @@ function renderSkills(){
     </div>`).join('');
   renderStreakDays();
   // Score breakdown
-  const sc=calcConverScore();
-  if(sc){
-    const g=scoreGrade(sc);
-    document.getElementById('score-breakdown').innerHTML=`
-      <div style="text-align:center;padding:16px 0">
-        <div style="font-family:'DM Sans',sans-serif;font-size:48px;font-weight:600;color:${g.color};letter-spacing:-2px;line-height:1">${sc}</div>
-        <div style="font-size:13px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:4px">/100 · ${g.grade}</div>
-        <div style="font-size:13px;color:var(--muted2);margin-top:8px">${g.sub}</div>
-      </div>
-      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:12.5px;color:var(--muted2);line-height:1.8">
-        <div>Sessions analyzed: <strong style="color:var(--text)">${S.sessions}</strong></div>
-        <div>Avg clarity: <strong style="color:var(--accent2)">${S.scores.clarity.length?(S.scores.clarity.reduce((a,b)=>a+b,0)/S.scores.clarity.length).toFixed(1):'-'}/10</strong></div>
-        <div>Avg confidence: <strong style="color:var(--accent3)">${S.scores.confidence.length?(S.scores.confidence.reduce((a,b)=>a+b,0)/S.scores.confidence.length).toFixed(1):'-'}/10</strong></div>
-        <div>Avg persuasion: <strong style="color:var(--green)">${S.scores.persuasion.length?(S.scores.persuasion.reduce((a,b)=>a+b,0)/S.scores.persuasion.length).toFixed(1):'-'}/10</strong></div>
-      </div>`;
-  }
+  const tier = getLevelTier(S.level);
+  const progress = calcXPProgressToNextLevel(S.xp);
+  document.getElementById('score-breakdown').innerHTML = S.sessions ? `
+<div style="text-align:center;padding:16px 0">
+  <div style="font-family:'Syne',sans-serif;font-size:48px;font-weight:800;color:${tier.color};letter-spacing:-2px;line-height:1">Lv.${S.level}</div>
+  <div style="font-size:13px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:4px">${tier.name}</div>
+  <div style="font-size:13px;color:var(--muted2);margin-top:8px">${S.xp} total XP</div>
+</div>
+<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+  <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted2);margin-bottom:6px">
+    <span>Progress to Level ${S.level + 1}</span>
+    <span style="font-family:'DM Mono',monospace;color:${tier.color}">${progress.current}/${progress.needed} XP</span>
+  </div>
+  <div style="background:var(--bg3);border-radius:4px;height:8px;overflow:hidden">
+    <div style="height:100%;border-radius:4px;background:${tier.color};width:${Math.round(progress.pct*100)}%;transition:width 0.8s ease"></div>
+  </div>
+</div>
+<div style="margin-top:12px;font-size:12.5px;color:var(--muted2);line-height:1.8">
+  <div>Sessions analyzed: <strong style="color:var(--text)">${S.sessions}</strong></div>
+  <div>Avg clarity: <strong style="color:var(--accent2)">${S.scores.clarity.length?(S.scores.clarity.reduce((a,b)=>a+b,0)/S.scores.clarity.length).toFixed(1):'-'}/10</strong></div>
+  <div>Avg confidence: <strong style="color:var(--accent3)">${S.scores.confidence.length?(S.scores.confidence.reduce((a,b)=>a+b,0)/S.scores.confidence.length).toFixed(1):'-'}/10</strong></div>
+  <div>Avg persuasion: <strong style="color:var(--green)">${S.scores.persuasion.length?(S.scores.persuasion.reduce((a,b)=>a+b,0)/S.scores.persuasion.length).toFixed(1):'-'}/10</strong></div>
+</div>` : '<div class="empty-state" style="padding:28px"><p>Complete sessions to see your level progress.</p></div>';
 }
 
 function renderStreakDays(){
@@ -1875,20 +1923,11 @@ function stopVoiceSession(){
   window.speechSynthesis?.cancel();
   if(window._currentVoiceAudio){window._currentVoiceAudio.pause();window._currentVoiceAudio.src='';window._currentVoiceAudio=null;}
   mouthOpen=0;
-  // Snapshot session before clearing
-  voiceSessionSnapshot=[...S.voiceChatHistory];
-  voiceSessionCoachSnapshot=currentVoiceCoach;
-  document.getElementById('filler-overlay').style.display='none';
-  document.getElementById('hold-hint').textContent='Click to speak';
   setVoiceState('idle');
   document.getElementById('voice-transcript').textContent='Session stopped. Click the mic to start a new one.';
-  // Show transcript button if there was any conversation
-  const vtBtn=document.getElementById('view-transcript-btn');
-  if(vtBtn)vtBtn.style.display=voiceSessionSnapshot.length>0?'block':'none';
   S.voiceChatHistory=[];
   showBackBtn(false);
-  const fillerMsg=voiceFillerCount>0?` · ${voiceFillerCount} filler word${voiceFillerCount!==1?'s':''}`:'';
-  showToast('⏹','Voice session ended'+fillerMsg);
+  showToast('⏹','Voice session ended');
 }
 
 function switchVoiceCoach(name){
@@ -1987,10 +2026,6 @@ function fallbackSpeak(text){
 }
 
 let isListeningVoice = false;
-let voiceFillerCount = 0;
-let voiceFillerWords = {};
-let voiceSessionSnapshot = [];
-let voiceSessionCoachSnapshot = '';
 
 function toggleListening(){
   if(voiceState==='processing'||voiceState==='speaking')return;
@@ -2005,10 +2040,6 @@ function toggleListening(){
 
 function startListening(){
   window.speechSynthesis?.cancel();
-  // Reset filler tracking for this listening burst
-  voiceFillerCount=0; voiceFillerWords={};
-  document.getElementById('filler-overlay').style.display='flex';
-  document.getElementById('filler-total').textContent='0';
   setVoiceState('listening');
   document.getElementById('voice-transcript').textContent='Listening... click again to send';
   document.getElementById('hold-hint').textContent='Click to stop & send';
@@ -2016,7 +2047,6 @@ function startListening(){
     alert('Please use Chrome for voice.');
     setVoiceState('idle');isListeningVoice=false;
     document.getElementById('hold-hint').textContent='Click to speak';
-    document.getElementById('filler-overlay').style.display='none';
     return;
   }
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -2032,21 +2062,7 @@ function startListening(){
         const conf=e.results[i][0].confidence;
         const t=e.results[i][0].transcript.trim();
         // Accept if confidence ok OR multi-word (likely real speech not noise)
-        if(conf>0.35||t.split(' ').length>3||t.length>12){
-          finalTranscript+=t+' ';
-          // Inline filler detection on final transcripts
-          const tl=t.toLowerCase();
-          FILLERS.forEach(f=>{
-            const rx=new RegExp('\\b'+f+'\\b','gi');
-            const m=tl.match(rx);
-            if(m){voiceFillerCount+=m.length;voiceFillerWords[f]=(voiceFillerWords[f]||0)+m.length;}
-          });
-          document.getElementById('filler-total').textContent=voiceFillerCount;
-          if(voiceFillerCount>0){
-            const badge=document.getElementById('filler-badge');
-            badge.classList.add('bump');setTimeout(()=>badge.classList.remove('bump'),300);
-          }
-        }
+        if(conf>0.35||t.split(' ').length>3||t.length>12){finalTranscript+=t+' ';}
       } else{interim+=e.results[i][0].transcript;}
     }
     const display=(finalTranscript+interim).trim();
@@ -2127,17 +2143,12 @@ function renderInsights(){
         <div>🔥 Streak: <strong style="color:var(--amber)">${S.streak} days</strong></div>
       </div>
     </div>
-    <div class="insight-card" style="grid-column:span 2">
-      <div class="insight-title" style="margin-bottom:12px">Score trends — last ${Math.min(S.history.length,10)} sessions</div>
-      <div style="display:flex;gap:16px;align-items:center;margin-bottom:10px">
-        <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted2);font-family:'DM Mono',monospace"><div style="width:24px;height:2px;background:#4fc3f7;border-radius:2px"></div>Clarity</div>
-        <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted2);font-family:'DM Mono',monospace"><div style="width:24px;height:2px;background:#a78bfa;border-radius:2px"></div>Confidence</div>
-        <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted2);font-family:'DM Mono',monospace"><div style="width:24px;height:2px;background:#34d399;border-radius:2px"></div>Persuasion</div>
+    <div class="insight-card" style="grid-column:span 2"><div class="insight-title">Score trend — last ${Math.min(S.history.length,10)} sessions</div>
+      <div style="display:flex;gap:8px;align-items:flex-end;height:80px;margin-top:4px">
+        ${S.history.slice(0,10).reverse().map(h=>{const a=((h.analysis.clarity+h.analysis.confidence+h.analysis.persuasion)/3).toFixed(1);const c=COACHES[h.coach];return`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px"><div style="font-size:9.5px;color:var(--muted);font-family:'DM Mono',monospace">${a}</div><div style="width:100%;background:${c.bg};border:1px solid ${c.accent.replace('0.8','0.3')};border-radius:4px 4px 0 0;height:${(a/10)*66}px;min-height:4px"></div><div style="font-size:9.5px;color:var(--muted)">${h.scenario.slice(0,3)}</div></div>`;}).join('')}
       </div>
-      <canvas id="trend-chart" height="110" style="width:100%;display:block"></canvas>
     </div>
   </div>`;
-  setTimeout(drawTrendChart,0);
 }
 
 // ── History ───────────────────────────────────────────────────────────────────
@@ -2299,43 +2310,6 @@ function getWeakSpots() {
   if (S.skills.storytelling < 60) spots.push('storytelling');
   if (S.skills.conciseness < 60) spots.push('conciseness');
   return spots.length ? spots : ['all-around communication'];
-}
-
-function renderReengagementBanner() {
-  const banner = document.getElementById('reengagement-banner');
-  const textEl = document.getElementById('reengagement-text');
-  const ctaBtn = document.getElementById('reengagement-cta');
-  if (!S.history.length) { banner.style.display = 'none'; return; }
-  const lastSession = S.history[0];
-  const lastTime = lastSession.time instanceof Date ? lastSession.time : new Date(lastSession.time);
-  const daysSince = Math.floor((Date.now() - lastTime.getTime()) / 86400000);
-  if (daysSince < 2) { banner.style.display = 'none'; return; }
-  const weak = typeof getWeakSpots === 'function' ? getWeakSpots() : [];
-  const weakSpot = (weak.length && weak[0] !== 'all-around communication') ? weak[0] : null;
-  const gapPhrase = daysSince >= 14 ? `It's been a couple weeks`
-    : daysSince >= 7 ? `It's been about a week`
-    : `It's been ${daysSince} days`;
-  const lastScenario = lastSession.scenario || 'a session';
-  const lastCoach = lastSession.coach || S.coach;
-  let message = `${gapPhrase} since your last session (${lastScenario} with ${lastCoach}).`;
-  if (weakSpot) {
-    const focusMap = {
-      clarity: 'clarity', confidence: 'confidence', persuasion: 'persuasion',
-      storytelling: 'storytelling', conciseness: 'conciseness'
-    };
-    message += ` Your biggest opportunity right now is ${focusMap[weakSpot] || weakSpot} — want to pick that back up?`;
-  } else {
-    message += ` Ready to keep the momentum going?`;
-  }
-  textEl.textContent = message;
-  banner.style.display = 'flex';
-  ctaBtn.onclick = () => {
-    if (weakSpot) {
-      navTo('practice');
-    } else {
-      navTo(lastSession.scenario === 'Debate' ? 'debate' : lastSession.scenario === 'Cold Open' ? 'coldopen' : 'practice');
-    }
-  };
 }
 
 function startDailyChallenge() {
@@ -2876,7 +2850,7 @@ async function stopDebateListening(){
     else{document.getElementById('debate-global-status').textContent=`Round ${debateRound+1} — keep pushing!`;}
   }catch(e){document.getElementById('debate-global-status').textContent='Error: '+e.message;}
   btn.className='hold-btn idle';btn.textContent='🎙️';
-  if(debateRound>=(S.debateRounds||3))btn.disabled=true;
+  if(debateRound>=debateMaxRounds)btn.disabled=true;
   else btn.disabled=false;
 }
 
@@ -2923,6 +2897,16 @@ async function scoreDebate(){
     S.skills.confidence=lerp(S.skills.confidence,r.confidence*10,lt);
     S.skills.persuasion=lerp(S.skills.persuasion,r.persuasion*10,lt);
     S.streak=Math.min(S.streak+1,99);
+    const sessionXP = calcSessionXP(r, S.streak);
+    const oldLevel = S.level;
+    S.xp += sessionXP;
+    S.level = calcLevelFromXP(S.xp);
+    if (S.level > oldLevel) {
+      const tier = getLevelTier(S.level);
+      showToast('⬆', `Level up! You're now Level ${S.level} — ${tier.name}`);
+    } else {
+      showToast('✓', `+${sessionXP} XP · Level ${S.level}`);
+    }
     // Save to history so Insights + History tabs update
     const debSession = {
       scenario: 'Debate',
@@ -2947,7 +2931,7 @@ async function scoreDebate(){
 }
 
 function resetDebate(){
-  debateRunning=false;debateRound=0;debateSide='for';isDebateListening=false;
+  debateRunning=false;debateRound=0;debateSide='for';
   if(debateRecognition){debateRecognition.stop();debateRecognition=null;}
   if(debateFaceAnimA){cancelAnimationFrame(debateFaceAnimA);debateFaceAnimA=null;}
   if(debateFaceAnimB){cancelAnimationFrame(debateFaceAnimB);debateFaceAnimB=null;}
@@ -2955,8 +2939,6 @@ function resetDebate(){
   document.getElementById('debate-setup-screen').style.display='block';
   document.getElementById('debate-live-screen').style.display='none';
   document.getElementById('debate-topic').value='';
-  const dBtn=document.getElementById('debate-mic-btn');
-  if(dBtn){dBtn.disabled=false;dBtn.className='hold-btn idle';dBtn.textContent='🎙️';}
   showBackBtn(false);
   // Reset side buttons
   document.getElementById('side-for-btn').style.cssText='background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:14px;cursor:pointer;transition:all 0.15s;text-align:center';
@@ -3017,46 +2999,20 @@ function applySettingsToUI() {
   setChk('tog-report', settings.autoReport);
   setChk('tog-tone', settings.toneDetector);
   setChk('tog-autosave', settings.autosave);
-  // Phone verification status
-  sbClient.auth.getUser().then(({ data }) => {
-    const confirmed = data?.user?.phone_confirmed_at;
-    const hasPhone = !!data?.user?.phone;
-    if (confirmed) {
-      document.getElementById('phone-unverified-view').style.display = 'none';
-      document.getElementById('phone-otp-view').style.display = 'none';
-      document.getElementById('phone-verified-view').style.display = 'block';
-    } else if (hasPhone) {
-      document.getElementById('phone-unverified-view').style.display = 'none';
-      document.getElementById('phone-otp-view').style.display = 'block';
-      document.getElementById('phone-verified-view').style.display = 'none';
-    } else {
-      document.getElementById('phone-unverified-view').style.display = 'block';
-      document.getElementById('phone-otp-view').style.display = 'none';
-      document.getElementById('phone-verified-view').style.display = 'none';
-    }
-  }).catch(() => {});
   const sc = document.getElementById('settings-scenario-cards');
-  if (sc) {
-    if (sc.children.length === 0) {
-      SCENARIOS.forEach(s => {
-        const d = document.createElement('div');
-        d.className = 'sc-card' + (s.name === S.scenario ? ' active' : '');
-        d.style.cssText = 'padding:10px;text-align:center';
-        d.dataset.scenario = s.name;
-        d.innerHTML = `<div style="font-size:16px">${s.icon}</div><div style="font-size:11px;margin-top:4px;font-family:'DM Sans',sans-serif;font-weight:600">${s.name}</div>`;
-        d.onclick = () => {
-          document.querySelectorAll('#settings-scenario-cards .sc-card').forEach(c=>c.classList.remove('active'));
-          d.classList.add('active');
-          S.scenario = s.name; updateChips(); saveSettings();
-        };
-        sc.appendChild(d);
-      });
-    } else {
-      // Sync active state in case scenario changed via Practice Lab
-      sc.querySelectorAll('.sc-card').forEach(c => {
-        c.classList.toggle('active', c.dataset.scenario === S.scenario);
-      });
-    }
+  if (sc && sc.children.length === 0) {
+    SCENARIOS.forEach(s => {
+      const d = document.createElement('div');
+      d.className = 'sc-card' + (s.name === S.scenario ? ' active' : '');
+      d.style.cssText = 'padding:10px;text-align:center';
+      d.innerHTML = `<div style="font-size:16px">${s.icon}</div><div style="font-size:11px;margin-top:4px;font-family:'DM Sans',sans-serif;font-weight:600">${s.name}</div>`;
+      d.onclick = () => {
+        document.querySelectorAll('#settings-scenario-cards .sc-card').forEach(c=>c.classList.remove('active'));
+        d.classList.add('active');
+        S.scenario = s.name; updateChips(); saveSettings();
+      };
+      sc.appendChild(d);
+    });
   }
 }
 
@@ -3097,20 +3053,12 @@ function buildSystemPromptExtras() {
   if (S.detail === 'concise') parts.push('Keep feedback short and punchy. Bullet points over paragraphs.');
   if (S.detail === 'detailed') parts.push('Give thorough, detailed explanations for every piece of feedback.');
   if (S.coachMemory && S.history.length > 0) {
-    const weak = typeof getWeakSpots === 'function' ? getWeakSpots() : [];
-    if (weak.length && weak[0] !== 'all-around communication') {
-      const focusMap = {
-        clarity: 'being clear and direct rather than rambling or vague',
-        confidence: 'sounding sure of themselves instead of hedging or trailing off',
-        persuasion: 'making a compelling case instead of just stating facts',
-        storytelling: 'using specific, vivid detail instead of generic summary',
-        conciseness: 'cutting filler and getting to the point faster'
-      };
-      const focusLines = weak.map(w => focusMap[w] || w).join('; ');
-      parts.push(`Based on this person's recent sessions, their weakest areas are: ${weak.join(', ')}. Specifically push them on: ${focusLines}. Weave this into your feedback naturally — do not just list it back at them.`);
-    } else if (S.history.length >= 3) {
-      parts.push('This person has been fairly well-rounded across sessions so far — keep pushing all dimensions evenly rather than over-focusing on one area.');
-    }
+    const patterns = [];
+    const avgC = (S.scores.clarity.reduce((a,b)=>a+b,0)/(S.scores.clarity.length||1)).toFixed(1);
+    const avgCo = (S.scores.confidence.reduce((a,b)=>a+b,0)/(S.scores.confidence.length||1)).toFixed(1);
+    if (avgC < 6) patterns.push('struggles with clarity');
+    if (avgCo < 6) patterns.push('needs confidence work');
+    if (patterns.length) parts.push(`Based on past sessions, this person ${patterns.join(' and ')}.`);
   }
   return parts.join(' ');
 }
@@ -3158,6 +3106,11 @@ const COLD_OPEN_SCENARIOS = {
     {setup:"You're at an AI and machine learning conference. Someone approaches you near a demo booth.",opener:"Are you more on the research side or are you building products with this?",person:"Lena",role:"AI researcher at a major lab"},
     {setup:"You're at a food and beverage industry trade show. Someone at the sample table turns to you.",opener:"Consumer brand or more of a B2B supplier?",person:"Carlos",role:"Founder of a fast-growing CPG brand"},
     {setup:"You're at an accelerator demo day. Sitting next to you is an unfamiliar face.",opener:"Are you here as a founder, investor, or just checking things out?",person:"Stella",role:"Managing Director of a top accelerator"},
+    {setup:"You're at a private members club business breakfast. A well-connected executive sits at your table alone.",opener:"You look like you're here for business, not the eggs. What are you working on?",person:"Patricia",role:"CFO at a well-connected family office"},
+    {setup:"You're at a product launch event for a brand you admire. Someone from the company's team approaches you.",opener:"You seem genuinely interested in what we're building. What stood out to you?",person:"Theo",role:"Head of Product at the company that just launched"},
+    {setup:"You're at a think tank roundtable discussion. A policy researcher sits next to you.",opener:"Are you on the practitioner side or more of a researcher here?",person:"Dr. Reyes",role:"Senior policy researcher and published author"},
+    {setup:"You're at an awards ceremony dinner. You're seated next to one of the finalists.",opener:"Are you nervous? I'd be a wreck right now.",person:"Nina",role:"Award finalist who's built something impressive"},
+    {setup:"You're at a startup retreat in a mountain cabin. You're assigned to a breakout group with a stranger.",opener:"What's the thing you're actually trying to figure out this weekend?",person:"Jordan",role:"Founder at a crossroads with their business"},
   ],
   elevator: [
     {setup:"You step into an elevator at a startup conference. The only other person is the CEO of your dream company.",opener:"Floor?",person:"Morgan",role:"CEO of your dream company"},
@@ -3200,6 +3153,10 @@ const COLD_OPEN_SCENARIOS = {
     {setup:"You're at an insurance summit. An insuretech disruptor steps in.",opener:"Do you think traditional insurance is actually going anywhere or just evolving?",person:"Tomas",role:"Founder of a billion-dollar insuretech company"},
     {setup:"You're at a philosophy and tech ethics conference. A well-known AI ethicist steps in.",opener:"Are you more worried about AI being too smart or too stupid?",person:"Dr. Zhao",role:"Leading AI ethicist and author"},
     {setup:"You're at a sports business summit. An Olympic gold medalist turned executive enters.",opener:"Which is harder — competing at the Olympics or building a business?",person:"Coach Adler",role:"Former Olympian now running a sports brand"},
+    {setup:"You're at a startup incubator open house and share the elevator with the managing director.",opener:"Are you a founder or a visitor today?",person:"Marcus",role:"Managing director of a top accelerator program"},
+    {setup:"You're visiting a hospital for a client meeting and share the elevator with the CMO.",opener:"Busy place. Are you clinical or administrative side?",person:"Dr. Morris",role:"Chief Medical Officer of a major hospital system"},
+    {setup:"You're at a film studio lot on a tour and share the elevator with a senior studio executive.",opener:"What are you working on here today?",person:"Janet",role:"Senior VP of Production at a major film studio"},
+    {setup:"You're at a city hall for a permit meeting and end up in the elevator with a senior official.",opener:"Long wait out there. Are you navigating the bureaucracy or part of it?",person:"Commissioner Hall",role:"City commissioner with real policy influence"},
   ],
   interview: [
     {setup:"You walk into the interview room. The interviewer looks up with a warm smile.",opener:"Great, come on in. So — tell me, what made you interested in this role specifically?",person:"Sam",role:"Hiring Manager"},
@@ -3242,6 +3199,10 @@ const COLD_OPEN_SCENARIOS = {
     {setup:"You're interviewing for a communications director role. They test you live.",opener:"A journalist just called asking for comment on a crisis you've never heard of. What do you say right now?",person:"CEO",role:"CEO who wants to test real-time PR thinking"},
     {setup:"You're in an internal interview for a promotion. Your own manager is in the room.",opener:"Tell me why you deserve this more than someone we'd hire from outside.",person:"Your Manager",role:"Your direct manager of 2 years"},
     {setup:"You're in a final round for a dream job. The last question catches you off guard.",opener:"Is there anything about this role or company that genuinely worries you? Be honest.",person:"Hiring Lead",role:"Head of Talent who values authenticity"},
+    {setup:"You're in a group interview alongside two other candidates. The panel is watching everyone closely.",opener:"Let's start with a group discussion. What do you think is the biggest challenge in this industry right now?",person:"Panel Lead",role:"Hiring panel observing how you collaborate under pressure"},
+    {setup:"You're being interviewed by your potential future peers, not managers.",opener:"We're the ones you'd actually be working with. Real question — what's your working style when things get messy?",person:"Peer Interviewer",role:"Senior colleague who will be your equal"},
+    {setup:"The interviewer arrives late and flustered. They apologize and immediately jump in.",opener:"Sorry, it's been a day. Skip the small talk — what's the most impressive thing you have shipped?",person:"Director",role:"Stretched director who gets straight to what matters"},
+    {setup:"The interview pivots unexpectedly to a live ethical scenario.",opener:"Here's a hypothetical: your manager asks you to shade the truth to close a deal. Walk me through exactly what you do.",person:"VP",role:"VP testing your values under realistic pressure"},
   ],
   social: [
     {setup:"You're at a friend's house party. You end up next to someone at the snack table.",opener:"Good spread, right? How do you know the host?",person:"Charlie",role:"Someone new at the party"},
@@ -3284,6 +3245,10 @@ const COLD_OPEN_SCENARIOS = {
     {setup:"You're at a karaoke bar. A stranger convinces you to do a duet.",opener:"Okay we're doing this. What's your go-to karaoke song?",person:"Sunny",role:"Karaoke regular"},
     {setup:"You're at a meditation retreat check-in. You're next to each other in line.",opener:"Is it weird that I'm nervous about meditating?",person:"Riley",role:"First time at a retreat"},
     {setup:"You're at a film screening and discussion. You sit next to someone during the Q&A.",opener:"What did you take away from it? I have thoughts but I want to hear yours first.",person:"Mila",role:"Film studies grad and cinephile"},
+    {setup:"You're at a beach bonfire with a group. Someone sits near the fire who clearly doesn't know anyone.",opener:"Do you know all these people or are you also just kind of here?",person:"Sam",role:"Someone who tagged along and knows almost nobody"},
+    {setup:"You're waiting for a table at a packed brunch spot. Someone waiting solo strikes up conversation.",opener:"How long have you been waiting? I've been here forever.",person:"Alex",role:"Patient brunch-goer flying solo"},
+    {setup:"You're at a running group meetup for the first time. Someone jogs up next to you before the start.",opener:"First time? You look about as nervous as I did my first time here.",person:"Chris",role:"Regular at the running club"},
+    {setup:"You're at a midnight movie screening. The person next to you clocks you deliberating over snacks.",opener:"Get the popcorn. Trust me. The movie is long.",person:"River",role:"Film buff and regular at late-night screenings"},
   ],
   leadership: [
     {setup:"A team member knocks on your office door looking stressed.",opener:"Hey, do you have a minute? I'm having a really hard time with this project and I don't know what to do.",person:"Casey",role:"Junior team member"},
@@ -3326,6 +3291,10 @@ const COLD_OPEN_SCENARIOS = {
     {setup:"A colleague comes to you about a toxic team member you also manage.",opener:"I don't want to get anyone in trouble, but I think you need to know what's happening.",person:"Peer",role:"Peer who trusts you enough to speak up"},
     {setup:"You're inheriting a budget cut and have to tell your team.",opener:"Before you say anything — how bad is it?",person:"Senior Team Member",role:"Senior team member who's been through budget cuts before"},
     {setup:"A team member asks you a question you genuinely don't know the answer to, in front of the group.",opener:"What's the answer to that? You're the leader.",person:"Team Member",role:"Team member genuinely looking to you for guidance"},
+    {setup:"A remote team member messages you saying they feel invisible and unrecognized.",opener:"I don't know if it's just me, but I feel like nothing I do gets noticed. I'm starting to wonder if remote was the wrong call.",person:"Remote Team Member",role:"High-effort remote employee feeling unseen"},
+    {setup:"Your most junior team member quietly tells you they spotted a major error in a senior colleague's work.",opener:"I don't know if I should say this... but I'm pretty sure the numbers in the report are badly wrong.",person:"Junior Team Member",role:"Sharp junior employee in an uncomfortable position"},
+    {setup:"A high performer is leaving on good terms and uses their last 1:1 to give you candid leadership feedback.",opener:"I want to be honest with you before I go — I think you're actually good at this. But here's what I think you could do better.",person:"Departing Team Member",role:"High performer leaving on their own terms"},
+    {setup:"A peer manager from another division asks if they can shadow your team for a week to learn from how you operate.",opener:"I've heard great things about how you run things. Would you be open to letting me sit in?",person:"Peer Manager",role:"Colleague trying to learn from your approach"},
   ],
   sales: [
     {setup:"You've gotten a cold call reply. The prospect picks up.",opener:"Yeah, I got your email. You've got like two minutes.",person:"Dana",role:"Busy VP of Sales"},
@@ -3368,6 +3337,11 @@ const COLD_OPEN_SCENARIOS = {
     {setup:"You've been selling to a prospect for six months. They finally tell you why they keep stalling.",opener:"I'll be real with you. I believe in the product. But my boss doesn't and I can't convince them.",person:"Champion",role:"Internal champion who can't get buy-in above them"},
     {setup:"A prospect asks an uncomfortable question about a known product limitation.",opener:"I've been reading reviews online and a lot of people mention this specific limitation. What's the deal?",person:"Informed Prospect",role:"Prospect who's done their research"},
     {setup:"You're on a customer success call and the customer says they're not getting value.",opener:"We pay a lot for this and honestly I'm struggling to show ROI to my leadership.",person:"Customer Success Contact",role:"Champion who needs to justify the spend internally"},
+    {setup:"A customer who churned a year ago reaches out wanting to come back.",opener:"I know we left on rocky terms. But the alternatives we tried were worse. Can we talk about starting over?",person:"Former Customer",role:"Churned customer willing to try again"},
+    {setup:"You're on a discovery call and the prospect reveals they were burned by a near-identical product last year.",opener:"I'll be upfront — we tried something almost identical to this and it was a disaster. Why would you be any different?",person:"VP",role:"Cautious buyer with fresh vendor trauma"},
+    {setup:"A prospect reveals they're your biggest internal champion but have zero budget authority.",opener:"I love what you're doing — but I have to be honest. I can't approve anything. I need to sell this internally for you.",person:"Internal Champion",role:"Enthusiastic but powerless internal advocate"},
+    {setup:"You're deep in a sales cycle and the economic buyer suddenly changes.",opener:"I want to let you know — the person you've been working with is no longer here. I'm taking over. Start from the beginning.",person:"New Decision Maker",role:"New economic buyer with no context on your deal"},
+    {setup:"A prospect wants a white-label version of your product.",opener:"We like what you've built. But we'd need it to look completely like ours. Can you do that?",person:"CEO",role:"CEO of a potential OEM partner"},
   ],
 };;
 let coState = { running: false, type: '', scenario: null, history: [], faceAnim: null, personCoach: 'Echo', turns: 0 };
@@ -3390,7 +3364,6 @@ function startColdOpen() {
   document.getElementById('co-person-role').textContent=scenario.role;
   document.getElementById('co-messages').innerHTML='';
   document.getElementById('co-transcript').textContent='Click the mic to respond...';
-  const _micBtn=document.getElementById('co-mic-btn');if(_micBtn){_micBtn.disabled=false;_micBtn.className='hold-btn idle';_micBtn.textContent='🎙️';}
   if(coState.faceAnim)cancelAnimationFrame(coState.faceAnim);
   drawCOFace();
   addCOMsg(scenario.person, scenario.opener, false);
@@ -3508,11 +3481,7 @@ async function stopCOListening(){
 
 async function endColdOpen(){
   if(coState.turns<1){resetColdOpen();return;}
-  // Stop any active listening before scoring
-  isCOListening=false;
-  if(coRecognition){try{coRecognition.stop();}catch(e){}coRecognition=null;}
-  const coMicBtn=document.getElementById('co-mic-btn');
-  if(coMicBtn){coMicBtn.disabled=true;coMicBtn.className='hold-btn processing';coMicBtn.textContent='⏳';}
+  document.getElementById('co-mic-btn').disabled=true;
   document.getElementById('co-status').textContent='Scoring your cold open...';
   const convText=coState.history.map((m,i)=>`${i%2===0?'You':'Them'}: ${m.content}`).join('\n');
   const briefNote=S.briefing?`Note: this person is preparing for "${S.briefing.preparing}" and wants to improve "${S.briefing.improve}". Factor this into your scoring and feedback.`:``;
@@ -3551,6 +3520,16 @@ async function endColdOpen(){
     S.skills.confidence=lerp(S.skills.confidence,r.warmth*10,0.3);
     S.skills.persuasion=lerp(S.skills.persuasion,r.impact*10,0.3);
     S.streak=Math.min(S.streak+1,99);
+    const sessionXP = calcSessionXP({clarity: r.naturalness, confidence: r.warmth, persuasion: r.impact, storytelling: 5, conciseness: 5}, S.streak);
+    const oldLevel = S.level;
+    S.xp += sessionXP;
+    S.level = calcLevelFromXP(S.xp);
+    if (S.level > oldLevel) {
+      const tier = getLevelTier(S.level);
+      showToast('⬆', `Level up! You're now Level ${S.level} — ${tier.name}`);
+    } else {
+      showToast('✓', `+${sessionXP} XP · Level ${S.level}`);
+    }
     // Save to history so Insights + History tabs update
     const coSession = {
       scenario: 'Cold Open',
@@ -3569,20 +3548,12 @@ async function endColdOpen(){
     saveSessionToCloud(coSession);
     updateChips();saveUserData();showToast('📊','Cold Open score added to Conver Score!');
     panel.scrollIntoView({behavior:'smooth'});
-  }catch(e){
-    document.getElementById('co-status').textContent='Scoring error: '+e.message;
-    // Re-enable mic so user isn't stuck
-    const _btn=document.getElementById('co-mic-btn');
-    if(_btn){_btn.disabled=false;_btn.className='hold-btn idle';_btn.textContent='🎙️';}
-  }
+  }catch(e){document.getElementById('co-status').textContent='Scoring error: '+e.message;}
 }
 
 function resetColdOpen(){
   coState.running=false;
-  isCOListening=false;
-  if(coRecognition){try{coRecognition.stop();}catch(e){}coRecognition=null;}
   if(coState.faceAnim){cancelAnimationFrame(coState.faceAnim);coState.faceAnim=null;}
-  coFaceState='idle';coMouth=0;
   document.getElementById('coldopen-setup').style.display='block';
   document.getElementById('coldopen-live').style.display='none';
   showBackBtn(false);
@@ -3636,6 +3607,72 @@ const QUESTION_BANK = [
   {cat:'Pressure',q:'What is the most controversial opinion you hold?',diff:'hard',tip:'Have a real one ready. Hedging makes you forgettable. Own it.'},
   {cat:'Pressure',q:'How would your harshest critic describe you?',diff:'hard',tip:'Show you know your blind spots. Then show what you do about them.'},
   {cat:'Pressure',q:'Your slides crash 5 minutes into a presentation. What do you do?',diff:'hard',tip:'Stay calm, adapt, continue. Show composure under fire.'},
+  // Interview
+  {cat:'Interview',q:'How do you approach a task when the requirements keep changing?',diff:'medium',tip:'Show adaptability. Describe how you create clarity and communicate changes to stakeholders.'},
+  {cat:'Interview',q:'Describe a time you had to influence a decision without having authority.',diff:'hard',tip:'Focus on how you built consensus. Show your persuasion style and political awareness.'},
+  {cat:'Interview',q:'Tell me about a project you are most proud of and why.',diff:'easy',tip:'Tie the outcome to business impact. Show ownership and your specific contribution.'},
+  {cat:'Interview',q:'How do you handle a stakeholder who keeps changing the scope?',diff:'hard',tip:'Show you can push back constructively. Frame it around protecting quality and timelines.'},
+  {cat:'Interview',q:'What is your approach to giving upward feedback?',diff:'medium',tip:'Show you have actually done it. Name the moment, the method, the outcome.'},
+  {cat:'Interview',q:'Tell me about a time you took initiative without being asked.',diff:'easy',tip:'Show proactivity. The story should end with clear impact, not just effort.'},
+  {cat:'Interview',q:'How do you stay current in your field?',diff:'easy',tip:'Name specific sources, people, or habits. Vague answers signal shallow commitment.'},
+  {cat:'Interview',q:'Describe a time you had to manage up during a crisis.',diff:'hard',tip:'Show emotional steadiness. How you communicated upward says a lot about your judgment.'},
+  {cat:'Interview',q:'What does a great day at work look like for you?',diff:'easy',tip:'Be specific and connect it to the role. This reveals your values and working style.'},
+  {cat:'Interview',q:'Tell me about a time you had to rebuild trust with a colleague or client.',diff:'hard',tip:'Show accountability first. Then walk through the repair, step by step.'},
+  {cat:'Interview',q:'How do you approach learning a new tool, process, or domain quickly?',diff:'medium',tip:'Show your learning method. First principles thinking, mentors, and shipping early are strong signals.'},
+  {cat:'Interview',q:'What is something you changed your mind about in the last year?',diff:'medium',tip:'Shows intellectual honesty. Pick something real. Growth is the signal, not the topic.'},
+  // Networking
+  {cat:'Networking',q:'What is the best piece of career advice you have ever received?',diff:'easy',tip:'Be specific and genuine. Use it as a window into your values and how you think.'},
+  {cat:'Networking',q:'What is something most people get wrong about your industry?',diff:'medium',tip:'Have a real opinion. Insider insight makes you memorable and credible.'},
+  {cat:'Networking',q:'How did you know this was the right career path for you?',diff:'easy',tip:'Tell a story, not a polished narrative. Authenticity matters more than polish.'},
+  {cat:'Networking',q:'What book, podcast, or resource has most shaped how you think?',diff:'easy',tip:'Have a real answer. It reveals your mind and opens great conversation.'},
+  {cat:'Networking',q:'What is the most unexpected skill that has helped you in your career?',diff:'medium',tip:'Surprising answers are memorable. Connect it to something real in your journey.'},
+  {cat:'Networking',q:'Who has influenced your work the most and why?',diff:'easy',tip:'Show your values through the mentor you pick. Specific stories beat names alone.'},
+  {cat:'Networking',q:'What is the most important thing you look for when choosing who to work with?',diff:'medium',tip:'Be direct and specific. Vague answers like good culture fit waste the moment.'},
+  {cat:'Networking',q:'What project or accomplishment are you most proud of?',diff:'easy',tip:'Make it specific and brief. Leave room for them to ask follow-ups.'},
+  {cat:'Networking',q:'What trends are you most excited or most worried about in your space?',diff:'medium',tip:'Have a real take. Intellectual conviction is magnetic in a networking conversation.'},
+  {cat:'Networking',q:'What would you do differently if you were starting your career today?',diff:'medium',tip:'Show self-awareness and insight. This is a chance to be both honest and interesting.'},
+  // Pitch
+  {cat:'Pitch',q:'What is your unfair advantage?',diff:'hard',tip:'Be specific and honest. Team, technology, distribution, or insight — name the real moat.'},
+  {cat:'Pitch',q:'How did you validate this idea before building?',diff:'hard',tip:'Show discipline. Investors fund founders who de-risk before they build.'},
+  {cat:'Pitch',q:'Walk me through your go-to-market strategy.',diff:'hard',tip:'Channel, messaging, first customers. Show you know exactly how you will acquire users.'},
+  {cat:'Pitch',q:'What do your unit economics look like?',diff:'hard',tip:'Know your CAC, LTV, and payback period cold. Vague answers here kill credibility.'},
+  {cat:'Pitch',q:'Why are you the right team to solve this problem?',diff:'medium',tip:'Domain expertise, lived experience, or unique insight. Make the connection explicit.'},
+  {cat:'Pitch',q:'What happens if a big tech company copies you?',diff:'hard',tip:'Show your moat. Speed, relationships, data, or regulatory position. Have a real answer.'},
+  {cat:'Pitch',q:'Who are your three dream early customers and why?',diff:'medium',tip:'Show strategic clarity. Your choice of early customers reveals your positioning instinct.'},
+  {cat:'Pitch',q:'What does the competitive landscape actually look like?',diff:'medium',tip:'Know your space cold. Saying you have no competitors is the fastest way to lose credibility.'},
+  {cat:'Pitch',q:'What would it take for this to be a billion-dollar company?',diff:'hard',tip:'Paint the full picture. Show the path from where you are to category leader.'},
+  {cat:'Pitch',q:'What is the one assumption your model depends on most?',diff:'hard',tip:'Shows intellectual honesty and rigor. Explain the assumption and how you are testing it.'},
+  // Leadership
+  {cat:'Leadership',q:'How do you decide when to delegate versus when to do something yourself?',diff:'medium',tip:'Show judgment. The answer is about trust, stakes, and development — not just bandwidth.'},
+  {cat:'Leadership',q:'How do you handle a situation where you disagree with your own manager?',diff:'hard',tip:'Show you advocate clearly, then commit. Disagree-and-commit is a powerful trait to name.'},
+  {cat:'Leadership',q:'Describe a time you made a decision with incomplete information.',diff:'hard',tip:'Show your risk framework. Reversibility, stakes, and who else needs to be involved matter.'},
+  {cat:'Leadership',q:'How do you build psychological safety on a team?',diff:'medium',tip:'Name specific behaviors. What you do when someone speaks up — or fails — sets the tone.'},
+  {cat:'Leadership',q:'How do you manage someone who is smarter than you in their domain?',diff:'hard',tip:'Show humility and clarity of role. Your job is to create conditions, not to have all the answers.'},
+  {cat:'Leadership',q:'How do you set expectations with a new team or new hire?',diff:'medium',tip:'Be specific. First 30/60/90 days, written clarity, regular check-ins. Show your system.'},
+  {cat:'Leadership',q:'Describe a time you changed your leadership approach for a specific person.',diff:'medium',tip:'Shows adaptability. Name what you noticed, what you changed, and what happened.'},
+  {cat:'Leadership',q:'How do you create accountability without micromanaging?',diff:'hard',tip:'Outcomes over activities. Named check-ins, not surveillance. Show the distinction clearly.'},
+  {cat:'Leadership',q:'What do you do when a high performer suddenly starts underperforming?',diff:'hard',tip:'Curiosity before judgment. Personal circumstances, motivation, or misalignment — investigate first.'},
+  {cat:'Leadership',q:'How do you prioritize when your team has more work than capacity?',diff:'medium',tip:'Show your framework. Impact vs effort, stakeholder alignment, and what you explicitly say no to.'},
+  // Social
+  {cat:'Social',q:'If you could live anywhere in the world for a year, where would you go and why?',diff:'easy',tip:'Be specific and enthusiastic. Share the real reason — it is a doorway into who you are.'},
+  {cat:'Social',q:'What is something you recently got really into?',diff:'easy',tip:'Genuine enthusiasm is contagious. Name something real and be willing to geek out about it.'},
+  {cat:'Social',q:'What is a skill you want to learn that has nothing to do with work?',diff:'easy',tip:'Shows depth and self-awareness. Pick something real that makes you interesting.'},
+  {cat:'Social',q:'What is the most spontaneous thing you have ever done?',diff:'easy',tip:'Tell a story with a clear image. Specifics make the story land.'},
+  {cat:'Social',q:'If you could have dinner with anyone alive or dead, who would it be?',diff:'easy',tip:'Have a real answer and a reason. The why tells them who you are.'},
+  {cat:'Social',q:'What is something small that consistently makes your day better?',diff:'easy',tip:'Specific and warm. Shows self-awareness and opens up easy follow-on conversation.'},
+  {cat:'Social',q:'What is the last thing you changed your mind about?',diff:'medium',tip:'Shows openness and intellectual honesty. Real answers beat safe ones.'},
+  {cat:'Social',q:'What is one thing most people do not know about you?',diff:'medium',tip:'One surprising or warm detail. Not too private but genuinely memorable.'},
+  // Pressure
+  {cat:'Pressure',q:'You find out a close colleague has been lying to management. What do you do?',diff:'hard',tip:'Show your values clearly. Be honest about the conflict between loyalty and integrity.'},
+  {cat:'Pressure',q:'Your company announces a policy you personally disagree with. How do you respond?',diff:'hard',tip:'Show you can advocate internally and commit externally. Articulate the tension clearly.'},
+  {cat:'Pressure',q:'You are given a major project with half the budget and half the time you need. Go.',diff:'hard',tip:'Scope it ruthlessly. Show what you cut first and how you communicate that decision.'},
+  {cat:'Pressure',q:'Your mentor gives you advice you think is completely wrong. What do you say?',diff:'hard',tip:'Show respect and backbone. You can disagree without dismissing — find that line.'},
+  {cat:'Pressure',q:'A journalist asks you a question on camera that you are unprepared for. What do you do?',diff:'hard',tip:'Bridge technique. Acknowledge, pivot, and deliver your key message. No dead air.'},
+  {cat:'Pressure',q:'You realize mid-presentation that a key data point in your deck is wrong. What do you do?',diff:'hard',tip:'Transparency wins. Correct it calmly, explain, and move on. Do not let it derail you.'},
+  {cat:'Pressure',q:'Someone takes credit for your idea in front of leadership. How do you handle it in the room?',diff:'hard',tip:'Reclaim it gracefully and immediately. Name it without hostility.'},
+  {cat:'Pressure',q:'You disagree with the direction of a project but are overruled. How do you move forward?',diff:'hard',tip:'Disagree and commit. Voice it once, clearly, then own the execution as if it were your idea.'},
+  {cat:'Pressure',q:'You make a mistake that costs your company a significant client. What do you do next?',diff:'hard',tip:'Own it fully and immediately. Then show what you changed to prevent it from happening again.'},
+  {cat:'Pressure',q:'Defend a position you do not personally agree with.',diff:'hard',tip:'Show you understand multiple sides. Steel-man the argument. Intellectual flexibility is the skill being tested.'},
 ];
 let currentQCat = 'All';
 
@@ -3846,61 +3883,53 @@ function resetWarmup() {
 // ── Auth ──────────────────────────────────────────────────────────────────────
 const SUPABASE_URL = 'https://cxvxiljzaldufonioiyt.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4dnhpbGp6YWxkdWZvbmlvaXl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNDI1NTYsImV4cCI6MjA5NTkxODU1Nn0.SZp-NtyxcOijwL2noC_VYCR-vGPVXaPoIkBDwVbmot8';
-const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// Initialize Supabase client for client-side auth (token refresh, session management)
+const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    storageKey: 'conver_sb_session'
+  }
+});
+
 let currentUser = null;
 let authToken = null;
 
-async function sendPhoneCode() {
-  const phone = document.getElementById('phone-input').value.trim();
-  if (!phone) { showToast('⚠️', 'Enter a phone number'); return; }
-  const btn = document.getElementById('send-code-btn');
-  btn.disabled = true; btn.textContent = 'Sending...';
-  try {
-    const { error } = await sbClient.auth.updateUser({ phone });
-    if (error) throw error;
-    document.getElementById('phone-unverified-view').style.display = 'none';
-    document.getElementById('phone-otp-view').style.display = 'block';
-    showToast('📱', 'Code sent');
-  } catch(e) {
-    showToast('⚠️', e.message);
-  }
-  btn.disabled = false; btn.textContent = 'Send Verification Code';
-}
-
-async function verifyPhoneCode() {
-  const phone = document.getElementById('phone-input').value.trim();
-  const token = document.getElementById('phone-otp-input').value.trim();
-  if (!token) { showToast('⚠️', 'Enter the code'); return; }
-  const btn = document.getElementById('verify-code-btn');
-  btn.disabled = true; btn.textContent = 'Verifying...';
-  try {
-    const { error } = await sbClient.auth.verifyOtp({ phone, token, type: 'sms' });
-    if (error) throw error;
-    document.getElementById('phone-otp-view').style.display = 'none';
-    document.getElementById('phone-verified-view').style.display = 'block';
-    showToast('✅', 'Phone verified!');
-  } catch(e) {
-    showToast('⚠️', e.message);
-  }
-  btn.disabled = false; btn.textContent = 'Verify';
-}
-
 async function initAuth() {
-  // Restore session from localStorage (persisted across page loads)
-  const storedToken = localStorage.getItem('conver_token');
-  const storedEmail = localStorage.getItem('conver_email');
-  if (storedToken) {
-    authToken = storedToken;
-    currentUser = { email: storedEmail || '' };
-    const email = storedEmail || 'User';
+  // Use Supabase client to restore and auto-refresh session properly
+  // This handles expired tokens gracefully instead of blindly trusting localStorage
+  const { data: { session }, error } = await sbClient.auth.getSession();
+  if (session && session.access_token) {
+    authToken = session.access_token;
+    currentUser = session.user;
+    // Keep localStorage in sync for backward compat
+    localStorage.setItem('conver_token', authToken);
+    localStorage.setItem('conver_email', currentUser.email || '');
+    const email = currentUser.email || 'User';
     document.getElementById('user-email-display').textContent = email;
     document.getElementById('user-avatar').textContent = email[0].toUpperCase();
     hideAuthScreen();
     await loadUserData();
     showToast('👋', 'Welcome back, ' + email.split('@')[0] + '!');
   } else {
+    // No valid session — clear stale localStorage and show sign in
+    localStorage.removeItem('conver_token');
+    localStorage.removeItem('conver_email');
     showAuthScreen();
   }
+
+  // Listen for token refresh events and keep authToken in sync automatically
+  sbClient.auth.onAuthStateChange((event, session) => {
+    if (session && session.access_token) {
+      authToken = session.access_token;
+      localStorage.setItem('conver_token', authToken);
+    } else if (event === 'SIGNED_OUT') {
+      authToken = null;
+      localStorage.removeItem('conver_token');
+      localStorage.removeItem('conver_email');
+    }
+  });
 }
 
 function showAuthScreen() {
@@ -3937,12 +3966,9 @@ async function signIn() {
   btn.disabled = true; btn.textContent = 'Signing in...';
   setAuthError('signin', '');
   try {
-    const res = await fetch('/api/auth/signin', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ email, password })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
+    // Use Supabase client directly so session is managed/refreshed automatically
+    const { data, error } = await sbClient.auth.signInWithPassword({ email, password });
+    if (error) throw new Error(error.message);
     authToken = data.session.access_token;
     currentUser = data.user;
     await afterSignIn();
@@ -3961,12 +3987,8 @@ async function signUp() {
   btn.disabled = true; btn.textContent = 'Creating account...';
   setAuthError('signup', '');
   try {
-    const res = await fetch('/api/auth/signup', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ email, password })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
+    const { data, error } = await sbClient.auth.signUp({ email, password });
+    if (error) throw new Error(error.message);
     if (data.session) {
       authToken = data.session.access_token;
       currentUser = data.user;
@@ -4049,6 +4071,8 @@ async function loadUserData() {
         S.sessions = stats.total_sessions || 0;
         S.streak = stats.streak || 0;
         S.converScore = stats.conver_score || null;
+        if (stats.xp) S.xp = stats.xp;
+        S.level = calcLevelFromXP(S.xp);
         // Restore skills
         if (stats.skills) S.skills = { ...S.skills, ...stats.skills };
         // Restore scores arrays from skills jsonb
@@ -4130,7 +4154,6 @@ async function loadUserData() {
       }
     }
     updateChips();
-    renderReengagementBanner();
   } catch(e) {
     console.error('Load user data error:', e);
   }
@@ -4146,7 +4169,8 @@ async function saveUserData() {
         stats: {
           total_sessions: S.sessions,
           streak: S.streak,
-          conver_score: calcConverScore(),
+          conver_score: S.level,
+          xp: S.xp,
           skills: {
             clarity: S.skills.clarity,
             confidence: S.skills.confidence,
@@ -4206,9 +4230,11 @@ document.addEventListener('click', (e) => {
 });
 
 async function signOut() {
+  await sbClient.auth.signOut();
   authToken = null; currentUser = null;
   localStorage.removeItem('conver_token');
   localStorage.removeItem('conver_email');
+  localStorage.removeItem('conver_sb_session');
   document.getElementById('user-dropdown').classList.remove('open');
   document.getElementById('user-email-display').textContent = 'Not signed in';
   document.getElementById('user-avatar').textContent = '?';
@@ -4259,135 +4285,7 @@ function handleBackBtn() {
   }
 }
 
-// ── TREND CHART ───────────────────────────────────────────────────────────────
-function drawTrendChart(){
-  const canvas=document.getElementById('trend-chart');
-  if(!canvas)return;
-  const sessions=S.history.slice(0,10).reverse();
-  if(!sessions.length)return;
-  const dpr=window.devicePixelRatio||1;
-  const W=canvas.offsetWidth||canvas.parentElement.offsetWidth||600;
-  const H=110;
-  canvas.width=W*dpr; canvas.height=H*dpr;
-  canvas.style.width=W+'px'; canvas.style.height=H+'px';
-  const ctx=canvas.getContext('2d');
-  ctx.scale(dpr,dpr);
-  const pad={l:28,r:16,t:10,b:24};
-  const cw=W-pad.l-pad.r, ch=H-pad.t-pad.b;
-  const n=sessions.length;
-  // Grid lines
-  ctx.strokeStyle='rgba(255,255,255,0.06)'; ctx.lineWidth=1;
-  [0,2.5,5,7.5,10].forEach(v=>{
-    const y=pad.t+ch-(v/10)*ch;
-    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+cw,y);ctx.stroke();
-    ctx.fillStyle='rgba(123,130,153,0.6)';ctx.font='9px DM Mono,monospace';ctx.textAlign='right';
-    ctx.fillText(v,pad.l-4,y+3);
-  });
-  // X labels
-  ctx.fillStyle='rgba(123,130,153,0.7)';ctx.font='9px DM Mono,monospace';ctx.textAlign='center';
-  sessions.forEach((h,i)=>{
-    const x=n===1?pad.l+cw/2:pad.l+(i/(n-1))*cw;
-    ctx.fillText(h.scenario.slice(0,3),x,H-pad.b+13);
-  });
-  // Draw line for each metric
-  const metrics=[
-    {key:'clarity',color:'#4fc3f7'},
-    {key:'confidence',color:'#a78bfa'},
-    {key:'persuasion',color:'#34d399'}
-  ];
-  metrics.forEach(({key,color})=>{
-    const pts=sessions.map((h,i)=>({
-      x:n===1?pad.l+cw/2:pad.l+(i/(n-1))*cw,
-      y:pad.t+ch-((h.analysis[key]||0)/10)*ch
-    }));
-    // Gradient fill under line
-    const gradAlpha={'#4fc3f7':'rgba(79,195,247,0.15)','#a78bfa':'rgba(167,139,250,0.15)','#34d399':'rgba(52,211,153,0.15)'};
-    const grad=ctx.createLinearGradient(0,pad.t,0,pad.t+ch);
-    grad.addColorStop(0,gradAlpha[color]||'rgba(108,99,255,0.1)');
-    grad.addColorStop(1,'rgba(0,0,0,0)');
-    ctx.beginPath();
-    ctx.moveTo(pts[0].x,pts[0].y);
-    pts.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));
-    ctx.lineTo(pts[pts.length-1].x,pad.t+ch);
-    ctx.lineTo(pts[0].x,pad.t+ch);
-    ctx.closePath();
-    ctx.fillStyle=grad;ctx.fill();
-    // Line
-    ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=2;ctx.lineJoin='round';
-    pts.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));
-    ctx.stroke();
-    // Dots
-    pts.forEach(p=>{
-      ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);
-      ctx.fillStyle=color;ctx.fill();
-      ctx.strokeStyle='#0f1118';ctx.lineWidth=1.5;ctx.stroke();
-    });
-  });
-}
-
-// ── VOICE TRANSCRIPT ──────────────────────────────────────────────────────────
-function openVoiceTranscript(){
-  if(!voiceSessionSnapshot.length){showToast('📄','No transcript available');return;}
-  const body=document.getElementById('transcript-modal-body');
-  const fillerEl=document.getElementById('transcript-filler-summary');
-  // Build filler summary bar
-  if(voiceFillerCount>0){
-    const chips=Object.entries(voiceFillerWords).sort((a,b)=>b[1]-a[1])
-      .map(([w,c])=>`<span class="transcript-filler-chip">${w} ×${c}</span>`).join('');
-    fillerEl.innerHTML=`<div class="transcript-filler-summary-bar"><span style="color:var(--red);margin-right:4px">🚨 ${voiceFillerCount} filler word${voiceFillerCount!==1?'s':''}</span>${chips}</div>`;
-  } else {
-    fillerEl.innerHTML='<span style="color:var(--green)">✓ No filler words detected</span>';
-  }
-  // Build conversation lines
-  body.innerHTML=voiceSessionSnapshot.map(msg=>{
-    const isUser=msg.role==='user';
-    const speaker=isUser?'You':voiceSessionCoachSnapshot;
-    return `<div class="transcript-line">
-      <div class="transcript-speaker">${speaker}</div>
-      <div class="${isUser?'transcript-line-user':'transcript-line-coach'}">${escHtml(msg.content)}</div>
-    </div>`;
-  }).join('');
-  document.getElementById('annotate-btn').disabled=false;
-  document.getElementById('annotate-btn').textContent='✦ AI Annotate';
-  document.getElementById('transcript-modal').classList.remove('hidden');
-}
-
-function closeVoiceTranscript(){
-  document.getElementById('transcript-modal').classList.add('hidden');
-}
-
-async function annotateTranscript(){
-  const btn=document.getElementById('annotate-btn');
-  btn.disabled=true; btn.textContent='Analyzing…';
-  const text=voiceSessionSnapshot.map(m=>`${m.role==='user'?'User':'Coach'}: ${m.content}`).join('\n');
-  try{
-    const res=await fetch('/api/chat',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        messages:[{role:'user',content:'Analyze this conversation transcript and return ONLY a JSON array (no markdown, no explanation). Each object must have: {"turn": NUMBER_0_BASED, "note": "SHORT_COACHING_NOTE_MAX_12_WORDS"}. Pick 2-4 key moments.\n\nTranscript:\n'+text}],
-        system:'You are a communication coach analyst. Return raw JSON array only.'
-      })
-    });
-    const d=await res.json();
-    let annotations=[];
-    try{annotations=JSON.parse(d.text);}catch(e){btn.textContent='✦ AI Annotate';btn.disabled=false;showToast('⚠️','Could not parse annotations');return;}
-    // Inject annotations into body
-    const body=document.getElementById('transcript-modal-body');
-    const lines=body.querySelectorAll('.transcript-line');
-    annotations.forEach(a=>{
-      const target=lines[a.turn];
-      if(!target)return;
-      const ann=document.createElement('div');
-      ann.className='transcript-annotation';
-      ann.innerHTML=`<span>✦</span><span>${escHtml(a.note)}</span>`;
-      target.after(ann);
-    });
-    btn.textContent='✓ Annotated';
-  }catch(e){btn.textContent='✦ AI Annotate';btn.disabled=false;showToast('⚠️','Annotation failed');}
-}
-
-initUI(); updateChips(); setTimeout(initToneDetector, 500); loadSettings(); renderReengagementBanner();
+initUI(); updateChips(); setTimeout(initToneDetector, 500); loadSettings();
 if(window.speechSynthesis){window.speechSynthesis.onvoiceschanged=()=>window.speechSynthesis.getVoices();window.speechSynthesis.getVoices();}
 initAuth();
 </script>

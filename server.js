@@ -35,7 +35,7 @@ const supabase = createClient(rawUrl, rawKey, {
 (async () => {
   try {
     const { error } = await supabase.from('profiles').select('id').limit(1);
-    if (error) console.log('⚠️  Supabase test query failed:', error.message);
+    if (error) console.log('⚠️  Supabase test query failed (full error):', JSON.stringify(error, null, 2));
     else console.log('✓ Supabase connection OK\n');
   } catch (e) {
     console.log('⚠️  Supabase connection failed at boot:', e.message, '\n');
