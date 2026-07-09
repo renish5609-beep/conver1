@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conver — AI Conversation Coaching</title>
+<meta name="description" content="Practice interviews, pitches, debates, and hard conversations with AI coaches. Get real-time scoring, voice feedback, and track how your communication evolves.">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #050507;
+  color: #f0f1f8;
+  font-family: 'DM Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+a { color: inherit; text-decoration: none; }
+
+/* Nav */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 20px 60px;
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(5,5,7,0.8);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.nav-logo { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; background: linear-gradient(135deg,#7c6fff,#b48cff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.nav-links { display: flex; align-items: center; gap: 32px; }
+.nav-links a { font-size: 14px; color: #9099b8; transition: color 0.2s; }
+.nav-links a:hover { color: #f0f1f8; }
+.nav-cta { background: linear-gradient(135deg,#7c6fff,#b48cff); color: #fff !important; padding: 10px 24px; border-radius: 10px; font-weight: 600; font-size: 14px; transition: all 0.2s !important; box-shadow: 0 4px 16px rgba(124,111,255,0.3); }
+.nav-cta:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(124,111,255,0.45) !important; }
+
+/* Hero */
+.hero {
+  min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 120px 40px 80px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(124,111,255,0.15) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(56,189,248,0.08) 0%, transparent 60%);
+  pointer-events: none;
+}
+.hero-eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #7c6fff;
+  margin-bottom: 24px;
+  display: flex; align-items: center; gap: 10px;
+  justify-content: center;
+}
+.hero-eyebrow::before, .hero-eyebrow::after {
+  content: '';
+  display: inline-block; width: 24px; height: 1px;
+  background: rgba(124,111,255,0.5);
+}
+.hero h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(42px, 6vw, 76px);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -2px;
+  margin-bottom: 24px;
+  max-width: 860px;
+}
+.hero h1 span {
+  background: linear-gradient(135deg, #7c6fff, #b48cff, #38bdf8);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.hero-sub {
+  font-size: 18px;
+  color: #9099b8;
+  line-height: 1.7;
+  max-width: 560px;
+  margin: 0 auto 40px;
+}
+.hero-ctas { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+.cta-primary {
+  background: linear-gradient(135deg,#7c6fff,#b48cff);
+  color: #fff;
+  padding: 16px 36px;
+  border-radius: 12px;
+  font-family: 'Syne', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 8px 32px rgba(124,111,255,0.35);
+  text-decoration: none;
+  display: inline-block;
+}
+.cta-primary:hover { transform: translateY(-2px); box-shadow: 0 16px 48px rgba(124,111,255,0.5); }
+.cta-secondary {
+  background: rgba(255,255,255,0.05);
+  color: #f0f1f8;
+  padding: 16px 36px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 500;
+  border: 1px solid rgba(255,255,255,0.1);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+  display: inline-block;
+}
+.cta-secondary:hover { background: rgba(255,255,255,0.08); border-color: rgba(124,111,255,0.3); }
+
+/* Feature tags */
+.hero-tags { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 48px; }
+.hero-tag {
+  font-size: 12px;
+  font-family: 'DM Mono', monospace;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid;
+}
+.tag-purple { color: #b48cff; border-color: rgba(180,140,255,0.25); background: rgba(124,111,255,0.06); }
+.tag-blue { color: #38bdf8; border-color: rgba(56,189,248,0.25); background: rgba(56,189,248,0.06); }
+.tag-green { color: #2dd4a0; border-color: rgba(45,212,160,0.25); background: rgba(45,212,160,0.06); }
+.tag-amber { color: #fbbf24; border-color: rgba(251,191,36,0.25); background: rgba(251,191,36,0.06); }
+
+/* Features section */
+.section { padding: 100px 40px; max-width: 1100px; margin: 0 auto; }
+.section-label { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #7c6fff; margin-bottom: 16px; text-align: center; }
+.section h2 { font-family: 'Syne', sans-serif; font-size: clamp(28px,4vw,44px); font-weight: 800; letter-spacing: -1px; text-align: center; margin-bottom: 60px; }
+.features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+.feature-card {
+  background: linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 20px;
+  padding: 28px;
+  transition: all 0.25s;
+  position: relative;
+  overflow: hidden;
+}
+.feature-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+}
+.feature-card:hover { border-color: rgba(124,111,255,0.25); transform: translateY(-4px); box-shadow: 0 20px 48px rgba(0,0,0,0.4); }
+.feature-icon { font-size: 28px; margin-bottom: 16px; display: block; }
+.feature-card h3 { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+.feature-card p { font-size: 13.5px; color: #9099b8; line-height: 1.7; }
+
+/* Coaches section */
+.coaches-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; }
+.coach-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px;
+  padding: 20px 16px;
+  text-align: center;
+  transition: all 0.2s;
+}
+.coach-card:hover { border-color: rgba(124,111,255,0.25); background: rgba(124,111,255,0.05); }
+.coach-emoji { font-size: 28px; margin-bottom: 10px; display: block; }
+.coach-name { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.coach-style { font-size: 11.5px; color: #6b7494; }
+
+/* CTA section */
+.cta-section {
+  text-align: center;
+  padding: 100px 40px;
+  background: linear-gradient(135deg, rgba(124,111,255,0.08), rgba(56,189,248,0.04));
+  border-top: 1px solid rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  position: relative;
+  overflow: hidden;
+}
+.cta-section::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse 60% 80% at 50% 50%, rgba(124,111,255,0.1) 0%, transparent 70%);
+  pointer-events: none;
+}
+.cta-section h2 { font-family: 'Syne', sans-serif; font-size: clamp(28px,4vw,48px); font-weight: 800; letter-spacing: -1.5px; margin-bottom: 16px; position: relative; z-index: 1; }
+.cta-section p { font-size: 16px; color: #9099b8; margin-bottom: 36px; position: relative; z-index: 1; }
+
+/* Footer */
+footer {
+  padding: 48px 60px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.footer-logo { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; background: linear-gradient(135deg,#7c6fff,#b48cff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.footer-links { display: flex; gap: 24px; flex-wrap: wrap; }
+.footer-links a { font-size: 13px; color: #6b7494; transition: color 0.2s; }
+.footer-links a:hover { color: #9099b8; }
+.footer-copy { font-size: 12px; color: #6b7494; font-family: 'DM Mono', monospace; }
+
+@media (max-width: 640px) {
+  nav { padding: 16px 20px; }
+  .nav-links { gap: 14px; }
+  .nav-links a:not(.nav-cta) { display: none; }
+  .section { padding: 60px 20px; }
+  .cta-section { padding: 60px 20px; }
+  footer { padding: 32px 20px; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">Conver</div>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#coaches">Coaches</a>
+    <a href="/app">Sign In</a>
+    <a href="/app" class="nav-cta">Get Started Free</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-eyebrow">AI Conversation Intelligence</div>
+  <h1>Your AI coach for the conversations <span>that actually matter.</span></h1>
+  <p class="hero-sub">Practice interviews, pitches, debates, and hard conversations with 6 distinct AI coaches. Get real-time voice feedback, scoring, and a stronger version of every answer.</p>
+  <div class="hero-ctas">
+    <a href="/app" class="cta-primary">Start Practicing Free →</a>
+    <a href="#features" class="cta-secondary">See How It Works</a>
+  </div>
+  <div class="hero-tags">
+    <span class="hero-tag tag-purple">Voice Coaching</span>
+    <span class="hero-tag tag-blue">Live Debate</span>
+    <span class="hero-tag tag-green">Real-time Scoring</span>
+    <span class="hero-tag tag-amber">Skills Tracking</span>
+    <span class="hero-tag tag-purple">Cold Open Practice</span>
+    <span class="hero-tag tag-blue">AI Rewrites</span>
+  </div>
+</section>
+
+<section id="features" class="section">
+  <div class="section-label">What you get</div>
+  <h2>Everything you need to communicate with confidence</h2>
+  <div class="features-grid">
+    <div class="feature-card">
+      <span class="feature-icon">🎙️</span>
+      <h3>Voice Sessions</h3>
+      <p>Speak with your AI coach in real time. They listen, respond, and push you to be sharper — just like a real coaching session.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">✍️</span>
+      <h3>Practice Lab</h3>
+      <p>Submit a draft response and get AI scoring on clarity, confidence, persuasion, storytelling, and conciseness — plus a rewritten stronger version.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">⚡</span>
+      <h3>Daily Warmup</h3>
+      <p>Get a targeted practice question every day based on your scenario and goals. Build the habit of thinking on your feet.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🗣️</span>
+      <h3>Live Debate</h3>
+      <p>Go head-to-head with an AI opponent. Defend your position, handle pushback, and learn to argue with both logic and composure.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">❄️</span>
+      <h3>Cold Open</h3>
+      <p>Get dropped into a high-stakes social scenario with no context. Learn to read the room and open any conversation with confidence.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">📈</span>
+      <h3>Skills Tracking</h3>
+      <p>Watch your clarity, confidence, and persuasion scores evolve session by session. Your communication growth, visualized.</p>
+    </div>
+  </div>
+</section>
+
+<section id="coaches" class="section">
+  <div class="section-label">Your coaches</div>
+  <h2>Six coaches. Six completely different approaches.</h2>
+  <div class="coaches-grid">
+    <div class="coach-card"><span class="coach-emoji">🔥</span><div class="coach-name">Blaze</div><div class="coach-style">Direct & intense</div></div>
+    <div class="coach-card"><span class="coach-emoji">💬</span><div class="coach-name">Echo</div><div class="coach-style">Empathetic listener</div></div>
+    <div class="coach-card"><span class="coach-emoji">🧘</span><div class="coach-name">Sage</div><div class="coach-style">Calm & strategic</div></div>
+    <div class="coach-card"><span class="coach-emoji">⭐</span><div class="coach-name">Nova</div><div class="coach-style">Energetic & bold</div></div>
+    <div class="coach-card"><span class="coach-emoji">🥊</span><div class="coach-name">Rex</div><div class="coach-style">No-nonsense drill</div></div>
+    <div class="coach-card"><span class="coach-emoji">🌙</span><div class="coach-name">Luna</div><div class="coach-style">Gentle & nurturing</div></div>
+  </div>
+</section>
+
+<section class="cta-section">
+  <h2>Ready to communicate like you mean it?</h2>
+  <p>Free to start. No credit card required.</p>
+  <a href="/app" class="cta-primary">Start Practicing Free →</a>
+</section>
+
+<footer>
+  <div class="footer-logo">Conver</div>
+  <div class="footer-links">
+    <a href="/privacy.html">Privacy Policy</a>
+    <a href="/terms.html">Terms of Service</a>
+    <a href="/cookies.html">Cookie Policy</a>
+    <a href="mailto:renishdjoshi@gmail.com">Contact</a>
+  </div>
+  <div class="footer-copy">© 2026 Conver · Built with 🎤</div>
+</footer>
+
+</body>
+</html>

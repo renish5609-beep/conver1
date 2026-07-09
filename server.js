@@ -10,6 +10,18 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+
+// Serve landing page at root
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'landing.html'));
+});
+
+// Serve main app at /app
+app.get('/app', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Keep existing static file serving for assets (must come after the explicit routes above)
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Supabase admin client (service role for server-side ops)
@@ -214,7 +226,7 @@ app.get('/auth/callback', (req, res) => {
         localStorage.setItem('conver_token', token);
         localStorage.setItem('conver_refresh', params.get('refresh_token') || '');
       }
-      window.location.href = '/';
+      window.location.href = '/app';
     </script>
   </body></html>`);
 });
