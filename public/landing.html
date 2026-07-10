@@ -2,105 +2,177 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Conver — AI Conversation Coaching</title>
-<meta name="description" content="Practice interviews, pitches, debates, and hard conversations with AI coaches. Get real-time voice feedback, scoring, and track how your communication evolves.">
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&family=Manrope:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="description" content="Practice interviews, pitches, debates, and hard conversations with 6 AI coaches. Real-time voice feedback, live scoring, track how your communication evolves.">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Space+Grotesk:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#050507;color:#f0f1f8;font-family:'Manrope',sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
-body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(124,111,255,0.12) 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 80% 100%,rgba(56,189,248,0.07) 0%,transparent 60%);pointer-events:none;z-index:0}
+html{scroll-behavior:smooth}
+body{background:#04040a;color:#f0f1f8;font-family:'Plus Jakarta Sans',sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden;cursor:default}
+
+/* CANVAS PARTICLE BACKGROUND */
+#particle-canvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:0.5}
+
+/* CURSOR GLOW FOLLOWER */
+#cursor-glow{position:fixed;width:400px;height:400px;background:radial-gradient(circle,rgba(124,111,255,0.06) 0%,transparent 70%);border-radius:50%;pointer-events:none;z-index:1;transform:translate(-50%,-50%);transition:left 0.15s ease,top 0.15s ease}
+
 a{color:inherit;text-decoration:none}
 
 /* NAV */
-nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:18px 60px;display:flex;align-items:center;justify-content:space-between;background:rgba(5,5,7,0.8);backdrop-filter:blur(24px);border-bottom:1px solid rgba(255,255,255,0.05)}
-.nav-logo{font-family:'Geist',sans-serif;font-size:22px;font-weight:800;background:linear-gradient(135deg,#7c6fff,#b48cff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;display:flex;align-items:center;gap:10px}
-.nav-logo-icon{width:30px;height:30px;background:linear-gradient(135deg,#7c6fff,#b48cff);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 4px 14px rgba(124,111,255,0.4)}
-.nav-links{display:flex;align-items:center;gap:28px}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:16px 60px;display:flex;align-items:center;justify-content:space-between;background:rgba(4,4,10,0.85);backdrop-filter:blur(24px);border-bottom:1px solid rgba(255,255,255,0.04);transition:background 0.3s}
+.nav-logo{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;background:linear-gradient(135deg,#7c6fff,#b48cff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;display:flex;align-items:center;gap:10px;letter-spacing:-0.5px}
+.nav-logo-icon{width:30px;height:30px;background:linear-gradient(135deg,#7c6fff,#b48cff);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 0 20px rgba(124,111,255,0.4);animation:iconGlow 3s ease-in-out infinite alternate;flex-shrink:0}
+@keyframes iconGlow{from{box-shadow:0 0 16px rgba(124,111,255,0.4)}to{box-shadow:0 0 28px rgba(124,111,255,0.7),0 0 50px rgba(124,111,255,0.2)}}
+.nav-links{display:flex;align-items:center;gap:26px}
 .nav-links a{font-size:14px;color:#9099b8;transition:color 0.2s;font-weight:500}
 .nav-links a:hover{color:#f0f1f8}
-.nav-cta{background:linear-gradient(135deg,#7c6fff,#b48cff) !important;color:#fff !important;padding:10px 22px;border-radius:10px;font-weight:700;font-size:14px;font-family:'Geist',sans-serif;transition:all 0.2s !important;box-shadow:0 4px 16px rgba(124,111,255,0.3)}
-.nav-cta:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(124,111,255,0.5) !important}
+.nav-cta{background:linear-gradient(135deg,#7c6fff,#b48cff) !important;color:#fff !important;padding:9px 20px;border-radius:10px;font-weight:700;font-size:14px;font-family:'Space Grotesk',sans-serif;transition:all 0.2s !important;box-shadow:0 4px 16px rgba(124,111,255,0.35);position:relative;overflow:hidden}
+.nav-cta::after{content:'';position:absolute;top:0;left:-100%;right:0;bottom:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent);transition:left 0.4s}
+.nav-cta:hover::after{left:100%}
+.nav-cta:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(124,111,255,0.55) !important}
 
 /* HERO */
-.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:120px 40px 80px;text-align:center;position:relative;z-index:1}
-.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(124,111,255,0.1);border:1px solid rgba(124,111,255,0.25);border-radius:20px;padding:6px 16px;font-size:11px;font-family:'DM Mono',monospace;letter-spacing:2px;text-transform:uppercase;color:#b48cff;margin-bottom:28px;animation:fadeInDown 0.6s ease}
-.hero-badge::before{content:'';width:6px;height:6px;background:#7c6fff;border-radius:50%;animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(1.5)}}
-@keyframes fadeInDown{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
-@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-.hero h1{font-family:'Geist',sans-serif;font-size:clamp(44px,6vw,80px);font-weight:900;line-height:1.03;letter-spacing:-2.5px;margin-bottom:22px;animation:fadeInUp 0.7s ease 0.1s both}
-.hero h1 .line1{display:block;color:#f0f1f8}
-.hero h1 .line2{display:block;background:linear-gradient(135deg,#7c6fff 0%,#b48cff 50%,#38bdf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.hero-sub{font-size:17px;color:#9099b8;line-height:1.75;max-width:520px;margin:0 auto 36px;animation:fadeInUp 0.7s ease 0.2s both;font-weight:400}
-.hero-ctas{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;animation:fadeInUp 0.7s ease 0.3s both}
-.cta-primary{background:linear-gradient(135deg,#7c6fff,#b48cff);color:#fff;padding:15px 32px;border-radius:12px;font-family:'Geist',sans-serif;font-size:15px;font-weight:700;border:none;cursor:pointer;transition:all 0.2s;box-shadow:0 8px 32px rgba(124,111,255,0.35);display:inline-block;position:relative;overflow:hidden}
-.cta-primary::after{content:'';position:absolute;top:0;left:-100%;right:0;bottom:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.12),transparent);transition:left 0.4s}
-.cta-primary:hover{transform:translateY(-2px);box-shadow:0 16px 48px rgba(124,111,255,0.5)}
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:120px 40px 80px;text-align:center;position:relative;z-index:2}
+.hero-ambient{position:absolute;inset:0;pointer-events:none;z-index:-1}
+.orb{position:absolute;border-radius:50%;filter:blur(80px);animation:orbFloat 12s ease-in-out infinite}
+.orb-1{width:500px;height:500px;background:radial-gradient(circle,rgba(124,111,255,0.18) 0%,transparent 70%);top:-15%;left:-10%;animation-delay:0s}
+.orb-2{width:400px;height:400px;background:radial-gradient(circle,rgba(56,189,248,0.12) 0%,transparent 70%);bottom:-10%;right:-5%;animation-delay:-4s}
+.orb-3{width:300px;height:300px;background:radial-gradient(circle,rgba(244,114,182,0.08) 0%,transparent 70%);top:40%;left:60%;animation-delay:-8s}
+@keyframes orbFloat{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-20px) scale(1.05)}66%{transform:translate(-20px,15px) scale(0.95)}}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(124,111,255,0.1);border:1px solid rgba(124,111,255,0.25);border-radius:24px;padding:6px 16px;font-size:11px;font-family:'DM Mono',monospace;letter-spacing:2px;text-transform:uppercase;color:#b48cff;margin-bottom:28px;opacity:0;animation:fadeSlideDown 0.6s ease 0.1s forwards}
+.hero-badge-dot{width:7px;height:7px;background:#7c6fff;border-radius:50%;animation:badgePulse 2s ease infinite;box-shadow:0 0 8px rgba(124,111,255,0.6)}
+@keyframes badgePulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.6);opacity:0.5}}
+@keyframes fadeSlideDown{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeSlideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.hero h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(46px,6.5vw,84px);font-weight:700;line-height:1.02;letter-spacing:-2.5px;margin-bottom:20px;opacity:0;animation:fadeSlideUp 0.7s ease 0.25s forwards}
+.hero-line1{display:block;color:#f0f1f8}
+.hero-line2{display:block;background:linear-gradient(135deg,#7c6fff 0%,#b48cff 40%,#38bdf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-cursor{display:inline-block;width:3px;height:0.85em;background:#7c6fff;margin-left:4px;vertical-align:middle;animation:blink 1s step-end infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.hero-sub{font-size:17px;color:#9099b8;line-height:1.75;max-width:500px;margin:0 auto 36px;font-weight:400;opacity:0;animation:fadeSlideUp 0.7s ease 0.4s forwards}
+.hero-ctas{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;opacity:0;animation:fadeSlideUp 0.7s ease 0.5s forwards}
+.cta-primary{background:linear-gradient(135deg,#7c6fff,#b48cff);color:#fff;padding:15px 34px;border-radius:12px;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;border:none;cursor:pointer;transition:all 0.22s;box-shadow:0 8px 32px rgba(124,111,255,0.4);display:inline-block;position:relative;overflow:hidden;letter-spacing:-0.3px}
+.cta-primary::after{content:'';position:absolute;top:0;left:-100%;right:0;bottom:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent);transition:left 0.45s}
+.cta-primary:hover{transform:translateY(-2px);box-shadow:0 16px 48px rgba(124,111,255,0.55)}
 .cta-primary:hover::after{left:100%}
-.cta-secondary{background:rgba(255,255,255,0.04);color:#f0f1f8;padding:15px 32px;border-radius:12px;font-size:15px;font-weight:600;border:1px solid rgba(255,255,255,0.1);cursor:pointer;transition:all 0.2s;display:inline-block}
-.cta-secondary:hover{background:rgba(255,255,255,0.08);border-color:rgba(124,111,255,0.35)}
+.cta-secondary{background:rgba(255,255,255,0.04);color:#f0f1f8;padding:15px 34px;border-radius:12px;font-size:15px;font-weight:600;border:1px solid rgba(255,255,255,0.1);cursor:pointer;transition:all 0.22s;display:inline-block}
+.cta-secondary:hover{background:rgba(255,255,255,0.08);border-color:rgba(124,111,255,0.4);transform:translateY(-1px)}
 
-/* TAGS */
-.hero-tags{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:52px;animation:fadeInUp 0.7s ease 0.4s both}
-.htag{font-size:11.5px;font-family:'DM Mono',monospace;padding:5px 14px;border-radius:20px;border:1px solid}
-.htag-p{color:#b48cff;border-color:rgba(180,140,255,0.25);background:rgba(124,111,255,0.06)}
-.htag-b{color:#38bdf8;border-color:rgba(56,189,248,0.25);background:rgba(56,189,248,0.06)}
-.htag-g{color:#2dd4a0;border-color:rgba(45,212,160,0.25);background:rgba(45,212,160,0.06)}
-.htag-a{color:#fbbf24;border-color:rgba(251,191,36,0.25);background:rgba(251,191,36,0.06)}
-
-/* STATS BAR */
-.stats-bar{display:flex;gap:0;border:1px solid rgba(255,255,255,0.07);border-radius:16px;overflow:hidden;margin-top:64px;max-width:640px;width:100%;background:rgba(255,255,255,0.02);animation:fadeInUp 0.7s ease 0.5s both}
-.stat{flex:1;padding:18px 20px;text-align:center;border-right:1px solid rgba(255,255,255,0.06)}
+/* LIVE STATS TICKER */
+.stats-container{margin-top:60px;opacity:0;animation:fadeSlideUp 0.7s ease 0.6s forwards}
+.stats-label{font-size:10px;font-family:'DM Mono',monospace;letter-spacing:3px;text-transform:uppercase;color:#6b7494;margin-bottom:14px}
+.stats-bar{display:flex;border:1px solid rgba(255,255,255,0.07);border-radius:16px;overflow:hidden;background:rgba(255,255,255,0.02);max-width:620px;width:100%;margin:0 auto}
+.stat{flex:1;padding:18px 16px;text-align:center;border-right:1px solid rgba(255,255,255,0.06);position:relative}
 .stat:last-child{border-right:none}
-.stat-num{font-family:'Geist',sans-serif;font-size:22px;font-weight:800;background:linear-gradient(135deg,#7c6fff,#b48cff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:2px}
-.stat-label{font-size:11px;color:#6b7494;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--grad-purple);opacity:0;transition:opacity 0.3s}
+.stat:hover::before{opacity:1}
+.stat-num{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;background:linear-gradient(135deg,#7c6fff,#b48cff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:3px}
+.stat-label{font-size:10.5px;color:#6b7494;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:0.5px}
 
-/* FEATURES */
-.section{padding:90px 40px;max-width:1080px;margin:0 auto;position:relative;z-index:1}
+/* FLOATING SCORE CARDS — animated product preview */
+.floating-preview{position:relative;margin:80px auto 0;max-width:700px;width:100%;height:240px;opacity:0;animation:fadeSlideUp 0.8s ease 0.7s forwards}
+.float-card{position:absolute;background:linear-gradient(145deg,rgba(20,21,30,0.95),rgba(14,15,22,0.95));border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:16px 20px;backdrop-filter:blur(20px);box-shadow:0 20px 60px rgba(0,0,0,0.5);animation:cardFloat 6s ease-in-out infinite}
+.float-card-1{left:0;top:20px;animation-delay:0s;width:200px}
+.float-card-2{left:50%;transform:translateX(-50%);top:0;animation-delay:-2s;width:240px}
+.float-card-3{right:0;top:30px;animation-delay:-4s;width:200px}
+@keyframes cardFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+.float-card-2{animation:card2Float 6s ease-in-out infinite}
+@keyframes card2Float{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-10px)}}
+.fc-label{font-size:9.5px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1.5px;color:#6b7494;margin-bottom:8px}
+.fc-score{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:#f0f1f8;margin-bottom:4px}
+.fc-sub{font-size:11.5px;color:#9099b8}
+.fc-bar{height:4px;border-radius:2px;background:rgba(255,255,255,0.08);margin-top:10px;overflow:hidden}
+.fc-bar-fill{height:100%;border-radius:2px;animation:barGrow 2s ease 1s both}
+@keyframes barGrow{from{width:0}to{width:var(--w)}}
+.fc-skill-row{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:11px}
+.fc-skill-name{color:#9099b8}
+.fc-skill-val{font-family:'DM Mono',monospace;font-weight:500}
+.fc-live-dot{width:6px;height:6px;background:#2dd4a0;border-radius:50%;animation:badgePulse 1.5s ease infinite;box-shadow:0 0 6px rgba(45,212,160,0.6);display:inline-block;margin-right:6px}
+
+/* HERO TAGS */
+.hero-tags{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:48px;opacity:0;animation:fadeSlideUp 0.7s ease 0.65s forwards}
+.htag{font-size:11.5px;font-family:'DM Mono',monospace;padding:5px 14px;border-radius:20px;border:1px solid;transition:all 0.2s;cursor:default}
+.htag:hover{transform:translateY(-2px)}
+.htag-p{color:#b48cff;border-color:rgba(180,140,255,0.25);background:rgba(124,111,255,0.06)}
+.htag-p:hover{background:rgba(124,111,255,0.12);border-color:rgba(180,140,255,0.4)}
+.htag-b{color:#38bdf8;border-color:rgba(56,189,248,0.25);background:rgba(56,189,248,0.06)}
+.htag-b:hover{background:rgba(56,189,248,0.12);border-color:rgba(56,189,248,0.4)}
+.htag-g{color:#2dd4a0;border-color:rgba(45,212,160,0.25);background:rgba(45,212,160,0.06)}
+.htag-g:hover{background:rgba(45,212,160,0.12)}
+.htag-a{color:#fbbf24;border-color:rgba(251,191,36,0.25);background:rgba(251,191,36,0.06)}
+.htag-a:hover{background:rgba(251,191,36,0.12)}
+
+/* SCROLL REVEAL */
+.reveal{opacity:0;transform:translateY(28px);transition:opacity 0.65s ease,transform 0.65s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+.reveal-delay-1{transition-delay:0.1s}
+.reveal-delay-2{transition-delay:0.2s}
+.reveal-delay-3{transition-delay:0.3s}
+.reveal-delay-4{transition-delay:0.4s}
+.reveal-delay-5{transition-delay:0.5s}
+.reveal-delay-6{transition-delay:0.6s}
+
+/* SECTIONS */
+.section{padding:90px 40px;max-width:1080px;margin:0 auto;position:relative;z-index:2}
 .section-label{font-family:'DM Mono',monospace;font-size:10.5px;letter-spacing:3px;text-transform:uppercase;color:#7c6fff;margin-bottom:14px;text-align:center}
-.section h2{font-family:'Geist',sans-serif;font-size:clamp(28px,4vw,46px);font-weight:800;letter-spacing:-1.5px;text-align:center;margin-bottom:56px;color:#f0f1f8}
-.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:18px}
-.feature-card{background:linear-gradient(145deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:28px;transition:all 0.25s;position:relative;overflow:hidden;cursor:default}
+.section h2{font-family:'Space Grotesk',sans-serif;font-size:clamp(30px,4vw,50px);font-weight:700;letter-spacing:-1.5px;text-align:center;margin-bottom:54px;color:#f0f1f8}
+
+/* FEATURE CARDS */
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px}
+.feature-card{background:linear-gradient(145deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:28px;transition:all 0.3s cubic-bezier(0.4,0,0.2,1);position:relative;overflow:hidden;cursor:default}
 .feature-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.09),transparent)}
-.feature-card:hover{border-color:rgba(124,111,255,0.28);transform:translateY(-4px);box-shadow:0 20px 48px rgba(0,0,0,0.4),0 0 0 1px rgba(124,111,255,0.08)}
-.feature-icon{font-size:26px;margin-bottom:14px;display:block;filter:drop-shadow(0 0 10px rgba(124,111,255,0.5))}
-.feature-card h3{font-family:'Geist',sans-serif;font-size:16px;font-weight:700;margin-bottom:8px;color:#f0f1f8}
+.feature-card::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at var(--mx,50%) var(--my,50%),rgba(124,111,255,0.06) 0%,transparent 60%);opacity:0;transition:opacity 0.3s}
+.feature-card:hover{border-color:rgba(124,111,255,0.3);transform:translateY(-5px);box-shadow:0 20px 48px rgba(0,0,0,0.5),0 0 0 1px rgba(124,111,255,0.1)}
+.feature-card:hover::after{opacity:1}
+.feature-icon{font-size:28px;margin-bottom:14px;display:block;filter:drop-shadow(0 0 10px rgba(124,111,255,0.5));transition:transform 0.3s}
+.feature-card:hover .feature-icon{transform:scale(1.15)}
+.feature-card h3{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;margin-bottom:8px;color:#f0f1f8;letter-spacing:-0.3px}
 .feature-card p{font-size:13px;color:#9099b8;line-height:1.7}
 
+/* HOW IT WORKS */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:32px;position:relative}
+.steps::before{content:'';position:absolute;top:24px;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,rgba(124,111,255,0.3),transparent)}
+.step{text-align:center;position:relative;z-index:1}
+.step-num{width:48px;height:48px;background:linear-gradient(135deg,#7c6fff,#b48cff);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:#fff;margin:0 auto 16px;box-shadow:0 0 24px rgba(124,111,255,0.4);animation:stepGlow 3s ease-in-out infinite alternate}
+@keyframes stepGlow{from{box-shadow:0 0 16px rgba(124,111,255,0.4)}to{box-shadow:0 0 32px rgba(124,111,255,0.7)}}
+.step h3{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;margin-bottom:6px;color:#f0f1f8}
+.step p{font-size:12.5px;color:#9099b8}
+
 /* COACHES */
-.coaches-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px}
-.coach-card{background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:22px 16px;text-align:center;transition:all 0.22s;cursor:default}
-.coach-card:hover{border-color:rgba(124,111,255,0.28);background:rgba(124,111,255,0.06);transform:translateY(-2px)}
-.coach-emoji{font-size:26px;margin-bottom:10px;display:block}
-.coach-name{font-family:'Geist',sans-serif;font-size:14px;font-weight:700;margin-bottom:3px;color:#f0f1f8}
-.coach-style{font-size:11px;color:#6b7494;font-family:'DM Mono',monospace}
+.coaches-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px}
+.coach-card{background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:22px 14px;text-align:center;transition:all 0.25s cubic-bezier(0.4,0,0.2,1);cursor:default;position:relative;overflow:hidden}
+.coach-card::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,var(--c,rgba(124,111,255,0.08)) 0%,transparent 60%);opacity:0;transition:opacity 0.3s}
+.coach-card:hover{transform:translateY(-4px) scale(1.02);border-color:rgba(124,111,255,0.3)}
+.coach-card:hover::after{opacity:1}
+.coach-emoji{font-size:28px;margin-bottom:10px;display:block;transition:transform 0.3s}
+.coach-card:hover .coach-emoji{transform:scale(1.2) rotate(5deg)}
+.coach-name{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;margin-bottom:3px;color:#f0f1f8}
+.coach-style{font-size:10.5px;color:#6b7494;font-family:'DM Mono',monospace}
+
+/* DIVIDER BEAM */
+.section-beam{height:1px;background:linear-gradient(90deg,transparent,rgba(124,111,255,0.4),rgba(56,189,248,0.2),transparent);margin:0 auto;max-width:800px;position:relative;z-index:2}
 
 /* CTA SECTION */
-.cta-section{text-align:center;padding:100px 40px;background:linear-gradient(135deg,rgba(124,111,255,0.07),rgba(56,189,248,0.03));border-top:1px solid rgba(255,255,255,0.05);border-bottom:1px solid rgba(255,255,255,0.05);position:relative;z-index:1;overflow:hidden}
-.cta-section::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 80% at 50% 50%,rgba(124,111,255,0.09) 0%,transparent 70%);pointer-events:none}
-.cta-section h2{font-family:'Geist',sans-serif;font-size:clamp(28px,4vw,50px);font-weight:900;letter-spacing:-2px;margin-bottom:14px;position:relative;z-index:1;color:#f0f1f8}
-.cta-section p{font-size:15px;color:#9099b8;margin-bottom:32px;position:relative;z-index:1}
+.cta-section{text-align:center;padding:100px 40px;position:relative;z-index:2;overflow:hidden}
+.cta-section::before{content:'';position:absolute;top:-50%;left:25%;width:500px;height:500px;background:radial-gradient(circle,rgba(124,111,255,0.1) 0%,transparent 70%);pointer-events:none;animation:orbFloat 10s ease-in-out infinite}
+.cta-section h2{font-family:'Space Grotesk',sans-serif;font-size:clamp(30px,5vw,56px);font-weight:700;letter-spacing:-2px;margin-bottom:14px;color:#f0f1f8;position:relative;z-index:1}
+.cta-section p{font-size:16px;color:#9099b8;margin-bottom:32px;position:relative;z-index:1}
 
 /* FOOTER */
-footer{padding:44px 60px;border-top:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:18px;position:relative;z-index:1}
-.footer-logo{font-family:'Geist',sans-serif;font-size:18px;font-weight:800;background:linear-gradient(135deg,#7c6fff,#b48cff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.footer-links{display:flex;gap:22px}
+footer{padding:40px 60px;border-top:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;position:relative;z-index:2}
+.footer-logo{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;background:linear-gradient(135deg,#7c6fff,#b48cff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.footer-links{display:flex;gap:20px}
 .footer-links a{font-size:12.5px;color:#6b7494;transition:color 0.2s}
 .footer-links a:hover{color:#9099b8}
 .footer-copy{font-size:11.5px;color:#6b7494;font-family:'DM Mono',monospace}
-
-@media (max-width:640px){
-  nav{padding:16px 20px}
-  .nav-links{gap:14px}
-  .nav-links a:not(.nav-cta){display:none}
-  .section{padding:60px 20px}
-  .cta-section{padding:60px 20px}
-  footer{padding:32px 20px}
-}
 </style>
 </head>
 <body>
+<!-- Particle canvas -->
+<canvas id="particle-canvas"></canvas>
+<!-- Cursor glow -->
+<div id="cursor-glow"></div>
 
 <nav>
   <div class="nav-logo">
@@ -109,6 +181,7 @@ footer{padding:44px 60px;border-top:1px solid rgba(255,255,255,0.05);display:fle
   </div>
   <div class="nav-links">
     <a href="#features">Features</a>
+    <a href="#how">How It Works</a>
     <a href="#coaches">Coaches</a>
     <a href="/app">Sign In</a>
     <a href="/app" class="nav-cta">Get Started Free</a>
@@ -116,62 +189,118 @@ footer{padding:44px 60px;border-top:1px solid rgba(255,255,255,0.05);display:fle
 </nav>
 
 <section class="hero">
-  <div class="hero-badge">AI Conversation Intelligence</div>
+  <div class="hero-ambient">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <div class="hero-badge">
+    <div class="hero-badge-dot"></div>
+    AI Conversation Intelligence
+  </div>
+
   <h1>
-    <span class="line1">Your AI coach for the</span>
-    <span class="line2">conversations that matter.</span>
+    <span class="hero-line1">Your AI coach for the</span>
+    <span class="hero-line2" id="typewriter-text"><span class="hero-cursor"></span></span>
   </h1>
+
   <p class="hero-sub">Practice interviews, pitches, debates, and hard conversations with 6 distinct AI coaches. Real-time voice feedback, live scoring, and a stronger version of every answer.</p>
+
   <div class="hero-ctas">
     <a href="/app" class="cta-primary">Start Practicing Free →</a>
     <a href="#features" class="cta-secondary">See How It Works</a>
   </div>
+
   <div class="hero-tags">
     <span class="htag htag-p">Voice Coaching</span>
     <span class="htag htag-b">Live Debate</span>
     <span class="htag htag-g">Real-time Scoring</span>
     <span class="htag htag-a">Skills Tracking</span>
     <span class="htag htag-p">Cold Open Practice</span>
-    <span class="htag htag-b">AI Rewrites</span>
+    <span class="htag htag-b">1000+ Questions</span>
   </div>
-  <div class="stats-bar">
-    <div class="stat"><div class="stat-num">6</div><div class="stat-label">AI Coaches</div></div>
-    <div class="stat"><div class="stat-num">5</div><div class="stat-label">Skill Dimensions</div></div>
-    <div class="stat"><div class="stat-num">1K+</div><div class="stat-label">Practice Questions</div></div>
-    <div class="stat"><div class="stat-num">50</div><div class="stat-label">Levels to Climb</div></div>
+
+  <!-- Floating live product preview -->
+  <div class="floating-preview">
+    <div class="float-card float-card-1">
+      <div class="fc-label">Session Score</div>
+      <div class="fc-score" id="live-score">8.4</div>
+      <div class="fc-sub">Clarity · Confidence</div>
+      <div class="fc-bar"><div class="fc-bar-fill" style="--w:84%;background:linear-gradient(90deg,#7c6fff,#b48cff)"></div></div>
+    </div>
+    <div class="float-card float-card-2">
+      <div class="fc-label"><span class="fc-live-dot"></span>Live Feedback</div>
+      <div style="font-size:12.5px;color:#9099b8;line-height:1.7;margin-top:6px">"Strong opening. Your confidence is there — now sharpen the close. End with conviction, not a question."</div>
+      <div style="margin-top:10px;font-size:11px;color:#7c6fff;font-family:'DM Mono',monospace">— Blaze · Interview Coach</div>
+    </div>
+    <div class="float-card float-card-3">
+      <div class="fc-label">Skills Progress</div>
+      <div class="fc-skill-row"><span class="fc-skill-name">Clarity</span><span class="fc-skill-val" style="color:#7c6fff">↑ 78</span></div>
+      <div class="fc-skill-row"><span class="fc-skill-name">Confidence</span><span class="fc-skill-val" style="color:#38bdf8">↑ 82</span></div>
+      <div class="fc-skill-row"><span class="fc-skill-name">Persuasion</span><span class="fc-skill-val" style="color:#b48cff">↑ 71</span></div>
+      <div class="fc-skill-row"><span class="fc-skill-name">Level</span><span class="fc-skill-val" style="color:#2dd4a0">Lv.12</span></div>
+    </div>
+  </div>
+
+  <div class="stats-container">
+    <div class="stats-label">Built for every conversation that matters</div>
+    <div class="stats-bar">
+      <div class="stat"><div class="stat-num" data-count="6">0</div><div class="stat-label">AI Coaches</div></div>
+      <div class="stat"><div class="stat-num" data-count="5">0</div><div class="stat-label">Skill Dimensions</div></div>
+      <div class="stat"><div class="stat-num" data-count="1000" data-suffix="+">0</div><div class="stat-label">Practice Questions</div></div>
+      <div class="stat"><div class="stat-num" data-count="50">0</div><div class="stat-label">Levels to Climb</div></div>
+    </div>
   </div>
 </section>
+
+<div class="section-beam"></div>
 
 <section id="features" class="section">
-  <div class="section-label">What you get</div>
-  <h2>Everything you need to communicate with confidence</h2>
+  <div class="section-label reveal">What you get</div>
+  <h2 class="reveal reveal-delay-1">Everything you need to<br>communicate with confidence</h2>
   <div class="features-grid">
-    <div class="feature-card"><span class="feature-icon">🎙️</span><h3>Voice Sessions</h3><p>Speak with your AI coach in real time. They listen, respond, and push you to be sharper — just like a real coaching session.</p></div>
-    <div class="feature-card"><span class="feature-icon">✍</span><h3>Practice Lab</h3><p>Submit a response and get scored across 5 dimensions — plus a rewritten stronger version so you hear what great sounds like.</p></div>
-    <div class="feature-card"><span class="feature-icon">⚡</span><h3>Daily Warmup</h3><p>Get a targeted question every day based on your goals. Build the habit of thinking on your feet before it matters.</p></div>
-    <div class="feature-card"><span class="feature-icon">🗣️</span><h3>Live Debate</h3><p>Go head-to-head with an AI opponent. Defend your position, handle real pushback, and learn to argue with composure.</p></div>
-    <div class="feature-card"><span class="feature-icon">❄️</span><h3>Cold Open</h3><p>Get dropped into a high-stakes social scenario with no context. Learn to read the room and open any conversation cold.</p></div>
-    <div class="feature-card"><span class="feature-icon">📈</span><h3>Skills & Levels</h3><p>Earn XP every session, level up from Beginner to Elite (Level 1–50), and watch your 5 core communication skills evolve.</p></div>
+    <div class="feature-card reveal reveal-delay-1"><span class="feature-icon">🎙️</span><h3>Voice Sessions</h3><p>Speak with your AI coach in real time. They listen, respond, and push you to be sharper — just like a real coaching session.</p></div>
+    <div class="feature-card reveal reveal-delay-2"><span class="feature-icon">✍</span><h3>Practice Lab</h3><p>Submit a response and get scored across 5 dimensions — plus a rewritten stronger version so you hear what great sounds like.</p></div>
+    <div class="feature-card reveal reveal-delay-3"><span class="feature-icon">⚡</span><h3>Daily Warmup</h3><p>Get a targeted question every day based on your goals. Build the habit of thinking on your feet before it matters.</p></div>
+    <div class="feature-card reveal reveal-delay-4"><span class="feature-icon">🗣️</span><h3>Live Debate</h3><p>Go head-to-head with an AI opponent. Defend your position, handle real pushback, and learn to argue with composure.</p></div>
+    <div class="feature-card reveal reveal-delay-5"><span class="feature-icon">❄️</span><h3>Cold Open</h3><p>Get dropped into a high-stakes social scenario with no context. Learn to read the room and open any conversation cold.</p></div>
+    <div class="feature-card reveal reveal-delay-6"><span class="feature-icon">📈</span><h3>XP & Levels</h3><p>Earn XP every session, level up from Beginner to Elite (Level 1–50), and watch your communication skills evolve over time.</p></div>
   </div>
 </section>
 
-<section id="coaches" class="section" style="padding-top:0">
-  <div class="section-label">Your coaches</div>
-  <h2>Six coaches. Six completely different approaches.</h2>
+<div class="section-beam"></div>
+
+<section id="how" class="section">
+  <div class="section-label reveal">How it works</div>
+  <h2 class="reveal reveal-delay-1">From sign up to sharper in minutes</h2>
+  <div class="steps">
+    <div class="step reveal reveal-delay-1"><div class="step-num">1</div><h3>Pick your coach</h3><p>Choose from 6 AI coaches, each with a distinct style — from brutal honesty to empathetic guidance.</p></div>
+    <div class="step reveal reveal-delay-2"><div class="step-num">2</div><h3>Practice your scenario</h3><p>Voice sessions, practice lab, live debate, cold opens — 6 modes for every situation you'll face.</p></div>
+    <div class="step reveal reveal-delay-3"><div class="step-num">3</div><h3>Get real feedback</h3><p>Scored across 5 dimensions, rewritten stronger, with specific coaching on exactly what to improve.</p></div>
+    <div class="step reveal reveal-delay-4"><div class="step-num">4</div><h3>Track your growth</h3><p>Watch your skills evolve. Earn XP, level up, and see the data proving you're getting better.</p></div>
+  </div>
+</section>
+
+<div class="section-beam"></div>
+
+<section id="coaches" class="section">
+  <div class="section-label reveal">Your coaches</div>
+  <h2 class="reveal reveal-delay-1">Six coaches. Six approaches.<br>One goal.</h2>
   <div class="coaches-grid">
-    <div class="coach-card"><span class="coach-emoji">🔥</span><div class="coach-name">Blaze</div><div class="coach-style">Direct & intense</div></div>
-    <div class="coach-card"><span class="coach-emoji">💬</span><div class="coach-name">Echo</div><div class="coach-style">Empathetic listener</div></div>
-    <div class="coach-card"><span class="coach-emoji">🧘</span><div class="coach-name">Sage</div><div class="coach-style">Calm & strategic</div></div>
-    <div class="coach-card"><span class="coach-emoji">⭐</span><div class="coach-name">Nova</div><div class="coach-style">Energetic & bold</div></div>
-    <div class="coach-card"><span class="coach-emoji">🥊</span><div class="coach-name">Rex</div><div class="coach-style">No-nonsense drill</div></div>
-    <div class="coach-card"><span class="coach-emoji">🌙</span><div class="coach-name">Luna</div><div class="coach-style">Gentle & nurturing</div></div>
+    <div class="coach-card reveal reveal-delay-1" style="--c:rgba(248,113,113,0.08)"><span class="coach-emoji">🔥</span><div class="coach-name">Blaze</div><div class="coach-style">Direct & intense</div></div>
+    <div class="coach-card reveal reveal-delay-2" style="--c:rgba(56,189,248,0.08)"><span class="coach-emoji">💬</span><div class="coach-name">Echo</div><div class="coach-style">Empathetic listener</div></div>
+    <div class="coach-card reveal reveal-delay-3" style="--c:rgba(45,212,160,0.08)"><span class="coach-emoji">🧘</span><div class="coach-name">Sage</div><div class="coach-style">Calm & strategic</div></div>
+    <div class="coach-card reveal reveal-delay-4" style="--c:rgba(251,191,36,0.08)"><span class="coach-emoji">⭐</span><div class="coach-name">Nova</div><div class="coach-style">Energetic & bold</div></div>
+    <div class="coach-card reveal reveal-delay-5" style="--c:rgba(180,140,255,0.08)"><span class="coach-emoji">🥊</span><div class="coach-name">Rex</div><div class="coach-style">No-nonsense drill</div></div>
+    <div class="coach-card reveal reveal-delay-6" style="--c:rgba(124,111,255,0.08)"><span class="coach-emoji">🌙</span><div class="coach-name">Luna</div><div class="coach-style">Gentle & nurturing</div></div>
   </div>
 </section>
 
 <section class="cta-section">
-  <h2>Ready to communicate like you mean it?</h2>
-  <p>Free to start. No credit card. No fluff.</p>
-  <a href="/app" class="cta-primary">Start Practicing Free →</a>
+  <h2 class="reveal">Ready to communicate<br>like you mean it?</h2>
+  <p class="reveal reveal-delay-1">Free to start. No credit card. No fluff.</p>
+  <a href="/app" class="cta-primary reveal reveal-delay-2">Start Practicing Free →</a>
 </section>
 
 <footer>
@@ -185,5 +314,138 @@ footer{padding:44px 60px;border-top:1px solid rgba(255,255,255,0.05);display:fle
   <div class="footer-copy">© 2026 Conver · Built with 🎤</div>
 </footer>
 
+<script>
+// ── PARTICLE CANVAS ──────────────────────────────────────────
+const canvas = document.getElementById('particle-canvas');
+const ctx = canvas.getContext('2d');
+let W = canvas.width = window.innerWidth;
+let H = canvas.height = window.innerHeight;
+const particles = [];
+for (let i = 0; i < 80; i++) {
+  particles.push({
+    x: Math.random() * W, y: Math.random() * H,
+    r: Math.random() * 1.5 + 0.3,
+    vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3,
+    a: Math.random() * 0.5 + 0.1,
+    color: Math.random() > 0.5 ? '124,111,255' : '56,189,248'
+  });
+}
+function drawParticles() {
+  ctx.clearRect(0, 0, W, H);
+  particles.forEach(p => {
+    p.x += p.vx; p.y += p.vy;
+    if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+    if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(${p.color},${p.a})`;
+    ctx.fill();
+  });
+  // Draw connections
+  particles.forEach((a, i) => {
+    particles.slice(i + 1).forEach(b => {
+      const d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (d < 120) {
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+        ctx.strokeStyle = `rgba(124,111,255,${0.08 * (1 - d/120)})`;
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      }
+    });
+  });
+  requestAnimationFrame(drawParticles);
+}
+drawParticles();
+window.addEventListener('resize', () => { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; });
+
+// ── CURSOR GLOW ───────────────────────────────────────────────
+const glow = document.getElementById('cursor-glow');
+document.addEventListener('mousemove', e => {
+  glow.style.left = e.clientX + 'px';
+  glow.style.top = e.clientY + 'px';
+});
+
+// ── TYPEWRITER ────────────────────────────────────────────────
+const phrases = [
+  'conversations that matter.',
+  'interviews that count.',
+  'pitches that land.',
+  'debates you actually win.',
+  'moments that define you.'
+];
+let pi = 0, ci = 0, deleting = false;
+const tw = document.getElementById('typewriter-text');
+function type() {
+  const phrase = phrases[pi];
+  if (!deleting) {
+    ci++;
+    tw.innerHTML = phrase.slice(0, ci) + '<span class="hero-cursor"></span>';
+    if (ci === phrase.length) { deleting = true; setTimeout(type, 2200); return; }
+    setTimeout(type, 55);
+  } else {
+    ci--;
+    tw.innerHTML = phrase.slice(0, ci) + '<span class="hero-cursor"></span>';
+    if (ci === 0) { deleting = false; pi = (pi + 1) % phrases.length; setTimeout(type, 400); return; }
+    setTimeout(type, 28);
+  }
+}
+setTimeout(type, 900);
+
+// ── SCROLL REVEAL ─────────────────────────────────────────────
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
+}, { threshold: 0.12 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// ── COUNTER ANIMATION ─────────────────────────────────────────
+const counterObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    const el = e.target;
+    const target = parseInt(el.dataset.count);
+    const suffix = el.dataset.suffix || '';
+    const dur = 1800, step = 16;
+    let start = null;
+    function animate(ts) {
+      if (!start) start = ts;
+      const progress = Math.min((ts - start) / dur, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      el.textContent = Math.floor(eased * target) + (progress === 1 ? suffix : '');
+      if (progress < 1) requestAnimationFrame(animate);
+    }
+    requestAnimationFrame(animate);
+    counterObs.unobserve(el);
+  });
+}, { threshold: 0.5 });
+document.querySelectorAll('[data-count]').forEach(el => counterObs.observe(el));
+
+// ── CARD MOUSE GLOW ───────────────────────────────────────────
+document.querySelectorAll('.feature-card').forEach(card => {
+  card.addEventListener('mousemove', e => {
+    const r = card.getBoundingClientRect();
+    const mx = ((e.clientX - r.left) / r.width * 100) + '%';
+    const my = ((e.clientY - r.top) / r.height * 100) + '%';
+    card.style.setProperty('--mx', mx);
+    card.style.setProperty('--my', my);
+  });
+});
+
+// ── LIVE SCORE TICKER ─────────────────────────────────────────
+const scoreEl = document.getElementById('live-score');
+const scores = ['7.8','8.2','9.1','8.7','7.5','8.9','9.3','8.4'];
+let si = 0;
+setInterval(() => {
+  si = (si + 1) % scores.length;
+  scoreEl.style.opacity = '0';
+  scoreEl.style.transform = 'translateY(-8px)';
+  setTimeout(() => {
+    scoreEl.textContent = scores[si];
+    scoreEl.style.transition = 'all 0.4s ease';
+    scoreEl.style.opacity = '1';
+    scoreEl.style.transform = 'translateY(0)';
+  }, 300);
+}, 2500);
+</script>
 </body>
 </html>
