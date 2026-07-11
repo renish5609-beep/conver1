@@ -824,10 +824,8 @@ input:focus, select:focus, textarea:focus {
 .auth-oauth-btn:hover{background:var(--bg3);border-color:rgba(255,255,255,0.2)}
 .auth-switch{text-align:center;font-size:13px;color:var(--muted2);margin-top:8px}
 .auth-switch span{color:var(--accent3);cursor:pointer;text-decoration:underline}
-.auth-error{background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.2);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--red);margin-bottom:12px;display:none}
-.auth-error.show{display:block}
-.auth-success{background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.2);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--green);margin-bottom:12px;display:none}
-.auth-success.show{display:block}
+.auth-error{background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.2);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--red);margin-bottom:12px}
+.auth-success{background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.2);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--green);margin-bottom:12px}
 .user-menu{display:flex;align-items:center;gap:8px;cursor:pointer;padding:4px 10px;border-radius:20px;background:var(--bg2);border:1px solid var(--border2);transition:all 0.15s}
 .user-menu:hover{background:var(--bg3)}
 .user-avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent3));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;font-family:'Space Grotesk',sans-serif}
@@ -1664,6 +1662,50 @@ input:focus,select:focus,textarea:focus{
 .back-btn.visible{display:flex}
 /* Page transition animation */
 @keyframes ripple{to{width:130px;height:130px;opacity:0}}
+
+.app-footer {
+  border-top: 1px solid var(--border);
+  padding: 12px 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0;
+  background: rgba(8,9,26,0.5);
+}
+.app-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+}
+.app-footer-dot { color: var(--border2); }
+.app-footer-links {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.app-footer-links a {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.app-footer-links a:hover { color: var(--accent3); }
+
+body.reducemotion, body.reducemotion * {
+  animation-duration: 0.001s !important;
+  animation-delay: 0s !important;
+  transition-duration: 0.001s !important;
+  scroll-behavior: auto !important;
+}
+body.compact-mode .panel { padding: 14px; margin-bottom: 10px; }
+body.compact-mode .setting-row { padding: 8px 0; }
+body.compact-mode .page { padding: 20px 24px; }
 </style>
 </head>
 <body>
@@ -1736,43 +1778,43 @@ input:focus,select:focus,textarea:focus{
 
 
 <!-- AUTH SCREEN -->
-<div class="auth-screen" id="auth-screen">
+<div class="auth-screen hidden" id="auth-screen">
   <div class="auth-box">
     <div class="auth-logo">
       <div class="auth-logo-icon">🎤</div>
       <div class="auth-logo-text">Conver</div>
     </div>
-    <div id="auth-view-signin">
+
+    <!-- SIGN IN VIEW -->
+    <div id="view-signin">
       <div class="auth-title">Welcome back</div>
-      <div class="auth-sub">Sign in to your account to continue improving.</div>
-      <div class="auth-error" id="signin-error"></div>
-      <div class="auth-success" id="signin-success"></div>
-      <input class="auth-input" type="email" id="signin-email" placeholder="Email address"/>
-      <input class="auth-input" type="password" id="signin-password" placeholder="Password" onkeydown="if(event.key==='Enter')signIn()"/>
+      <div class="auth-sub">Sign in to continue improving.</div>
+      <div id="signin-error" class="auth-error hidden"></div>
+      <div id="signin-success" class="auth-success hidden"></div>
+      <label class="auth-label">Email</label>
+      <input type="email" id="signin-email" class="auth-input" placeholder="your@email.com" onkeydown="if(event.key==='Enter')signIn()"/>
+      <label class="auth-label">Password</label>
+      <input type="password" id="signin-password" class="auth-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')signIn()"/>
       <button class="auth-btn" id="signin-btn" onclick="signIn()">Sign In</button>
-      <div class="auth-switch">Don't have an account? <span onclick="showView('signup')">Sign up</span></div>
-      <div class="auth-switch" style="margin-top:8px"><span onclick="showView('reset')">Forgot password?</span></div>
+      <div class="auth-link">Don't have an account? <a onclick="showView('signup')">Sign up free</a></div>
+      <div class="auth-link"><a onclick="showForgotPassword()" style="font-size:11px;color:var(--muted)">Forgot password?</a></div>
     </div>
 
-    <div id="auth-view-signup" style="display:none">
-      <div class="auth-title">Create account</div>
-      <div class="auth-sub">Join Conver and start communicating like you mean it.</div>
-      <div class="auth-error" id="signup-error"></div>
-      <div class="auth-success" id="signup-success"></div>
-      <input class="auth-input" type="email" id="signup-email" placeholder="Email address"/>
-      <input class="auth-input" type="password" id="signup-password" placeholder="Password (min 6 chars)" onkeydown="if(event.key==='Enter')signUp()"/>
+    <!-- SIGN UP VIEW -->
+    <div id="view-signup" class="hidden">
+      <div class="auth-title">Create your account</div>
+      <div class="auth-sub">Free to start. No credit card required.</div>
+      <div id="signup-error" class="auth-error hidden"></div>
+      <div id="signup-success" class="auth-success hidden"></div>
+      <label class="auth-label">Email</label>
+      <input type="email" id="signup-email" class="auth-input" placeholder="your@email.com" onkeydown="if(event.key==='Enter')signUp()"/>
+      <label class="auth-label">Password <span style="color:var(--muted);font-size:10px;font-weight:400">(min 6 characters)</span></label>
+      <input type="password" id="signup-password" class="auth-input" placeholder="Create a password" onkeydown="if(event.key==='Enter')signUp()"/>
       <button class="auth-btn" id="signup-btn" onclick="signUp()">Create Account</button>
-      <div class="auth-switch">Already have an account? <span onclick="showView('signin')">Sign in</span></div>
-    </div>
-
-    <div id="auth-view-reset" style="display:none">
-      <div class="auth-title">Reset password</div>
-      <div class="auth-sub">Enter your email and we'll send you a reset link.</div>
-      <div class="auth-error" id="reset-error"></div>
-      <div class="auth-success" id="reset-success"></div>
-      <input class="auth-input" type="email" id="reset-email" placeholder="Email address"/>
-      <button class="auth-btn" onclick="resetPassword()">Send Reset Link</button>
-      <div class="auth-switch"><span onclick="showView('signin')">← Back to sign in</span></div>
+      <div class="auth-link">Already have an account? <a onclick="showView('signin')">Sign in</a></div>
+      <div style="font-size:10.5px;color:var(--muted);text-align:center;margin-top:12px;line-height:1.6">
+        By signing up you agree to our <a href="/terms.html" target="_blank" style="color:var(--accent3)">Terms</a> and <a href="/privacy.html" target="_blank" style="color:var(--accent3)">Privacy Policy</a>
+      </div>
     </div>
   </div>
 </div>
@@ -2347,10 +2389,14 @@ input:focus,select:focus,textarea:focus{
 
       <!-- SETTINGS -->
       <div class="page" id="page-settings">
-        <div class="section-head"><h2>Settings</h2><p>Customize how Conver coaches you, speaks to you, and analyzes you.</p></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
+        <div class="section-head">
+          <h2>Settings</h2>
+          <p>Customize every aspect of how Conver coaches, speaks, analyzes, and remembers you.</p>
+        </div>
 
-          <!-- LEFT COLUMN -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;align-items:start">
+
+          <!-- COLUMN 1 -->
           <div style="display:flex;flex-direction:column;gap:16px">
 
             <div class="panel">
@@ -2370,6 +2416,8 @@ input:focus,select:focus,textarea:focus{
                     <option value="public">Public Speaking</option>
                     <option value="social">Social Confidence</option>
                     <option value="sales">Sales & Persuasion</option>
+                    <option value="negotiation">Negotiation</option>
+                    <option value="debate">Debate & Argumentation</option>
                   </select>
                 </div>
               </div>
@@ -2380,6 +2428,40 @@ input:focus,select:focus,textarea:focus{
                     <option value="beginner">Beginner — teach me everything</option>
                     <option value="intermediate" selected>Intermediate — I know the basics</option>
                     <option value="advanced">Advanced — just the gaps</option>
+                  </select>
+                </div>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Industry / Context</h4><p>Helps coaches use relevant examples</p></div>
+                <div class="setting-control">
+                  <select id="set-industry" onchange="saveSettings()">
+                    <option value="">General</option>
+                    <option value="tech">Technology & Software</option>
+                    <option value="finance">Finance & Banking</option>
+                    <option value="healthcare">Healthcare & Medicine</option>
+                    <option value="education">Education</option>
+                    <option value="startup">Startups & Entrepreneurship</option>
+                    <option value="consulting">Consulting</option>
+                    <option value="law">Law & Legal</option>
+                    <option value="creative">Creative & Media</option>
+                    <option value="nonprofit">Non-profit & Government</option>
+                  </select>
+                </div>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Time Zone</h4><p>For streak resets and daily challenges</p></div>
+                <div class="setting-control">
+                  <select id="set-timezone" onchange="saveSettings()">
+                    <option value="auto">Auto-detect</option>
+                    <option value="America/New_York">Eastern (ET)</option>
+                    <option value="America/Chicago">Central (CT)</option>
+                    <option value="America/Denver">Mountain (MT)</option>
+                    <option value="America/Los_Angeles">Pacific (PT)</option>
+                    <option value="Europe/London">London (GMT)</option>
+                    <option value="Europe/Paris">Central Europe (CET)</option>
+                    <option value="Asia/Kolkata">India (IST)</option>
+                    <option value="Asia/Singapore">Singapore (SGT)</option>
+                    <option value="Australia/Sydney">Sydney (AEST)</option>
                   </select>
                 </div>
               </div>
@@ -2408,15 +2490,44 @@ input:focus,select:focus,textarea:focus{
                 </div>
               </div>
               <div class="setting-row">
+                <div class="setting-info"><h4>Coaching Language</h4><p>Tone of language coaches use</p></div>
+                <div class="setting-control">
+                  <select id="set-language-tone" onchange="saveSettings()">
+                    <option value="professional">Professional</option>
+                    <option value="casual" selected>Casual & Conversational</option>
+                    <option value="academic">Academic</option>
+                    <option value="motivational">Motivational</option>
+                  </select>
+                </div>
+              </div>
+              <div class="setting-row">
                 <div class="setting-info"><h4>Coach Memory</h4><p>Coaches reference your past sessions and patterns</p></div>
                 <label class="toggle"><input type="checkbox" id="tog-memory" checked onchange="S.coachMemory=this.checked;saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Motivational Messages</h4><p>Encouragement and milestone celebrations</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-motivation" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Socratic Mode</h4><p>Coach asks questions instead of giving answers</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-socratic" onchange="saveSettings()"><span class="toggle-slider"></span></label>
               </div>
             </div>
 
             <div class="panel">
-              <div class="settings-section-title">Voice</div>
+              <div class="settings-section-title">Default Scenario</div>
+              <div id="settings-scenario-cards" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"></div>
+            </div>
+
+          </div>
+
+          <!-- COLUMN 2 -->
+          <div style="display:flex;flex-direction:column;gap:16px">
+
+            <div class="panel">
+              <div class="settings-section-title">Voice & Audio</div>
               <div class="setting-row">
-                <div class="setting-info"><h4>Voice Speed</h4><p>How fast coaches speak in Voice Session</p></div>
+                <div class="setting-info"><h4>Coach Voice Speed</h4><p>How fast coaches speak</p></div>
                 <div class="setting-control">
                   <select id="set-voice-speed" onchange="saveSettings()">
                     <option value="slow">Slow</option>
@@ -2426,24 +2537,32 @@ input:focus,select:focus,textarea:focus{
                 </div>
               </div>
               <div class="setting-row">
-                <div class="setting-info"><h4>Voice Session Rounds</h4><p>How many rounds in Live Debate</p></div>
+                <div class="setting-info"><h4>Auto-play Coach Response</h4><p>Play voice automatically after your turn</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-autoplay" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Microphone Auto-start</h4><p>Mic activates automatically after coach speaks</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-mic-auto" onchange="saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Sound Effects</h4><p>UI sounds for toasts and completions</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-sfx" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Debate Rounds</h4><p>How many rounds in Live Debate</p></div>
                 <div class="setting-control">
                   <select id="set-debate-rounds" onchange="S.debateRounds=parseInt(this.value);saveSettings()">
                     <option value="2">2 rounds</option>
                     <option value="3" selected>3 rounds</option>
                     <option value="5">5 rounds</option>
+                    <option value="7">7 rounds</option>
                   </select>
                 </div>
               </div>
             </div>
 
-          </div>
-
-          <!-- RIGHT COLUMN -->
-          <div style="display:flex;flex-direction:column;gap:16px">
-
             <div class="panel">
-              <div class="settings-section-title">Analysis</div>
+              <div class="settings-section-title">Analysis & Feedback</div>
               <div class="setting-row">
                 <div class="setting-info"><h4>Rewrite Suggestions</h4><p>Show a stronger version after every analysis</p></div>
                 <label class="toggle"><input type="checkbox" id="tog-rewrite" checked onchange="S.rewrite=this.checked;saveSettings()"><span class="toggle-slider"></span></label>
@@ -2453,7 +2572,7 @@ input:focus,select:focus,textarea:focus{
                 <label class="toggle"><input type="checkbox" id="tog-diff" checked onchange="S.showDiff=this.checked;saveSettings()"><span class="toggle-slider"></span></label>
               </div>
               <div class="setting-row">
-                <div class="setting-info"><h4>Filler Word Detection</h4><p>Flag filler words in your responses</p></div>
+                <div class="setting-info"><h4>Filler Word Detection</h4><p>Flag um, uh, like, you know in responses</p></div>
                 <label class="toggle"><input type="checkbox" id="tog-filler" checked onchange="S.filler=this.checked;saveSettings()"><span class="toggle-slider"></span></label>
               </div>
               <div class="setting-row">
@@ -2464,75 +2583,130 @@ input:focus,select:focus,textarea:focus{
                 <div class="setting-info"><h4>Tone Detector</h4><p>Live tone analysis as you type</p></div>
                 <label class="toggle"><input type="checkbox" id="tog-tone" checked onchange="S.toneDetector=this.checked;saveSettings()"><span class="toggle-slider"></span></label>
               </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Weak Spot Targeting</h4><p>Focus coaching on your lowest-scoring skills</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-weakspot" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Show Confidence Score</h4><p>Display AI confidence in its scoring</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-confidence-score" onchange="saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Example Responses</h4><p>Show example A+ responses alongside feedback</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-examples" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
             </div>
 
             <div class="panel">
-              <div class="settings-section-title">Default Scenario</div>
-              <div id="settings-scenario-cards" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"></div>
+              <div class="settings-section-title">Gamification</div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>XP Notifications</h4><p>Show XP earned after each session</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-xp-notify" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Level Up Celebration</h4><p>Show animation when you level up</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-levelup" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Streak Reminders</h4><p>Warn when you're about to break your streak</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-streak-warn" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Daily Challenge Reminder</h4><p>Nudge to complete today's challenge</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-daily-remind" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- COLUMN 3 -->
+          <div style="display:flex;flex-direction:column;gap:16px">
+
+            <div class="panel">
+              <div class="settings-section-title">Appearance</div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Accent Color</h4><p>Primary brand color throughout the app</p></div>
+                <div class="setting-control" style="display:flex;gap:8px">
+                  <div onclick="setAccentColor('#7c6fff')" style="width:22px;height:22px;border-radius:50%;background:#7c6fff;cursor:pointer;border:2px solid rgba(255,255,255,0.3);transition:transform 0.2s" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform=''"></div>
+                  <div onclick="setAccentColor('#38bdf8')" style="width:22px;height:22px;border-radius:50%;background:#38bdf8;cursor:pointer;border:2px solid rgba(255,255,255,0.1);transition:transform 0.2s" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform=''"></div>
+                  <div onclick="setAccentColor('#2dd4a0')" style="width:22px;height:22px;border-radius:50%;background:#2dd4a0;cursor:pointer;border:2px solid rgba(255,255,255,0.1);transition:transform 0.2s" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform=''"></div>
+                  <div onclick="setAccentColor('#f472b6')" style="width:22px;height:22px;border-radius:50%;background:#f472b6;cursor:pointer;border:2px solid rgba(255,255,255,0.1);transition:transform 0.2s" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform=''"></div>
+                  <div onclick="setAccentColor('#fbbf24')" style="width:22px;height:22px;border-radius:50%;background:#fbbf24;cursor:pointer;border:2px solid rgba(255,255,255,0.1);transition:transform 0.2s" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform=''"></div>
+                </div>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Reduce Motion</h4><p>Disable animations and transitions</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-reduce-motion" onchange="document.body.classList.toggle('reducemotion',this.checked);saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Compact Mode</h4><p>Reduce spacing for more content on screen</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-compact" onchange="document.body.classList.toggle('compact-mode',this.checked);saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="settings-section-title">Account</div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Email Address</h4><p id="account-email-display" style="color:var(--accent3);font-family:'DM Mono',monospace;font-size:11px">Not signed in</p></div>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Member Since</h4><p id="account-created-display" style="color:var(--muted2);font-size:12px">—</p></div>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Change Password</h4><p>Update your account password</p></div>
+                <button class="btn-ghost" onclick="showChangePasswordModal()" style="width:auto;padding:6px 14px;font-size:12px">Change</button>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Sign Out</h4><p>Sign out of your account</p></div>
+                <button class="btn-ghost" onclick="signOut()" style="width:auto;padding:6px 14px;font-size:12px;color:var(--red);border-color:rgba(248,113,113,0.25)">Sign Out</button>
+              </div>
             </div>
 
             <div class="panel">
               <div class="settings-section-title">Data & Privacy</div>
               <div class="setting-row">
-                <div class="setting-info"><h4>Auto-save Sessions</h4><p>Save every practice session to your account</p></div>
+                <div class="setting-info"><h4>Auto-save Sessions</h4><p>Save every session to your account</p></div>
                 <label class="toggle"><input type="checkbox" id="tog-autosave" checked onchange="S.autosave=this.checked;saveSettings()"><span class="toggle-slider"></span></label>
               </div>
-              <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px">
-                <button class="btn-ghost" onclick="clearHistory()" style="color:var(--red);border-color:rgba(248,113,113,0.2)">🗑 Clear All History</button>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Analytics</h4><p>Help improve Conver with anonymous usage data</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-analytics" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
+                <button class="btn-ghost" onclick="exportUserData()" style="font-size:12.5px">⬇ Export My Data (JSON)</button>
+                <button class="btn-ghost" onclick="clearHistory()" style="color:var(--red);border-color:rgba(248,113,113,0.2);font-size:12.5px">🗑 Clear All History</button>
+              </div>
+              <div style="margin-top:14px;font-size:11.5px;color:var(--muted);line-height:1.8">
+                <a href="/privacy.html" target="_blank" style="color:var(--accent3);text-decoration:none">Privacy Policy</a> ·
+                <a href="/terms.html" target="_blank" style="color:var(--accent3);text-decoration:none">Terms of Service</a> ·
+                <a href="/cookies.html" target="_blank" style="color:var(--accent3);text-decoration:none">Cookie Policy</a>
+              </div>
+            </div>
+
+            <div class="panel" style="border-color:rgba(248,113,113,0.2)">
+              <div class="settings-section-title" style="color:var(--red)">⚠ Danger Zone</div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Reset All Progress</h4><p>Clear XP, level, and all skill scores. Keeps session history.</p></div>
+                <button class="btn-ghost" onclick="if(confirm('Reset all XP and level progress? This cannot be undone.')){S.xp=0;S.skills={clarity:0,confidence:0,persuasion:0,storytelling:0,conciseness:0};S.scores={clarity:[],confidence:[],persuasion:[]};updateChips();saveUserData();showToast('🔄','Progress reset')}" style="width:auto;padding:6px 14px;font-size:12px;color:var(--red);border-color:rgba(248,113,113,0.25)">Reset</button>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Delete Account</h4><p>Permanently delete your account and all data</p></div>
+                <button class="btn-ghost" onclick="showDeleteAccountModal()" style="width:auto;padding:6px 14px;font-size:12px;color:var(--red);border-color:rgba(248,113,113,0.25)">Delete</button>
               </div>
             </div>
 
             <div class="panel">
-              <div class="settings-section-title">About</div>
-              <div style="font-size:13px;color:var(--muted2);line-height:1.9">
-                <p style="margin-bottom:8px">Conver v2.0 — AI conversation intelligence.</p>
-                <p style="margin-bottom:8px">Powered by <strong style="color:var(--text)">Claude (claude-sonnet-4-5)</strong> + ElevenLabs.</p>
-                <p>Voice works best in Chrome.</p>
-              </div>
-            </div>
-
-            <div class="panel">
-              <div class="settings-section-title">Help & Support</div>
-              <div class="setting-row" style="flex-direction:column;align-items:flex-start;gap:12px">
-                <details style="width:100%;cursor:pointer">
-                  <summary style="font-size:13.5px;color:var(--text);font-weight:600;padding:6px 0;list-style:none;display:flex;justify-content:space-between;align-items:center">
-                    Voice isn't working — what do I do?
-                    <span style="color:var(--muted);font-size:16px">+</span>
-                  </summary>
-                  <p style="font-size:13px;color:var(--muted2);padding:10px 0 4px;line-height:1.7">
-                    Voice features require microphone access and work best in Chrome. Check that your browser has microphone permission for this site (click the lock icon in the address bar). If voice is still silent, try refreshing the page and clicking the mic button again.
-                  </p>
-                </details>
-                <details style="width:100%;cursor:pointer">
-                  <summary style="font-size:13.5px;color:var(--text);font-weight:600;padding:6px 0;list-style:none;display:flex;justify-content:space-between;align-items:center">
-                    Why isn't my data saving between sessions?
-                    <span style="color:var(--muted);font-size:16px">+</span>
-                  </summary>
-                  <p style="font-size:13px;color:var(--muted2);padding:10px 0 4px;line-height:1.7">
-                    Make sure Auto-save is toggled ON in Settings. Data saves to your account automatically after each completed session. If you're signed out, data is not saved — sign in first to enable persistence.
-                  </p>
-                </details>
-                <details style="width:100%;cursor:pointer">
-                  <summary style="font-size:13.5px;color:var(--text);font-weight:600;padding:6px 0;list-style:none;display:flex;justify-content:space-between;align-items:center">
-                    How is my score calculated?
-                    <span style="color:var(--muted);font-size:16px">+</span>
-                  </summary>
-                  <p style="font-size:13px;color:var(--muted2);padding:10px 0 4px;line-height:1.7">
-                    Each session is scored by AI across five dimensions: clarity, confidence, persuasion, storytelling, and conciseness. Your XP accumulates over time and determines your level (1–50). Good sessions earn more XP; a bad session never reduces your XP.
-                  </p>
-                </details>
-                <details style="width:100%;cursor:pointer">
-                  <summary style="font-size:13.5px;color:var(--text);font-weight:600;padding:6px 0;list-style:none;display:flex;justify-content:space-between;align-items:center">
-                    How do I delete my account?
-                    <span style="color:var(--muted);font-size:16px">+</span>
-                  </summary>
-                  <p style="font-size:13px;color:var(--muted2);padding:10px 0 4px;line-height:1.7">
-                    Email us at <a href="mailto:renishdjoshi@gmail.com" style="color:var(--accent)">renishdjoshi@gmail.com</a> with your account email and we'll delete your account and all associated data within 48 hours.
-                  </p>
-                </details>
-                <div style="margin-top:8px;padding:12px 16px;background:rgba(124,111,255,0.06);border:1px solid rgba(124,111,255,0.15);border-radius:10px">
-                  <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px">Contact Support</div>
-                  <a href="mailto:renishdjoshi@gmail.com" style="font-size:13.5px;color:var(--accent3);text-decoration:none">renishdjoshi@gmail.com</a>
+              <div class="settings-section-title">ℹ About</div>
+              <div style="font-size:13px;color:var(--muted2);line-height:2">
+                <p><strong style="color:var(--text)">Conver v2.0</strong> — AI Conversation Intelligence</p>
+                <p>AI powered by <strong style="color:var(--accent3)">Claude (claude-sonnet-4-5)</strong></p>
+                <p>Voice by <strong style="color:var(--accent2)">ElevenLabs</strong></p>
+                <p>Auth & data by <strong style="color:var(--green)">Supabase</strong></p>
+                <p style="margin-top:8px;font-size:11.5px">Voice works best in Chrome. For support: <a href="mailto:renishdjoshi@gmail.com" style="color:var(--accent3)">renishdjoshi@gmail.com</a></p>
+                <div style="margin-top:12px;display:flex;gap:10px">
+                  <a href="/privacy.html" target="_blank" style="font-size:11px;color:var(--muted);text-decoration:none;font-family:'DM Mono',monospace">Privacy</a>
+                  <a href="/terms.html" target="_blank" style="font-size:11px;color:var(--muted);text-decoration:none;font-family:'DM Mono',monospace">Terms</a>
+                  <a href="/cookies.html" target="_blank" style="font-size:11px;color:var(--muted);text-decoration:none;font-family:'DM Mono',monospace">Cookies</a>
                 </div>
               </div>
             </div>
@@ -2541,26 +2715,19 @@ input:focus,select:focus,textarea:focus{
         </div>
       </div>
 
-      <div class="app-footer" style="
-        border-top: 1px solid var(--border);
-        padding: 16px 28px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-top: auto;
-      ">
-        <div style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace">
-          Conver v2.0 · Powered by Claude
+      <footer class="app-footer">
+        <div class="app-footer-left">
+          <span>Conver v2.0</span>
+          <span class="app-footer-dot">·</span>
+          <span>Powered by Claude</span>
         </div>
-        <div style="display:flex;gap:16px;align-items:center">
-          <a href="/privacy.html" target="_blank" style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;text-decoration:none;transition:color 0.2s" onmouseover="this.style.color='var(--muted2)'" onmouseout="this.style.color='var(--muted)'">Privacy</a>
-          <a href="/terms.html" target="_blank" style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;text-decoration:none;transition:color 0.2s" onmouseover="this.style.color='var(--muted2)'" onmouseout="this.style.color='var(--muted)'">Terms</a>
-          <a href="/cookies.html" target="_blank" style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;text-decoration:none;transition:color 0.2s" onmouseover="this.style.color='var(--muted2)'" onmouseout="this.style.color='var(--muted)'">Cookies</a>
-          <a href="mailto:renishdjoshi@gmail.com" style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;text-decoration:none;transition:color 0.2s" onmouseover="this.style.color='var(--muted2)'" onmouseout="this.style.color='var(--muted)'">Contact</a>
+        <div class="app-footer-links">
+          <a href="/privacy.html" target="_blank">Privacy Policy</a>
+          <a href="/terms.html" target="_blank">Terms of Service</a>
+          <a href="/cookies.html" target="_blank">Cookie Policy</a>
+          <a href="mailto:renishdjoshi@gmail.com">Contact</a>
         </div>
-      </div>
+      </footer>
 
   </main>
 </div>
@@ -4098,6 +4265,11 @@ const DEFAULT_SETTINGS = {
   coachMemory: true, voiceSpeed: 'normal', debateRounds: 3,
   rewrite: true, showDiff: true, filler: true,
   autoReport: true, toneDetector: true, autosave: true,
+  industry: '', timezone: 'auto', languageTone: 'casual',
+  motivation: true, socratic: false, autoplay: true, micAuto: false,
+  sfx: true, weakspot: true, confidenceScore: false, examples: true,
+  xpNotify: true, levelup: true, streakWarn: true, dailyRemind: true,
+  reduceMotion: false, compactMode: false, analytics: true,
 };
 
 function loadSettings() {
@@ -4117,6 +4289,26 @@ function loadSettings() {
   S.intensity = settings.intensity;
   S.detail = settings.detail;
   S.voiceSpeed = settings.voiceSpeed;
+  S.industry = settings.industry;
+  S.timezone = settings.timezone;
+  S.languageTone = settings.languageTone;
+  S.motivation = settings.motivation;
+  S.socratic = settings.socratic;
+  S.autoplay = settings.autoplay;
+  S.micAuto = settings.micAuto;
+  S.sfx = settings.sfx;
+  S.weakspot = settings.weakspot;
+  S.confidenceScore = settings.confidenceScore;
+  S.examples = settings.examples;
+  S.xpNotify = settings.xpNotify;
+  S.levelup = settings.levelup;
+  S.streakWarn = settings.streakWarn;
+  S.dailyRemind = settings.dailyRemind;
+  S.reduceMotion = settings.reduceMotion;
+  S.compactMode = settings.compactMode;
+  S.analytics = settings.analytics;
+  document.body.classList.toggle('reducemotion', !!settings.reduceMotion);
+  document.body.classList.toggle('compact-mode', !!settings.compactMode);
   return settings;
 }
 
@@ -4139,6 +4331,24 @@ function applySettingsToUI() {
   setChk('tog-report', settings.autoReport);
   setChk('tog-tone', settings.toneDetector);
   setChk('tog-autosave', settings.autosave);
+  set('set-industry', settings.industry);
+  set('set-timezone', settings.timezone);
+  set('set-language-tone', settings.languageTone);
+  setChk('tog-motivation', settings.motivation);
+  setChk('tog-socratic', settings.socratic);
+  setChk('tog-autoplay', settings.autoplay);
+  setChk('tog-mic-auto', settings.micAuto);
+  setChk('tog-sfx', settings.sfx);
+  setChk('tog-weakspot', settings.weakspot);
+  setChk('tog-confidence-score', settings.confidenceScore);
+  setChk('tog-examples', settings.examples);
+  setChk('tog-xp-notify', settings.xpNotify);
+  setChk('tog-levelup', settings.levelup);
+  setChk('tog-streak-warn', settings.streakWarn);
+  setChk('tog-daily-remind', settings.dailyRemind);
+  setChk('tog-reduce-motion', settings.reduceMotion);
+  setChk('tog-compact', settings.compactMode);
+  setChk('tog-analytics', settings.analytics);
   const sc = document.getElementById('settings-scenario-cards');
   if (sc && sc.children.length === 0) {
     SCENARIOS.forEach(s => {
@@ -4174,16 +4384,99 @@ function saveSettings() {
     autoReport: getChk('tog-report'),
     toneDetector: getChk('tog-tone'),
     autosave: getChk('tog-autosave'),
+    industry: get('set-industry') || '',
+    timezone: get('set-timezone') || 'auto',
+    languageTone: get('set-language-tone') || 'casual',
+    motivation: getChk('tog-motivation'),
+    socratic: getChk('tog-socratic'),
+    autoplay: getChk('tog-autoplay'),
+    micAuto: getChk('tog-mic-auto'),
+    sfx: getChk('tog-sfx'),
+    weakspot: getChk('tog-weakspot'),
+    confidenceScore: getChk('tog-confidence-score'),
+    examples: getChk('tog-examples'),
+    xpNotify: getChk('tog-xp-notify'),
+    levelup: getChk('tog-levelup'),
+    streakWarn: getChk('tog-streak-warn'),
+    dailyRemind: getChk('tog-daily-remind'),
+    reduceMotion: getChk('tog-reduce-motion'),
+    compactMode: getChk('tog-compact'),
+    analytics: getChk('tog-analytics'),
   };
   localStorage.setItem('conver_settings', JSON.stringify(settings));
   loadSettings();
   showToast('✓', 'Settings saved');
 }
 
+// Accent color switcher
+function setAccentColor(color) {
+  document.documentElement.style.setProperty('--accent', color);
+  localStorage.setItem('conver_accent', color);
+  showToast('🎨', 'Accent color updated');
+}
+
+// Export user data as JSON download
+function exportUserData() {
+  const data = {
+    exportDate: new Date().toISOString(),
+    sessions: S.sessions,
+    streak: S.streak,
+    level: calcLevelFromXP(S.xp || 0),
+    xp: S.xp,
+    skills: S.skills,
+    history: S.history,
+    settings: {
+      goal: S.goal,
+      coach: S.coach,
+      scenario: S.scenario
+    }
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `conver-data-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('⬇', 'Data exported successfully');
+}
+
+// Show delete account modal (stub — just shows confirmation)
+function showDeleteAccountModal() {
+  if (confirm('This will permanently delete your account and all data. This cannot be undone.\n\nType your email below to confirm, or cancel.')) {
+    alert('To complete account deletion, email renishdjoshi@gmail.com with your account email. We will delete your account within 48 hours.');
+  }
+}
+
+// Show change password modal (stub)
+function showChangePasswordModal() {
+  const email = currentUser?.email;
+  if (!email) { showToast('⚠', 'You must be signed in to change your password'); return; }
+  sbClient.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/app' })
+    .then(() => showToast('✉', 'Password reset email sent to ' + email))
+    .catch(e => showToast('❌', 'Error: ' + e.message));
+}
+
+// Update account display in settings
+function updateAccountDisplay() {
+  const emailEl = document.getElementById('account-email-display');
+  if (emailEl && currentUser) emailEl.textContent = currentUser.email || '—';
+  const createdEl = document.getElementById('account-created-display');
+  if (createdEl && currentUser?.created_at) {
+    createdEl.textContent = new Date(currentUser.created_at).toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'});
+  }
+}
+
+// Load saved accent color on boot
+(function() {
+  const saved = localStorage.getItem('conver_accent');
+  if (saved) document.documentElement.style.setProperty('--accent', saved);
+})();
+
 function buildSystemPromptExtras() {
   const parts = [];
   if (S.userName) parts.push(`The user's name is ${S.userName}. Address them by name occasionally.`);
-  const goalMap = {interview:'They are preparing for job interviews.',pitch:'They are working on pitching and fundraising.',networking:'They are focused on networking and making connections.',leadership:'They are developing leadership and management skills.',public:'They are working on public speaking.',social:'They are building social confidence.',sales:'They are improving sales and persuasion skills.'};
+  const goalMap = {interview:'They are preparing for job interviews.',pitch:'They are working on pitching and fundraising.',networking:'They are focused on networking and making connections.',leadership:'They are developing leadership and management skills.',public:'They are working on public speaking.',social:'They are building social confidence.',sales:'They are improving sales and persuasion skills.',negotiation:'They are working on negotiation skills.',debate:'They are practicing debate and argumentation.'};
   if (S.goal && goalMap[S.goal]) parts.push(goalMap[S.goal]);
   if (S.level === 'beginner') parts.push('Explain concepts clearly as if they are new to this. Be patient and educational.');
   if (S.level === 'advanced') parts.push('Skip basics. Focus only on nuanced improvements and advanced technique.');
@@ -4191,6 +4484,19 @@ function buildSystemPromptExtras() {
   if (S.intensity === 'brutal') parts.push('Be completely blunt and direct. No sugarcoating. Tell them exactly what is wrong.');
   if (S.detail === 'concise') parts.push('Keep feedback short and punchy. Bullet points over paragraphs.');
   if (S.detail === 'detailed') parts.push('Give thorough, detailed explanations for every piece of feedback.');
+  const industryMap = {tech:'They work in technology and software — use relevant examples.',finance:'They work in finance and banking — use relevant examples.',healthcare:'They work in healthcare and medicine — use relevant examples.',education:'They work in education — use relevant examples.',startup:'They work in startups and entrepreneurship — use relevant examples.',consulting:'They work in consulting — use relevant examples.',law:'They work in law — use relevant examples.',creative:'They work in creative and media — use relevant examples.',nonprofit:'They work in non-profit or government — use relevant examples.'};
+  if (S.industry && industryMap[S.industry]) parts.push(industryMap[S.industry]);
+  const toneMap = {professional:'Use a professional, formal tone.',academic:'Use an academic, precise tone.',motivational:'Use a motivational, energetic tone.'};
+  if (S.languageTone && toneMap[S.languageTone]) parts.push(toneMap[S.languageTone]);
+  if (S.socratic) parts.push('Favor asking guiding questions over giving direct answers, to help them arrive at the insight themselves.');
+  if (S.examples) parts.push('Include a brief example of an A+ response alongside your feedback.');
+  if (S.weakspot && S.skills) {
+    const skillEntries = Object.entries(S.skills);
+    if (skillEntries.length) {
+      const [lowestSkill] = skillEntries.reduce((a, b) => b[1] < a[1] ? b : a);
+      parts.push(`Their weakest skill is ${lowestSkill} — prioritize coaching on that.`);
+    }
+  }
   if (S.coachMemory && S.history.length > 0) {
     const patterns = [];
     const avgC = (S.scores.clarity.reduce((a,b)=>a+b,0)/(S.scores.clarity.length||1)).toFixed(1);
@@ -4911,7 +5217,7 @@ function resetWarmup() {
 // ── Auth ──────────────────────────────────────────────────────────────────────
 const SUPABASE_URL = 'https://cxvxiljzaldufonioiyt.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4dnhpbGp6YWxkdWZvbmlvaXl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNDI1NTYsImV4cCI6MjA5NTkxODU1Nn0.SZp-NtyxcOijwL2noC_VYCR-vGPVXaPoIkBDwVbmot8';
-let sbClient = null;
+let sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 let currentUser = null;
 let authToken = null;
 
@@ -4937,22 +5243,33 @@ function hideAuthScreen() {
   document.getElementById('auth-screen').classList.add('hidden');
 }
 
-function showView(view) {
-  ['signin','signup','reset'].forEach(v => {
-    document.getElementById('auth-view-'+v).style.display = v === view ? 'block' : 'none';
+function showView(v) {
+  ['signin','signup'].forEach(id => {
+    const el = document.getElementById('view-'+id);
+    if (el) el.classList.toggle('hidden', id !== v);
   });
 }
 
-function setAuthError(id, msg) {
-  const el = document.getElementById(id+'-error');
+function setAuthError(view, msg) {
+  const el = document.getElementById(view+'-error');
+  if (!el) return;
   el.textContent = msg;
-  el.classList.toggle('show', !!msg);
+  el.classList.toggle('hidden', !msg);
 }
 
-function setAuthSuccess(id, msg) {
-  const el = document.getElementById(id+'-success');
+function setAuthSuccess(view, msg) {
+  const el = document.getElementById(view+'-success');
+  if (!el) return;
   el.textContent = msg;
-  el.classList.toggle('show', !!msg);
+  el.classList.toggle('hidden', !msg);
+}
+
+function showForgotPassword() {
+  const email = document.getElementById('signin-email')?.value?.trim();
+  if (!email) { setAuthError('signin','Enter your email first, then click Forgot Password'); return; }
+  sbClient.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/app' })
+    .then(() => { setAuthError('signin',''); alert('Password reset email sent to ' + email); })
+    .catch(e => setAuthError('signin', e.message));
 }
 
 async function signIn() {
@@ -5007,21 +5324,6 @@ async function signUp() {
   }
 }
 
-async function resetPassword() {
-  const email = document.getElementById('reset-email').value.trim();
-  if (!email) { setAuthError('reset', 'Please enter your email.'); return; }
-  setAuthError('reset', '');
-  try {
-    const res = await fetch('/api/auth/signup', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ email, password: 'RESET_PLACEHOLDER_NOT_REAL' })
-    });
-    setAuthSuccess('reset', 'If an account exists, a reset link has been sent.');
-  } catch(e) {
-    setAuthSuccess('reset', 'If an account exists, a reset link has been sent.');
-  }
-}
-
 async function afterSignIn() {
   currentUser = currentUser || {};
   // Create profile
@@ -5032,6 +5334,7 @@ async function afterSignIn() {
   const email = currentUser.email || 'User';
   document.getElementById('user-email-display').textContent = email;
   document.getElementById('user-avatar').textContent = email[0].toUpperCase();
+  if (typeof updateAccountDisplay === 'function') updateAccountDisplay();
   hideAuthScreen();
   await loadUserData();
   showToast('👋', 'Welcome back!');
