@@ -1939,6 +1939,112 @@ body.compact-mode .page { padding: 20px 24px; }
   position: relative;
   z-index: 1;
 }
+
+/* ── SCENARIO CHARACTERS (Cold Open) ───────────────────────── */
+.scenario-character-card {
+  background: var(--char-bg, rgba(56,189,248,0.05));
+  border: 1px solid var(--char-border, rgba(56,189,248,0.25));
+  border-radius: 20px;
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  overflow: hidden;
+  min-width: 200px;
+  text-align: center;
+}
+.scenario-character-card::before {
+  content: '';
+  position: absolute; top: -30%; left: 10%;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, var(--char-color, #38bdf8) 0%, transparent 70%);
+  opacity: 0.1;
+  pointer-events: none;
+  animation: orbFloat 8s ease-in-out infinite alternate;
+}
+.scenario-character-card::after {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--char-color, #38bdf8), transparent);
+  opacity: 0.5;
+}
+.scenario-char-emoji {
+  font-size: 52px;
+  line-height: 1;
+  filter: drop-shadow(0 0 16px var(--char-color, #38bdf8));
+  animation: charFloat 4s ease-in-out infinite;
+  position: relative; z-index: 1;
+}
+@keyframes charFloat {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-8px) rotate(2deg); }
+}
+.scenario-char-name {
+  font-family: 'Italiana', serif;
+  font-size: 22px;
+  color: var(--char-color, #38bdf8);
+  position: relative; z-index: 1;
+}
+.scenario-char-role {
+  font-size: 10.5px;
+  font-family: 'DM Mono', monospace;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  position: relative; z-index: 1;
+}
+.scenario-char-desc {
+  font-size: 12.5px;
+  color: var(--muted2);
+  line-height: 1.65;
+  max-width: 200px;
+  position: relative; z-index: 1;
+}
+.scenario-char-vibe {
+  font-size: 10.5px;
+  font-family: 'DM Mono', monospace;
+  color: var(--char-color, #38bdf8);
+  opacity: 0.7;
+  position: relative; z-index: 1;
+}
+/* Scenario character speaking state */
+.scenario-character-card.char-speaking .scenario-char-emoji {
+  animation: charSpeaking 0.5s ease-in-out infinite alternate;
+  filter: drop-shadow(0 0 24px var(--char-color, #38bdf8));
+}
+@keyframes charSpeaking {
+  from { transform: scale(1) rotate(-1deg); }
+  to { transform: scale(1.08) rotate(1deg); }
+}
+/* ── MODE ICONS (app feature cards) ────────────────────────── */
+.mode-icon-wrap {
+  width: 52px; height: 52px;
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+  position: relative;
+  margin-bottom: 12px;
+  transition: all 0.3s;
+}
+.mode-icon-wrap::before {
+  content: '';
+  position: absolute; inset: 0;
+  border-radius: 14px;
+  background: var(--mode-color, rgba(124,111,255,0.15));
+  animation: modeIconPulse 3s ease-in-out infinite alternate;
+}
+@keyframes modeIconPulse {
+  from { opacity: 0.7; transform: scale(1); }
+  to { opacity: 1; transform: scale(1.05); }
+}
+.hg-card:hover .mode-icon-wrap::before {
+  animation: modeIconPulse 1s ease-in-out infinite alternate;
+}
+.hg-card:hover .mode-icon-wrap {
+  transform: scale(1.1) rotate(-3deg);
+}
 </style>
 </head>
 <body>
@@ -2157,10 +2263,10 @@ body.compact-mode .page { padding: 20px 24px; }
           </div>
         </div>
         <div class="home-grid">
-          <div class="hg-card" onclick="navTo('warmup')"><div class="hg-icon">⚡</div><div class="hg-title">Warmup</div><div class="hg-desc">AI generates targeted questions from your briefing.</div><span class="hg-link">Get warmed up →</span></div>
-          <div class="hg-card" onclick="navTo('practice')"><div class="hg-icon">✍️</div><div class="hg-title">Practice Lab</div><div class="hg-desc">Submit a draft, get scored + a rewrite.</div><span class="hg-link">Open Lab →</span></div>
-          <div class="hg-card" onclick="navTo('voice')"><div class="hg-icon">🎙️</div><div class="hg-title">Voice Session</div><div class="hg-desc">Speak with your coach. They listen and talk back.</div><span class="hg-link">Go live →</span></div>
-          <div class="hg-card" onclick="navTo('skills')"><div class="hg-icon">📊</div><div class="hg-title">Skills & Progress</div><div class="hg-desc">Radar chart of your communication skills.</div><span class="hg-link">View progress →</span></div>
+          <div class="hg-card" onclick="navTo('warmup')"><div class="mode-icon-wrap" style="--mode-color:rgba(251,191,36,0.15)">⚡</div><div class="hg-title">Warmup</div><div class="hg-desc">AI generates targeted questions from your briefing.</div><span class="hg-link">Get warmed up →</span></div>
+          <div class="hg-card" onclick="navTo('practice')"><div class="mode-icon-wrap" style="--mode-color:rgba(124,111,255,0.15)">✍️</div><div class="hg-title">Practice Lab</div><div class="hg-desc">Submit a draft, get scored + a rewrite.</div><span class="hg-link">Open Lab →</span></div>
+          <div class="hg-card" onclick="navTo('voice')"><div class="mode-icon-wrap" style="--mode-color:rgba(45,212,160,0.15)">🎙️</div><div class="hg-title">Voice Session</div><div class="hg-desc">Speak with your coach. They listen and talk back.</div><span class="hg-link">Go live →</span></div>
+          <div class="hg-card" onclick="navTo('skills')"><div class="mode-icon-wrap" style="--mode-color:rgba(56,189,248,0.15)">📊</div><div class="hg-title">Skills & Progress</div><div class="hg-desc">Radar chart of your communication skills.</div><span class="hg-link">View progress →</span></div>
         </div>
         <div class="home-bottom">
           <div class="hb-card"><div class="hb-label">Sessions</div><div class="hb-value" id="home-sessions">0</div><div class="hb-sub">Analyzed this session</div></div>
@@ -2515,17 +2621,51 @@ body.compact-mode .page { padding: 20px 24px; }
             <div style="font-size:44px;margin-bottom:16px">🎲</div>
             <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:800;margin-bottom:10px;letter-spacing:-0.3px">Cold Open Trainer</div>
             <p style="font-size:14px;color:var(--muted2);line-height:1.75;margin-bottom:28px">You get dropped into a real situation — no prep, no context. Just handle it. The AI plays the other person and responds naturally. At the end you get scored.</p>
-            <div class="form-group" style="text-align:left;max-width:420px;margin:0 auto 20px">
-              <label>Situation Type</label>
-              <select id="co-type">
-                <option value="networking">Networking — conference, event, mixer</option>
-                <option value="elevator">Elevator pitch — chance encounter with investor/exec</option>
-                <option value="interview">Interview — surprise first question</option>
-                <option value="social">Social — party, casual intro, first impression</option>
-                <option value="leadership">Leadership — team member comes to you with a problem</option>
-                <option value="sales">Sales — cold outreach conversation</option>
-              </select>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">
+              <div class="scenario-cat-btn" onclick="selectColdOpenCategory('networking')" data-cat="networking"
+                   style="--char-color:#38bdf8;background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.2);
+                   border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;transition:all 0.22s">
+                <div style="font-size:28px;margin-bottom:6px;filter:drop-shadow(0 0 8px #38bdf8)">🤝</div>
+                <div style="font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#f0f1f8">Networking</div>
+                <div style="font-size:10.5px;color:#6b7494;font-family:'DM Mono',monospace;margin-top:2px">Mixers & events</div>
+              </div>
+              <div class="scenario-cat-btn" onclick="selectColdOpenCategory('elevator')" data-cat="elevator"
+                   style="--char-color:#fbbf24;background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.2);
+                   border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;transition:all 0.22s">
+                <div style="font-size:28px;margin-bottom:6px;filter:drop-shadow(0 0 8px #fbbf24)">💼</div>
+                <div style="font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#f0f1f8">Elevator Pitch</div>
+                <div style="font-size:10.5px;color:#6b7494;font-family:'DM Mono',monospace;margin-top:2px">60 seconds</div>
+              </div>
+              <div class="scenario-cat-btn" onclick="selectColdOpenCategory('interview')" data-cat="interview"
+                   style="--char-color:#c084fc;background:rgba(192,132,252,0.06);border:1px solid rgba(192,132,252,0.2);
+                   border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;transition:all 0.22s">
+                <div style="font-size:28px;margin-bottom:6px;filter:drop-shadow(0 0 8px #c084fc)">👔</div>
+                <div style="font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#f0f1f8">Interview</div>
+                <div style="font-size:10.5px;color:#6b7494;font-family:'DM Mono',monospace;margin-top:2px">First impression</div>
+              </div>
+              <div class="scenario-cat-btn" onclick="selectColdOpenCategory('social')" data-cat="social"
+                   style="--char-color:#f472b6;background:rgba(244,114,182,0.06);border:1px solid rgba(244,114,182,0.2);
+                   border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;transition:all 0.22s">
+                <div style="font-size:28px;margin-bottom:6px;filter:drop-shadow(0 0 8px #f472b6)">👋</div>
+                <div style="font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#f0f1f8">Social</div>
+                <div style="font-size:10.5px;color:#6b7494;font-family:'DM Mono',monospace;margin-top:2px">Party & casual</div>
+              </div>
+              <div class="scenario-cat-btn" onclick="selectColdOpenCategory('leadership')" data-cat="leadership"
+                   style="--char-color:#2dd4a0;background:rgba(45,212,160,0.06);border:1px solid rgba(45,212,160,0.2);
+                   border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;transition:all 0.22s">
+                <div style="font-size:28px;margin-bottom:6px;filter:drop-shadow(0 0 8px #2dd4a0)">⚡</div>
+                <div style="font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#f0f1f8">Leadership</div>
+                <div style="font-size:10.5px;color:#6b7494;font-family:'DM Mono',monospace;margin-top:2px">Team moment</div>
+              </div>
+              <div class="scenario-cat-btn" onclick="selectColdOpenCategory('sales')" data-cat="sales"
+                   style="--char-color:#fb923c;background:rgba(251,146,60,0.06);border:1px solid rgba(251,146,60,0.2);
+                   border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;transition:all 0.22s">
+                <div style="font-size:28px;margin-bottom:6px;filter:drop-shadow(0 0 8px #fb923c)">💰</div>
+                <div style="font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#f0f1f8">Sales</div>
+                <div style="font-size:10.5px;color:#6b7494;font-family:'DM Mono',monospace;margin-top:2px">Cold outreach</div>
+              </div>
             </div>
+            <div id="coldopen-character-display" style="margin-bottom:20px"></div>
             <button class="btn-primary" onclick="startColdOpen()" style="max-width:200px">🎲 Drop Me In</button>
           </div>
           <div id="coldopen-live" style="display:none">
@@ -3101,6 +3241,89 @@ function setCoachIdle(coachName) {
   const el = document.getElementById('avatar-' + coachName.toLowerCase());
   if (!el) return;
   el.classList.remove('speaking', 'listening');
+}
+
+const SCENARIO_CHARACTERS = {
+  networking: {
+    emoji: '🤝',
+    color: '#38bdf8',
+    name: 'The Connector',
+    role: 'Networking Event',
+    desc: 'A sharp professional at a mixer. They know everyone and size you up fast.',
+    vibe: 'Confident, curious, fast-reading',
+    bg: 'rgba(56,189,248,0.08)',
+    border: 'rgba(56,189,248,0.3)'
+  },
+  elevator: {
+    emoji: '💼',
+    color: '#fbbf24',
+    name: 'The Decision Maker',
+    role: 'Elevator Encounter',
+    desc: 'A busy exec with 60 seconds and zero patience for fluff. Make it count.',
+    vibe: 'Time-pressed, results-oriented',
+    bg: 'rgba(251,191,36,0.08)',
+    border: 'rgba(251,191,36,0.3)'
+  },
+  interview: {
+    emoji: '👔',
+    color: '#c084fc',
+    name: 'The Interviewer',
+    role: 'Job Interview',
+    desc: "Has seen hundreds of candidates. They're looking for the one who surprises them.",
+    vibe: 'Skeptical, thorough, testing',
+    bg: 'rgba(192,132,252,0.08)',
+    border: 'rgba(192,132,252,0.3)'
+  },
+  social: {
+    emoji: '👋',
+    color: '#f472b6',
+    name: 'The Stranger',
+    role: 'Social Setting',
+    desc: 'You just locked eyes at a party. The next 30 seconds decide everything.',
+    vibe: 'Open, social, reading energy',
+    bg: 'rgba(244,114,182,0.08)',
+    border: 'rgba(244,114,182,0.3)'
+  },
+  leadership: {
+    emoji: '⚡',
+    color: '#2dd4a0',
+    name: 'The Team Member',
+    role: 'Leadership Moment',
+    desc: 'Comes to you with a problem. How you respond defines your leadership.',
+    vibe: 'Needs guidance, watching you',
+    bg: 'rgba(45,212,160,0.08)',
+    border: 'rgba(45,212,160,0.3)'
+  },
+  sales: {
+    emoji: '💰',
+    color: '#fb923c',
+    name: 'The Prospect',
+    role: 'Sales Encounter',
+    desc: 'Busy, skeptical, and not looking to be sold. Earn their attention.',
+    vibe: 'Resistant, busy, show-me-value',
+    bg: 'rgba(251,146,60,0.08)',
+    border: 'rgba(251,146,60,0.3)'
+  }
+};
+
+function createScenarioCharacter(category, speaking = false) {
+  const char = SCENARIO_CHARACTERS[category] || SCENARIO_CHARACTERS.networking;
+  return `
+    <div class="scenario-character-card ${speaking ? 'char-speaking' : ''}"
+         id="scenario-char-${category}"
+         style="--char-color:${char.color};--char-bg:${char.bg};--char-border:${char.border}">
+      <span class="scenario-char-emoji">${char.emoji}</span>
+      <div class="scenario-char-name">${char.name}</div>
+      <div class="scenario-char-role">${char.role}</div>
+      <p class="scenario-char-desc">${char.desc}</p>
+      <div class="scenario-char-vibe">${char.vibe}</div>
+    </div>
+  `;
+}
+
+function setScenarioCharSpeaking(category, speaking) {
+  const el = document.getElementById('scenario-char-' + category);
+  if (el) el.classList.toggle('char-speaking', speaking);
 }
 
 function renderCoachProfiles() {
@@ -5172,10 +5395,31 @@ let coState = { running: false, type: '', scenario: null, history: [], faceAnim:
 let coFaceState = 'idle', coMouth = 0, coBlink = 0;
 let coRecognition = null, isCOListening = false;
 
-function initColdOpen() {}
+function initColdOpen() {
+  if (!coState.running) {
+    const charContainer = document.getElementById('coldopen-character-display');
+    if (charContainer && !charContainer.innerHTML) {
+      selectColdOpenCategory(S.coldOpenCategory || 'networking');
+    }
+  }
+}
+
+function selectColdOpenCategory(cat) {
+  S.coldOpenCategory = cat;
+  // Highlight selected button
+  document.querySelectorAll('.scenario-cat-btn').forEach(b => {
+    const isSelected = b.dataset.cat === cat;
+    b.style.transform = isSelected ? 'translateY(-2px) scale(1.03)' : '';
+    b.style.boxShadow = isSelected ? `0 8px 24px rgba(0,0,0,0.3)` : '';
+    b.style.borderWidth = isSelected ? '2px' : '1px';
+  });
+  // Show character preview
+  const charContainer = document.getElementById('coldopen-character-display');
+  if (charContainer) charContainer.innerHTML = createScenarioCharacter(cat, false);
+}
 
 function startColdOpen() {
-  const type = document.getElementById('co-type').value;
+  const type = S.coldOpenCategory || 'networking';
   const scenarios = COLD_OPEN_SCENARIOS[type];
   const scenario = scenarios[Math.floor(Math.random() * scenarios.length)];
   coState = { running:true, type, scenario, history:[], faceAnim:null, personCoach:['Echo','Luna','Sage','Nova'][Math.floor(Math.random()*4)], turns:0 };
@@ -5196,6 +5440,8 @@ function startColdOpen() {
   }
   addCOMsg(scenario.person, scenario.opener, false);
   speakCO(scenario.opener);
+  setScenarioCharSpeaking(type, true);
+  setTimeout(() => setScenarioCharSpeaking(type, false), 3000);
 }
 
 function drawCOFace(){
