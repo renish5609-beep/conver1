@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Conver — AI Conversation Intelligence</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Italiana&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Space+Grotesk:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -1712,6 +1713,232 @@ body.reducemotion, body.reducemotion * {
 body.compact-mode .panel { padding: 14px; margin-bottom: 10px; }
 body.compact-mode .setting-row { padding: 8px 0; }
 body.compact-mode .page { padding: 20px 24px; }
+
+/* ── COACH AVATARS ──────────────────────────────────────────── */
+.coach-avatar-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+}
+
+.coach-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: default;
+}
+
+/* Outer glow ring */
+.coach-avatar::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    var(--coach-color, #7c6fff),
+    transparent 60%,
+    var(--coach-color, #7c6fff)
+  );
+  animation: coachRingSpin 4s linear infinite;
+  opacity: 0.6;
+}
+/* Inner background */
+.coach-avatar::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--s2, #0e1028);
+  z-index: 1;
+}
+@keyframes coachRingSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+/* Avatar inner content */
+.coach-avatar-inner {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.coach-avatar-emoji {
+  font-size: 38px;
+  line-height: 1;
+  filter: drop-shadow(0 0 12px var(--coach-color, #7c6fff));
+  animation: coachIdleBob 3s ease-in-out infinite;
+  transition: all 0.3s;
+}
+@keyframes coachIdleBob {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-3px) scale(1.04); }
+}
+/* Sound wave bars */
+.coach-sound-bars {
+  display: flex;
+  align-items: center;
+  gap: 2.5px;
+  height: 16px;
+}
+.coach-bar {
+  width: 3px;
+  border-radius: 3px;
+  background: var(--coach-color, #7c6fff);
+  height: 4px;
+  transition: height 0.2s;
+  opacity: 0.5;
+}
+/* Speaking state */
+.coach-avatar.speaking::before {
+  animation: coachRingSpin 1s linear infinite;
+  opacity: 1;
+}
+.coach-avatar.speaking .coach-avatar-emoji {
+  animation: coachSpeakBounce 0.6s ease-in-out infinite alternate;
+  filter: drop-shadow(0 0 20px var(--coach-color, #7c6fff));
+}
+@keyframes coachSpeakBounce {
+  from { transform: scale(1); }
+  to { transform: scale(1.08); }
+}
+.coach-avatar.speaking .coach-bar:nth-child(1) { animation: barPulse 0.6s ease-in-out infinite; height: 8px; opacity: 1; }
+.coach-avatar.speaking .coach-bar:nth-child(2) { animation: barPulse 0.6s ease-in-out infinite 0.1s; height: 14px; opacity: 1; }
+.coach-avatar.speaking .coach-bar:nth-child(3) { animation: barPulse 0.6s ease-in-out infinite 0.2s; height: 10px; opacity: 1; }
+.coach-avatar.speaking .coach-bar:nth-child(4) { animation: barPulse 0.6s ease-in-out infinite 0.3s; height: 16px; opacity: 1; }
+.coach-avatar.speaking .coach-bar:nth-child(5) { animation: barPulse 0.6s ease-in-out infinite 0.15s; height: 8px; opacity: 1; }
+@keyframes barPulse {
+  0%, 100% { transform: scaleY(0.4); }
+  50% { transform: scaleY(1); }
+}
+/* Listening state */
+.coach-avatar.listening::before {
+  animation: coachRingSpin 2s linear infinite;
+  opacity: 0.3;
+}
+.coach-avatar.listening .coach-avatar-emoji {
+  animation: coachListenPulse 1.5s ease-in-out infinite;
+  opacity: 0.7;
+}
+@keyframes coachListenPulse {
+  0%, 100% { transform: scale(0.95); opacity: 0.7; }
+  50% { transform: scale(1.02); opacity: 1; }
+}
+/* Coach name tag below avatar */
+.coach-avatar-name {
+  font-family: 'Italiana', serif;
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  color: var(--coach-color, #7c6fff);
+  text-align: center;
+}
+.coach-avatar-role {
+  font-size: 11px;
+  color: var(--muted2);
+  font-family: 'DM Mono', monospace;
+  text-align: center;
+  letter-spacing: 0.5px;
+}
+/* Coach-specific colors */
+.coach-blaze { --coach-color: #f87171; }
+.coach-echo { --coach-color: #38bdf8; }
+.coach-sage { --coach-color: #2dd4a0; }
+.coach-nova { --coach-color: #fbbf24; }
+.coach-rex { --coach-color: #c084fc; }
+.coach-luna { --coach-color: #f472b6; }
+/* Full coach card for voice/debate sessions */
+.coach-session-card {
+  background: var(--s1);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+  min-width: 200px;
+}
+.coach-session-card::before {
+  content: '';
+  position: absolute;
+  top: -30%; left: 10%;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, var(--coach-color, #7c6fff) 0%, transparent 70%);
+  opacity: 0.08;
+  pointer-events: none;
+  transition: opacity 0.5s;
+}
+.coach-session-card.speaking::before { opacity: 0.18; }
+/* AI Profiles grid */
+.coach-profiles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+.coach-profile-card {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.22s;
+  position: relative;
+  overflow: hidden;
+}
+.coach-profile-card::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 0%, var(--coach-color, #7c6fff) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.coach-profile-card:hover {
+  border-color: var(--coach-color, #7c6fff);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 36px rgba(0,0,0,0.35);
+}
+.coach-profile-card:hover::before { opacity: 0.07; }
+.coach-profile-card.selected {
+  border-color: var(--coach-color, #7c6fff);
+  background: linear-gradient(145deg, rgba(124,111,255,0.08), var(--s1));
+  box-shadow: 0 0 24px color-mix(in srgb, var(--coach-color, #7c6fff) 30%, transparent);
+}
+.coach-profile-desc {
+  font-size: 12.5px;
+  color: var(--muted2);
+  text-align: center;
+  line-height: 1.6;
+  position: relative;
+  z-index: 1;
+}
+.coach-profile-trait {
+  font-size: 10.5px;
+  font-family: 'DM Mono', monospace;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  color: var(--muted2);
+  position: relative;
+  z-index: 1;
+}
 </style>
 </head>
 <body>
@@ -2042,6 +2269,7 @@ body.compact-mode .page { padding: 20px 24px; }
             <div class="hold-hint" id="hold-hint">Click to speak</div>
           </div>
           <div class="voice-controls-side">
+            <div id="voice-coach-avatar" class="coach-session-card"></div>
             <div class="vc-card"><div class="vc-title">Switch Coach</div><div class="coach-picker" id="voice-coach-picker"></div></div>
             <div class="vc-card"><div class="vc-title">Conversation Log</div><div class="voice-log" id="voice-log"><div style="font-size:13px;color:var(--muted);text-align:center;padding:16px 0">Conversation will appear here</div></div></div>
             <div class="vc-card"><div class="vc-title">Tips</div><div style="font-size:12.5px;color:var(--muted2);line-height:1.9"><div>🎙️ Hold button while speaking</div><div>🔊 Coach speaks back to you</div><div>📋 Set a briefing for better context</div><div>🔄 Switch coaches mid-session</div></div></div>
@@ -2182,6 +2410,7 @@ body.compact-mode .page { padding: 20px 24px; }
             <p style="font-size:14px;color:var(--muted2);max-width:440px;margin:0 auto 28px;line-height:1.7">Pick a topic, choose your side, and your coach will back you up. The opposition coach will challenge you hard. After 3 rounds you get scored on how well you argued.</p>
 
             <div style="max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:16px">
+              <div id="debate-coach-avatar" class="coach-session-card" style="align-self:center"></div>
               <input class="debate-topic-input" id="debate-topic" placeholder="e.g. Remote work is better than office work" onkeydown="if(event.key==='Enter')startDebate()"/>
 
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -2200,7 +2429,7 @@ body.compact-mode .page { padding: 20px 24px; }
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
                 <div>
                   <label style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;display:block">Your Coach (backs you up)</label>
-                  <select id="debate-coach-a" style="background:var(--bg2);border:1px solid var(--border2);border-radius:9px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;padding:9px 12px;width:100%;outline:none;appearance:none">
+                  <select id="debate-coach-a" onchange="updateDebateCoachAvatar()" style="background:var(--bg2);border:1px solid var(--border2);border-radius:9px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;padding:9px 12px;width:100%;outline:none;appearance:none">
                     <option value="Blaze">Blaze</option><option value="Sage">Sage</option><option value="Nova">Nova</option><option value="Echo">Echo</option><option value="Rex">Rex</option><option value="Luna">Luna</option>
                   </select>
                 </div>
@@ -2325,6 +2554,10 @@ body.compact-mode .page { padding: 20px 24px; }
                   <div id="co-person-role" style="font-size:12px;color:var(--muted2);font-family:'DM Mono',monospace"></div>
                   <div id="co-status" style="font-size:11px;color:var(--muted);margin-top:8px;min-height:14px"></div>
                 </div>
+                <div class="panel" style="text-align:center">
+                  <div class="panel-title">Your Coach</div>
+                  <div id="coldopen-coach-avatar"></div>
+                </div>
                 <div class="panel">
                   <div class="panel-title">Live Tips</div>
                   <div id="co-tips" style="font-size:13px;color:var(--muted2);line-height:1.9">
@@ -2389,8 +2622,11 @@ body.compact-mode .page { padding: 20px 24px; }
 
       <!-- PROFILES -->
       <div class="page" id="page-profiles">
-        <div class="section-head"><h2>AI Profiles</h2><p>Choose your coach. Each has a distinct style and approach.</p></div>
-        <div class="profiles-grid" id="profiles-grid"></div>
+        <div class="section-head">
+          <h2>AI Coaches</h2>
+          <p>Six coaches. Six completely different approaches. Each voice, style, and philosophy designed for a different kind of growth.</p>
+        </div>
+        <div class="coach-profiles-grid" id="coach-profiles-grid"></div>
       </div>
 
       <!-- SETTINGS -->
@@ -2757,6 +2993,145 @@ const SCENARIOS=[
   {name:'Networking',icon:'🤝',hint:'Authentic, memorable, and leave them curious'},
 ];
 
+// ── COACH AVATAR SYSTEM ──────────────────────────────────────
+const COACH_DATA = {
+  Blaze: {
+    emoji: '🔥',
+    color: '#f87171',
+    cssClass: 'coach-blaze',
+    title: 'Blaze',
+    subtitle: 'Direct & Intense',
+    desc: 'No sugarcoating. Pushes you to be sharper, faster, and more direct. Your toughest critic.',
+    traits: ['Brutal honesty', 'High standards', 'Fast-paced'],
+    voice: 'Young Jamal'
+  },
+  Echo: {
+    emoji: '🌊',
+    color: '#38bdf8',
+    cssClass: 'coach-echo',
+    title: 'Echo',
+    subtitle: 'Empathetic Listener',
+    desc: 'Deeply attentive. Helps you find your authentic voice through reflection and emotional intelligence.',
+    traits: ['Empathetic', 'Patient', 'Reflective'],
+    voice: 'Ciara'
+  },
+  Sage: {
+    emoji: '🌿',
+    color: '#2dd4a0',
+    cssClass: 'coach-sage',
+    title: 'Sage',
+    subtitle: 'Calm & Strategic',
+    desc: 'Methodical and precise. Focuses on structure, strategy, and the long game of communication.',
+    traits: ['Strategic', 'Methodical', 'Precise'],
+    voice: 'Eleanor'
+  },
+  Nova: {
+    emoji: '⭐',
+    color: '#fbbf24',
+    cssClass: 'coach-nova',
+    title: 'Nova',
+    subtitle: 'Energetic & Bold',
+    desc: 'High energy, infectious enthusiasm. Makes practice feel electric and builds your confidence fast.',
+    traits: ['Energetic', 'Motivating', 'Bold'],
+    voice: 'Eve'
+  },
+  Rex: {
+    emoji: '🥊',
+    color: '#c084fc',
+    cssClass: 'coach-rex',
+    title: 'Rex',
+    subtitle: 'No-Nonsense Drill',
+    desc: 'Military precision. Drills you on delivery, posture, and commanding presence. Respects results only.',
+    traits: ['Disciplined', 'Commanding', 'Results-focused'],
+    voice: 'Anton'
+  },
+  Luna: {
+    emoji: '🌙',
+    color: '#f472b6',
+    cssClass: 'coach-luna',
+    title: 'Luna',
+    subtitle: 'Gentle & Nurturing',
+    desc: 'Warm and encouraging. Creates a safe space to experiment, make mistakes, and grow without fear.',
+    traits: ['Nurturing', 'Safe space', 'Encouraging'],
+    voice: 'Brittney'
+  }
+};
+
+function createCoachAvatar(coachName, size = 'md', showName = true) {
+  const coach = COACH_DATA[coachName] || COACH_DATA.Blaze;
+  const sizes = { sm: '72px', md: '120px', lg: '160px' };
+  const emojiFontSizes = { sm: '26px', md: '38px', lg: '52px' };
+  const sz = sizes[size] || sizes.md;
+  const ez = emojiFontSizes[size] || emojiFontSizes.md;
+  return `
+    <div class="coach-avatar-wrap">
+      <div class="coach-avatar ${coach.cssClass}" id="avatar-${coachName.toLowerCase()}" style="width:${sz};height:${sz}">
+        <div class="coach-avatar-inner">
+          <span class="coach-avatar-emoji" style="font-size:${ez}">${coach.emoji}</span>
+          <div class="coach-sound-bars">
+            <div class="coach-bar"></div>
+            <div class="coach-bar"></div>
+            <div class="coach-bar"></div>
+            <div class="coach-bar"></div>
+            <div class="coach-bar"></div>
+          </div>
+        </div>
+      </div>
+      ${showName ? `<div class="coach-avatar-name">${coach.title}</div>
+      <div class="coach-avatar-role">${coach.subtitle}</div>` : ''}
+    </div>
+  `;
+}
+
+function setCoachSpeaking(coachName, speaking) {
+  const el = document.getElementById('avatar-' + coachName.toLowerCase());
+  if (!el) return;
+  el.classList.toggle('speaking', speaking);
+  el.classList.toggle('listening', false);
+}
+
+function setCoachListening(coachName, listening) {
+  const el = document.getElementById('avatar-' + coachName.toLowerCase());
+  if (!el) return;
+  el.classList.toggle('listening', listening);
+  el.classList.toggle('speaking', false);
+}
+
+function setCoachIdle(coachName) {
+  const el = document.getElementById('avatar-' + coachName.toLowerCase());
+  if (!el) return;
+  el.classList.remove('speaking', 'listening');
+}
+
+function renderCoachProfiles() {
+  const grid = document.getElementById('coach-profiles-grid');
+  if (!grid) return;
+  grid.innerHTML = Object.entries(COACH_DATA).map(([name, coach]) => `
+    <div class="coach-profile-card ${coach.cssClass} ${S.coach === name ? 'selected' : ''}"
+         onclick="selectCoach('${name}')">
+      ${createCoachAvatar(name, 'md', false)}
+      <div class="coach-avatar-name" style="position:relative;z-index:1">${coach.title}</div>
+      <div class="coach-avatar-role" style="position:relative;z-index:1">${coach.subtitle}</div>
+      <p class="coach-profile-desc">${coach.desc}</p>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;position:relative;z-index:1">
+        ${coach.traits.map(t => `<span class="coach-profile-trait">${t}</span>`).join('')}
+      </div>
+      <div style="font-size:10.5px;color:var(--muted);font-family:'DM Mono',monospace;position:relative;z-index:1">
+        Voice: ${coach.voice}
+      </div>
+      ${S.coach === name ? '<div style="font-size:11px;color:var(--green);font-family:\'DM Mono\',monospace;position:relative;z-index:1">✓ Active Coach</div>' : ''}
+    </div>
+  `).join('');
+}
+
+function selectCoach(name) {
+  S.coach = name;
+  updateChips();
+  switchVoiceCoach(name);
+  renderCoachProfiles(); // re-render to show selected state
+  showToast('✓', `${name} is now your active coach`);
+}
+
 const COACHES={
   Blaze:{color:'#f87171',accent:'rgba(248,113,113,0.8)',bg:'rgba(248,113,113,0.12)',greeting:"Hey. Ready to work? Tell me what you're preparing for.",style:"Direct, blunt, high-energy. No fluff. Push for sharper delivery.",voice:{pitch:1.1,rate:1.15}},
   Echo:{color:'#4fc3f7',accent:'rgba(79,195,247,0.8)',bg:'rgba(79,195,247,0.1)',greeting:"Hi! I'm here to help. What are you working on today?",style:"Calm, empathetic, encouraging. Build confidence gently.",voice:{pitch:1.25,rate:0.95}},
@@ -2788,16 +3163,7 @@ function initUI(){
     d.onclick=()=>{document.querySelectorAll('.sc-card').forEach(c=>c.classList.remove('active'));d.classList.add('active');S.scenario=s.name;updateChips();};
     sc.appendChild(d);
   });
-  // Profile cards
-  const pg=document.getElementById('profiles-grid');
-  Object.entries(COACHES).forEach(([name,c])=>{
-    const d=document.createElement('div');
-    d.className='profile-card'+(name===S.coach?' selected':'');
-    d.id='card-'+name.toLowerCase();
-    d.innerHTML=`<div class="p-avatar" style="background:${c.bg};color:${c.color}">${name[0]}</div><div class="p-name">${name}</div><p class="p-desc">${{Blaze:'Direct & no-nonsense. Pushes you to be sharper and faster.',Echo:'Calm & empathetic. Builds confidence step by step.',Sage:'Analytical & structured. Logic and evidence first.',Nova:'Creative & narrative-driven. Tell better stories.',Rex:'Intense & adversarial. Stress-tests everything.',Luna:'Balanced & adaptive. Adjusts to what you need.'}[name]}</p><div class="p-tags">${{Blaze:'<span class="tag t-red">Decisive</span><span class="tag t-blue">High-energy</span>',Echo:'<span class="tag t-green">Supportive</span><span class="tag t-blue">Patient</span>',Sage:'<span class="tag t-purple">Analytical</span><span class="tag t-blue">Strategic</span>',Nova:'<span class="tag t-green">Storytelling</span><span class="tag t-purple">Creative</span>',Rex:'<span class="tag t-amber">Challenging</span><span class="tag t-blue">Rigorous</span>',Luna:'<span class="tag t-green">Adaptive</span><span class="tag t-blue">Balanced</span>'}[name]}</div>`;
-    d.onclick=()=>selectProfile(name);
-    pg.appendChild(d);
-  });
+  // Coach profile cards are rendered by renderCoachProfiles() when the AI Profiles page is opened
   // Voice coach picker
   const vcp=document.getElementById('voice-coach-picker');
   Object.entries(COACHES).forEach(([name,c])=>{
@@ -2828,7 +3194,16 @@ function navTo(page){
   if(page==='insights')renderInsights();
   if(page==='history')renderHistory();
   if(page==='skills'){renderSkills();drawRadar();}
-  if(page==='voice'){if(!faceAnimFrame)drawFace();startWaveformIdle();if(voiceState!=='idle')showBackBtn(true,'Voice Session');}
+  if(page==='voice'){
+    if(!faceAnimFrame)drawFace();
+    startWaveformIdle();
+    if(voiceState!=='idle')showBackBtn(true,'Voice Session');
+    const voiceAvatarEl = document.getElementById('voice-coach-avatar');
+    if (voiceAvatarEl) {
+      voiceAvatarEl.innerHTML = createCoachAvatar(currentVoiceCoach||S.coach, 'lg', true);
+      voiceAvatarEl.className = 'coach-session-card ' + (COACH_DATA[currentVoiceCoach||S.coach]?.cssClass || '');
+    }
+  }
   if(page==='warmup'&&wuCurrentQuestion)showBackBtn(true,'Warmup');
   if(page==='daily')renderDailyChallenge();
   if(page==='coachnotes')renderCoachNotes();
@@ -2836,11 +3211,16 @@ function navTo(page){
   if(page==='coldopen'){initColdOpen();if(coState.running)showBackBtn(true,'Cold Open Setup');}
   if(page==='qbank')initQBank();
   if(page==='settings')applySettingsToUI();
+  if(page==='profiles')renderCoachProfiles();
 }
 
 function updateChips(){
   document.getElementById('chip-scenario').textContent=S.scenario;
-  document.getElementById('chip-coach').textContent='Coach: '+S.coach;
+  const coachChip = document.getElementById('chip-coach');
+  if (coachChip) {
+    const cd = COACH_DATA[S.coach];
+    coachChip.textContent = (cd ? cd.emoji + ' ' : '') + 'Coach: ' + S.coach;
+  }
   document.getElementById('streak-chip').textContent='🔥 '+S.streak+' day streak';
   document.getElementById('home-sessions').textContent=S.sessions;
   document.getElementById('home-coach').textContent=S.coach;
@@ -3280,10 +3660,10 @@ function startWaveformIdle(){
 function setVoiceState(state){
   voiceState=state;const btn=document.getElementById('hold-btn');const status=document.getElementById('voice-status');const ring=document.getElementById('face-ring');
   btn.className='hold-btn '+state;ring.className='coach-face-ring '+state;
-  if(state==='idle'){btn.textContent='🎙️';status.textContent='Click to speak';status.className='voice-status';isListeningVoice=false;}
-  else if(state==='listening'){btn.textContent='🔴';status.textContent='Listening...';status.className='voice-status listening';showBackBtn(true,'Voice Session');}
-  else if(state==='processing'){btn.textContent='⏳';status.textContent='Processing...';status.className='voice-status';}
-  else if(state==='speaking'){btn.textContent='🔊';status.textContent=currentVoiceCoach+' is speaking...';status.className='voice-status speaking';}
+  if(state==='idle'){btn.textContent='🎙️';status.textContent='Click to speak';status.className='voice-status';isListeningVoice=false;setCoachIdle(currentVoiceCoach);}
+  else if(state==='listening'){btn.textContent='🔴';status.textContent='Listening...';status.className='voice-status listening';showBackBtn(true,'Voice Session');setCoachListening(currentVoiceCoach,true);}
+  else if(state==='processing'){btn.textContent='⏳';status.textContent='Processing...';status.className='voice-status';setCoachIdle(currentVoiceCoach);}
+  else if(state==='speaking'){btn.textContent='🔊';status.textContent=currentVoiceCoach+' is speaking...';status.className='voice-status speaking';setCoachSpeaking(currentVoiceCoach,true);}
 }
 
 function switchVoiceCoach(name){
@@ -3291,6 +3671,11 @@ function switchVoiceCoach(name){
   document.getElementById('voice-coach-name').textContent=name;
   document.querySelectorAll('.cp-btn').forEach(b=>b.classList.remove('active'));
   const btn=document.getElementById('vcp-'+name.toLowerCase());if(btn)btn.classList.add('active');
+  const voiceAvatarEl = document.getElementById('voice-coach-avatar');
+  if (voiceAvatarEl) {
+    voiceAvatarEl.innerHTML = createCoachAvatar(name, 'lg', true);
+    voiceAvatarEl.className = 'coach-session-card ' + (COACH_DATA[name]?.cssClass || '');
+  }
   S.voiceChatHistory=[];addVoiceLog(name,COACHES[name].greeting,'ai');speakText(COACHES[name].greeting);
 }
 
@@ -3895,7 +4280,16 @@ let debateMouthA = 0, debateMouthB = 0;
 let debateBlinkT = 0;
 let debateUserArgs = [], debateOppResponses = [];
 
-function initDebatePage() {}
+function initDebatePage() { updateDebateCoachAvatar(); }
+
+function updateDebateCoachAvatar() {
+  const name = document.getElementById('debate-coach-a')?.value || S.coach;
+  const debateAvatarEl = document.getElementById('debate-coach-avatar');
+  if (debateAvatarEl) {
+    debateAvatarEl.innerHTML = createCoachAvatar(name, 'md', true);
+    debateAvatarEl.className = 'coach-session-card ' + (COACH_DATA[name]?.cssClass || '');
+  }
+}
 
 function selectDebateSide(side) {
   debateSide = side;
@@ -3940,6 +4334,11 @@ async function startDebate() {
 
   document.getElementById('debate-name-a').textContent = debateCoachA;
   document.getElementById('debate-name-b').textContent = debateCoachB;
+  const debateAvatarEl = document.getElementById('debate-coach-avatar');
+  if (debateAvatarEl) {
+    debateAvatarEl.innerHTML = createCoachAvatar(debateCoachA, 'md', true);
+    debateAvatarEl.className = 'coach-session-card ' + (COACH_DATA[debateCoachA]?.cssClass || '');
+  }
   document.getElementById('debate-log-a').innerHTML = '';
   document.getElementById('debate-log-b').innerHTML = '';
   document.getElementById('debate-transcript').textContent = 'Hold the button and make your argument...';
@@ -4051,7 +4450,7 @@ function addDebateLogMsg(side, who, text, isUser=false){
 
 async function speakDebate(text, side){
   const coach = side==='a'?debateCoachA:debateCoachB;
-  if(side==='a'){debateStateA='speaking';document.getElementById('debate-status-a').textContent='Speaking...';}
+  if(side==='a'){debateStateA='speaking';document.getElementById('debate-status-a').textContent='Speaking...';setCoachSpeaking(debateCoachA,true);}
   else{debateStateB='speaking';document.getElementById('debate-status-b').textContent='Speaking...';}
   const mi=setInterval(()=>{
     const mo=0.2+Math.random()*0.6;
@@ -4066,7 +4465,7 @@ async function speakDebate(text, side){
       const audio=new Audio(url);
       audio.onended=()=>{
         clearInterval(mi);
-        if(side==='a'){debateStateA='idle';debateMouthA=0;document.getElementById('debate-status-a').textContent='';}
+        if(side==='a'){debateStateA='idle';debateMouthA=0;document.getElementById('debate-status-a').textContent='';setCoachSpeaking(debateCoachA,false);}
         else{debateStateB='idle';debateMouthB=0;document.getElementById('debate-status-b').textContent='';}
         URL.revokeObjectURL(url);resolve();
       };
@@ -4791,6 +5190,10 @@ function startColdOpen() {
   document.getElementById('co-transcript').textContent='Click the mic to respond...';
   if(coState.faceAnim)cancelAnimationFrame(coState.faceAnim);
   drawCOFace();
+  const coEl = document.getElementById('coldopen-coach-avatar');
+  if (coEl) {
+    coEl.innerHTML = createCoachAvatar(S.coach, 'sm', false);
+  }
   addCOMsg(scenario.person, scenario.opener, false);
   speakCO(scenario.opener);
 }
