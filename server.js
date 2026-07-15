@@ -4,30 +4,30 @@ const cors = require('cors');
 const fetch = require('node-fetch');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
-
+ 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
+ 
 app.use(cors());
 app.use(express.json());
 
-// Serve landing page at root
+// Landing page at root
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'landing.html'));
 });
 
-// Serve main app at /app
+// Main app at /app
 app.get('/app', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Static files (must come AFTER the explicit routes above)
 app.use(express.static(path.join(__dirname, 'public')));
-
+ 
 // ── Validate env vars loudly at startup ─────────────────────────────────────
 const rawUrl = (process.env.SUPABASE_URL || '').trim();
 const rawKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || '').trim();
-
+ 
 console.log('\n── Supabase config check ──────────────────────');
 console.log('SUPABASE_URL:', rawUrl ? `"${rawUrl}"` : '❌ MISSING');
 console.log('Using key type:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SERVICE_ROLE' : (process.env.SUPABASE_ANON_KEY ? 'ANON (fallback)' : '❌ MISSING'));
@@ -36,14 +36,14 @@ if (!rawUrl.startsWith('https://') || !rawUrl.includes('.supabase.co')) {
   console.log('⚠️  SUPABASE_URL looks malformed! Expected format: https://xxxxx.supabase.co');
 }
 console.log('────────────────────────────────────────────────\n');
-
+ 
 // Supabase admin client (service role for server-side ops, bypasses RLS)
 const supabase = createClient(rawUrl, rawKey, {
   auth: { autoRefreshToken: false, persistSession: false },
   db: { schema: 'public' },
 });
-
-// Quick connectivity test at boot so failures show up immediately, not on first user request
+ 
+// Quick connectivity test at boot
 (async () => {
   try {
     const { error } = await supabase.from('profiles').select('id').limit(1);
@@ -53,74 +53,42 @@ const supabase = createClient(rawUrl, rawKey, {
     console.log('⚠️  Supabase connection failed at boot:', e.message, '\n');
   }
 })();
-
-// Cache of assigned coach voices
-let assignedVoices = null;
-
-async function fetchAndAssignVoices() {
-  const res = await fetch('https://api.elevenlabs.io/v1/voices', {
-    headers: { 'xi-api-key': process.env.ELEVENLABS_API_KEY }
-  });
-  if (!res.ok) throw new Error('Could not fetch voices');
-  const data = await res.json();
-  const voices = data.voices || [];
-  const male = voices.filter(v => v.labels?.gender === 'male');
-  const female = voices.filter(v => v.labels?.gender === 'female');
-  const all = voices;
-  const used = new Set();
-  function pick(pool) {
-    const available = pool.filter(v => !used.has(v.voice_id));
-    const v = available[0] || all.find(v => !used.has(v.voice_id)) || all[0];
-    used.add(v.voice_id);
-    return v.voice_id;
-  }
-  assignedVoices = {
-    Blaze: pick(male), Echo: pick(female), Sage: pick(male),
-    Nova: pick(female), Rex: pick(male), Luna: pick(female),
-  };
-  console.log('🎙️ Voices assigned:', assignedVoices);
-  return assignedVoices;
-}
-
+ 
+// ── Hardcoded coach voices ────────────────────────────────────────────────────
+const assignedVoices = {
+  Blaze: '6OzrBCQf8cjERkYgzSg8',  // Young Jamal
+  Echo:  'Qggl4b0xRMiqOwhPtVWT',  // Ciara
+  Sage:  'gx4234VtGf2pDCbrbUA8',  // Eleanor
+  Nova:  'BZgkqPqms7Kj9ulSkVzn',  // Eve
+  Rex:   'F2dJXHYSktFOVtCMu2w7',  // Anton
+  Luna:  'pjcYQlDFKMbcOUp6F5GD',  // Brittney
+};
+console.log('🎙️ Voices assigned:', assignedVoices);
+ 
 // ── Auth routes ───────────────────────────────────────────────────────────────
-
-// Sign up
+ 
 app.post('/api/auth/signup', async (req, res) => {
   const { email, password } = req.body;
   const { data, error } = await supabase.auth.signUp({ email, password });
   if (error) return res.status(400).json({ error: error.message });
   res.json({ user: data.user, session: data.session });
 });
-
-// Sign in
+ 
 app.post('/api/auth/signin', async (req, res) => {
   const { email, password } = req.body;
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return res.status(400).json({ error: error.message });
   res.json({ user: data.user, session: data.session });
 });
-
-// Sign out
+ 
 app.post('/api/auth/signout', async (req, res) => {
   const token = req.headers.authorization?.replace('Bearer ', '');
   if (token) await supabase.auth.admin?.signOut(token);
   res.json({ success: true });
 });
-
-// Get OAuth URL (Google, GitHub, etc.)
-app.post('/api/auth/oauth', async (req, res) => {
-  const { provider } = req.body;
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider,
-    options: { redirectTo: `https://conver1-production.up.railway.app/auth/callback`, skipBrowserRedirect: false }
-  });
-  if (error) return res.status(400).json({ error: error.message });
-  res.json({ url: data.url });
-});
-
+ 
 // ── User data routes ──────────────────────────────────────────────────────────
-
-// Middleware to verify JWT
+ 
 async function requireAuth(req, res, next) {
   const token = req.headers.authorization?.replace('Bearer ', '');
   if (!token) return res.status(401).json({ error: 'Not authenticated' });
@@ -130,8 +98,7 @@ async function requireAuth(req, res, next) {
   req.token = token;
   next();
 }
-
-// Get user stats
+ 
 app.get('/api/user/stats', requireAuth, async (req, res) => {
   const { data, error } = await supabase
     .from('user_stats')
@@ -141,8 +108,7 @@ app.get('/api/user/stats', requireAuth, async (req, res) => {
   if (error && error.code !== 'PGRST116') return res.status(400).json({ error: error.message });
   res.json({ stats: data || null });
 });
-
-// Save user stats
+ 
 app.post('/api/user/stats', requireAuth, async (req, res) => {
   const { stats } = req.body;
   const payload = { user_id: req.user.id, ...stats, updated_at: new Date().toISOString() };
@@ -155,8 +121,7 @@ app.post('/api/user/stats', requireAuth, async (req, res) => {
   }
   res.json({ success: true });
 });
-
-// Save session
+ 
 app.post('/api/user/session', requireAuth, async (req, res) => {
   const { session } = req.body;
   const { error } = await supabase
@@ -168,8 +133,7 @@ app.post('/api/user/session', requireAuth, async (req, res) => {
   }
   res.json({ success: true });
 });
-
-// Get sessions
+ 
 app.get('/api/user/sessions', requireAuth, async (req, res) => {
   const { data, error } = await supabase
     .from('sessions')
@@ -180,8 +144,7 @@ app.get('/api/user/sessions', requireAuth, async (req, res) => {
   if (error) return res.status(400).json({ error: error.message });
   res.json({ sessions: data });
 });
-
-// Ensure profile exists
+ 
 app.post('/api/user/profile', requireAuth, async (req, res) => {
   const { error } = await supabase
     .from('profiles')
@@ -189,18 +152,12 @@ app.post('/api/user/profile', requireAuth, async (req, res) => {
   if (error) return res.status(400).json({ error: error.message });
   res.json({ success: true });
 });
-
+ 
 // ── ElevenLabs voices ─────────────────────────────────────────────────────────
-app.get('/api/voices', async (req, res) => {
-  if (!process.env.ELEVENLABS_API_KEY) return res.status(500).json({ error: 'No ElevenLabs key' });
-  try {
-    if (!assignedVoices) await fetchAndAssignVoices();
-    res.json({ voices: assignedVoices });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+app.get('/api/voices', (req, res) => {
+  res.json({ voices: assignedVoices });
 });
-
+ 
 // ── Claude chat ───────────────────────────────────────────────────────────────
 app.post('/api/chat', async (req, res) => {
   const { messages, system } = req.body;
@@ -210,7 +167,11 @@ app.post('/api/chat', async (req, res) => {
     if (system) body.system = system;
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
       body: JSON.stringify(body),
     });
     if (!response.ok) { const err = await response.text(); return res.status(response.status).json({ error: err }); }
@@ -220,57 +181,63 @@ app.post('/api/chat', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
+ 
 // ── ElevenLabs TTS ────────────────────────────────────────────────────────────
+// Uses eleven_flash_v2_5 for minimum latency (~75ms vs turbo's ~400ms+)
+// Streams audio directly — client receives and plays as it arrives
 app.post('/api/speak', async (req, res) => {
   const { text, coach } = req.body;
   if (!process.env.ELEVENLABS_API_KEY) return res.status(500).json({ error: 'No ElevenLabs key' });
   if (!text?.trim()) return res.status(400).json({ error: 'No text' });
-  if (!assignedVoices) {
-    try { await fetchAndAssignVoices(); }
-    catch(e) { return res.status(500).json({ error: e.message }); }
-  }
-  const voiceId = assignedVoices[coach] || Object.values(assignedVoices)[0];
-  const clean = text.replace(/\*\*/g,'').replace(/\*/g,'').replace(/_/g,'').replace(/#{1,6}\s/g,'').replace(/`/g,'').replace(/\n+/g,' ').replace(/\s+/g,' ').trim();
+ 
+  const voiceId = assignedVoices[coach] || assignedVoices.Blaze;
+ 
+  // Clean markdown formatting before sending to TTS
+  const clean = text
+    .replace(/\*\*/g,'').replace(/\*/g,'').replace(/_/g,'')
+    .replace(/#{1,6}\s/g,'').replace(/`/g,'')
+    .replace(/\n+/g,' ').replace(/\s+/g,' ').trim();
+ 
   try {
     const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'xi-api-key': process.env.ELEVENLABS_API_KEY },
-      body: JSON.stringify({ text: clean, model_id: 'eleven_turbo_v2', voice_settings: { stability: 0.45, similarity_boost: 0.82, style: 0.35, use_speaker_boost: true } }),
+      headers: {
+        'Content-Type': 'application/json',
+        'xi-api-key': process.env.ELEVENLABS_API_KEY,
+        'Accept': 'audio/mpeg'
+      },
+      body: JSON.stringify({
+        text: clean,
+        model_id: 'eleven_flash_v2_5',
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.8,
+          style: 0.0,          // style=0 reduces latency significantly
+          use_speaker_boost: false  // speaker boost adds latency, disable for speed
+        },
+        optimize_streaming_latency: 4  // max latency optimization (0-4, 4=fastest)
+      }),
     });
-    if (!response.ok) { const err = await response.text(); return res.status(response.status).json({ error: err }); }
+    if (!response.ok) {
+      const err = await response.text();
+      return res.status(response.status).json({ error: err });
+    }
+    // Stream directly to client — audio starts playing as soon as first chunk arrives
     res.setHeader('Content-Type', 'audio/mpeg');
+    res.setHeader('Transfer-Encoding', 'chunked');
+    res.setHeader('X-Accel-Buffering', 'no'); // disable nginx buffering if behind proxy
     response.body.pipe(res);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
-
-// OAuth callback page
-app.get('/auth/callback', (req, res) => {
-  res.send(`<!DOCTYPE html><html><head><title>Signing in...</title></head><body>
-    <script>
-      const hash = window.location.hash;
-      const params = new URLSearchParams(hash.replace('#',''));
-      const token = params.get('access_token');
-      if (token) {
-        localStorage.setItem('conver_token', token);
-        localStorage.setItem('conver_refresh', params.get('refresh_token') || '');
-      }
-      window.location.href = '/app';
-    </script>
-  </body></html>`);
-});
-
-// Catch-all
+ 
+// Catch-all falls back to index.html
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
-
-app.listen(PORT, async () => {
+ 
+app.listen(PORT, () => {
   console.log(`\n🎤 Conver running at http://localhost:${PORT}\n`);
-  if (process.env.ELEVENLABS_API_KEY) {
-    try { await fetchAndAssignVoices(); console.log('✓ ElevenLabs voices loaded\n'); }
-    catch(e) { console.log('⚠️ Could not load voices:', e.message); }
-  }
+  console.log('✓ ElevenLabs voices loaded\n');
 });
