@@ -6,6 +6,7 @@
 <title>Conver — AI Conversation Intelligence</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@11labs/client@latest/dist/index.umd.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Italiana&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Space+Grotesk:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -2371,6 +2372,21 @@ body.compact-mode .page { padding: 20px 24px; }
             <div class="voice-status" id="voice-status">Hold the mic to speak</div>
             <div class="waveform" id="waveform"></div>
             <div class="voice-transcript" id="voice-transcript">Your words will appear here as you speak...</div>
+            <div id="voice-live-transcript" style="
+              min-height: 28px;
+              font-size: 14px;
+              color: var(--muted2);
+              font-family: 'Plus Jakarta Sans', sans-serif;
+              font-style: italic;
+              text-align: center;
+              padding: 8px 16px;
+              border-radius: 8px;
+              background: rgba(124,111,255,0.05);
+              border: 1px solid var(--border);
+              margin: 12px 0;
+              min-width: 300px;
+              transition: all 0.2s;
+            "></div>
             <button class="hold-btn idle" id="hold-btn" onclick="toggleListening()">🎙️</button>
             <div class="hold-hint" id="hold-hint">Click to speak</div>
           </div>
@@ -3115,6 +3131,197 @@ body.compact-mode .page { padding: 20px 24px; }
 </div>
 
 <script>
+// ── ELEVENLABS SCRIBE STT MANAGER ────────────────────────────
+// Replaces webkitSpeechRecognition across all modes
+// Uses Scribe v2 Realtime: ~150ms latency, filler word removal, 90+ languages
+const ScribeSTT = {
+  connection: null,
+  isListening: false,
+  onTranscript: null,  // callback(text, isFinal)
+  onError: null,       // callback(error)
+  onStart: null,       // callback()
+  onStop: null,         // callback()
+  partialText: '',
+
+  // Fetch a single-use token from our server
+  async getToken() {
+    const token = localStorage.getItem('conver_token');
+    const res = await fetch('/api/stt-token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + (token || '')
+      }
+    });
+    if (!res.ok) throw new Error('Failed to get STT token');
+    const data = await res.json();
+    return data.token;
+  },
+
+  // Start listening
+  async start(callbacks = {}) {
+    if (this.isListening) return;
+    if (callbacks.onTranscript) this.onTranscript = callbacks.onTranscript;
+    if (callbacks.onError) this.onError = callbacks.onError;
+    if (callbacks.onStart) this.onStart = callbacks.onStart;
+    if (callbacks.onStop) this.onStop = callbacks.onStop;
+
+    try {
+      const token = await this.getToken();
+
+      // Use ElevenLabs JS SDK Scribe client
+      const { Scribe } = window.ElevenLabsClient || {};
+      if (!Scribe) {
+        // Fallback: manual WebSocket if SDK not loaded
+        return this._startWebSocket(token);
+      }
+
+      this.connection = await Scribe.connect({
+        token,
+        microphone: {
+          sampleRate: 16000,
+        },
+        config: {
+          model_id: 'scribe_v2_realtime',
+          language_code: 'en',
+          no_verbatim: true,             // removes filler words (um, uh, like)
+          filter_background_audio: true, // reduces background noise
+          vad_silence_threshold_secs: 0.8,
+          keyterms: [
+            'clarity', 'confidence', 'persuasion', 'storytelling', 'conciseness',
+            'interview', 'pitch', 'networking', 'leadership', 'debate',
+            'Conver', 'coaching', 'feedback'
+          ]
+        }
+      });
+
+      this.connection.on('transcript', (event) => {
+        if (event.type === 'partial_transcript') {
+          this.partialText = event.text;
+          if (this.onTranscript) this.onTranscript(event.text, false);
+        } else if (event.type === 'final_transcript' || event.type === 'committed_transcript') {
+          this.partialText = '';
+          if (this.onTranscript) this.onTranscript(event.text, true);
+        }
+      });
+
+      this.connection.on('error', (err) => {
+        console.error('Scribe STT error:', err);
+        if (this.onError) this.onError(err);
+      });
+
+      this.isListening = true;
+      if (this.onStart) this.onStart();
+      console.log('✓ Scribe STT started');
+
+    } catch (err) {
+      console.error('Failed to start Scribe STT:', err);
+      // Graceful fallback to Web Speech API if Scribe fails
+      this._startFallback(callbacks);
+    }
+  },
+
+  // Stop listening
+  async stop() {
+    if (!this.isListening) return;
+    try {
+      if (this.connection) {
+        await this.connection.close();
+        this.connection = null;
+      }
+    } catch (e) { /* ignore close errors */ }
+    if (this._wsRef) {
+      try {
+        this._wsRef.ws.close();
+        this._wsRef.ctx.close();
+        this._wsRef.stream.getTracks().forEach(t => t.stop());
+      } catch (e) { /* ignore */ }
+      this._wsRef = null;
+    }
+    if (this._fallbackRecognition) {
+      try { this._fallbackRecognition.stop(); } catch (e) { /* ignore */ }
+      this._fallbackRecognition = null;
+    }
+    this.isListening = false;
+    this.partialText = '';
+    if (this.onStop) this.onStop();
+    console.log('✓ Scribe STT stopped');
+  },
+
+  // Manual WebSocket fallback (if SDK fails to load)
+  async _startWebSocket(token) {
+    try {
+      const ws = new WebSocket(
+        `wss://api.elevenlabs.io/v1/speech-to-text/stream?token=${token}&model_id=scribe_v2_realtime&language_code=en&no_verbatim=true&filter_background_audio=true`
+      );
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 16000 } });
+      const ctx = new AudioContext({ sampleRate: 16000 });
+      const source = ctx.createMediaStreamSource(stream);
+      const processor = ctx.createScriptProcessor(4096, 1, 1);
+
+      processor.onaudioprocess = (e) => {
+        if (ws.readyState !== WebSocket.OPEN) return;
+        const float32 = e.inputBuffer.getChannelData(0);
+        const int16 = new Int16Array(float32.length);
+        for (let i = 0; i < float32.length; i++) {
+          int16[i] = Math.max(-32768, Math.min(32767, float32[i] * 32768));
+        }
+        const b64 = btoa(String.fromCharCode(...new Uint8Array(int16.buffer)));
+        ws.send(JSON.stringify({ message_type: 'input_audio_chunk', audio_base_64: b64 }));
+      };
+      source.connect(processor);
+      processor.connect(ctx.destination);
+
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.message_type === 'partial_transcript') {
+          if (this.onTranscript) this.onTranscript(data.text, false);
+        } else if (data.message_type === 'final_transcript') {
+          if (this.onTranscript) this.onTranscript(data.text, true);
+        }
+      };
+      ws.onerror = (err) => { if (this.onError) this.onError(err); };
+      ws.onclose = () => { ctx.close(); stream.getTracks().forEach(t => t.stop()); };
+
+      this._wsRef = { ws, ctx, stream, source, processor };
+      this.isListening = true;
+      if (this.onStart) this.onStart();
+    } catch (err) {
+      console.error('WebSocket STT failed:', err);
+      this._startFallback({});
+    }
+  },
+
+  // Final fallback to browser Web Speech API
+  _startFallback(callbacks) {
+    console.warn('Falling back to Web Speech API');
+    if (!('webkitSpeechRecognition' in window)) {
+      if (this.onError) this.onError(new Error('No speech recognition available'));
+      return;
+    }
+    const recognition = new webkitSpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+    recognition.onresult = (e) => {
+      let interim = '', final = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) final += e.results[i][0].transcript;
+        else interim += e.results[i][0].transcript;
+      }
+      if (interim && this.onTranscript) this.onTranscript(interim, false);
+      if (final && this.onTranscript) this.onTranscript(final, true);
+    };
+    recognition.onerror = (e) => { if (this.onError) this.onError(e); };
+    recognition.onend = () => { if (this.onStop) this.onStop(); };
+    recognition.start();
+    this._fallbackRecognition = recognition;
+    this.isListening = true;
+    if (this.onStart) this.onStart();
+  }
+};
+// End ScribeSTT manager
+
 // ── State ──────────────────────────────────────────────────────────────────────
 const S={
   scenario:'Interview',coach:'Blaze',rewrite:true,filler:true,autoReport:true,
@@ -3582,18 +3789,18 @@ function updateConverScore(){
 }
 
 // ── Profile select ────────────────────────────────────────────────────────────
-function selectProfile(name){
+function selectProfile(name,silent=false){
   S.coach=name;
   document.querySelectorAll('.profile-card').forEach(c=>c.classList.remove('selected'));
-  document.getElementById('card-'+name.toLowerCase()).classList.add('selected');
+  document.getElementById('card-'+name.toLowerCase())?.classList.add('selected');
   updateChips();
   S.chatHistory=[];
   const c=COACHES[name];
   document.getElementById('coach-label').textContent=name;
   document.getElementById('coach-greeting').textContent=c.greeting;
   document.getElementById('chat-messages').innerHTML=`<div class="msg msg-ai"><div class="msg-name">${name}</div><span>${c.greeting}</span></div>`;
-  switchVoiceCoach(name);
-  showToast('✓','Switched to '+name);
+  switchVoiceCoach(name,silent);
+  if(!silent)showToast('✓','Switched to '+name);
 }
 
 // ── Briefing ──────────────────────────────────────────────────────────────────
@@ -3806,7 +4013,7 @@ function drawRadar(){
 }
 
 // ── Voice Session ─────────────────────────────────────────────────────────────
-let voiceState='idle',recognition=null,waveInterval=null,faceAnimFrame=null,currentVoiceCoach=S.coach,blinkT=0,mouthOpen=0;
+let voiceState='idle',waveInterval=null,faceAnimFrame=null,currentVoiceCoach=S.coach,blinkT=0,mouthOpen=0;
 
 function drawFace(){
   const canvas=document.getElementById('face-canvas');if(!canvas)return;
@@ -3889,7 +4096,7 @@ function setVoiceState(state){
   else if(state==='speaking'){btn.textContent='🔊';status.textContent=currentVoiceCoach+' is speaking...';status.className='voice-status speaking';setCoachSpeaking(currentVoiceCoach,true);}
 }
 
-function switchVoiceCoach(name){
+function switchVoiceCoach(name,silent=false){
   currentVoiceCoach=name;
   document.getElementById('voice-coach-name').textContent=name;
   document.querySelectorAll('.cp-btn').forEach(b=>b.classList.remove('active'));
@@ -3899,7 +4106,8 @@ function switchVoiceCoach(name){
     voiceAvatarEl.innerHTML = createCoachAvatar(name, 'lg', true);
     voiceAvatarEl.className = 'coach-session-card ' + (COACH_DATA[name]?.cssClass || '');
   }
-  S.voiceChatHistory=[];addVoiceLog(name,COACHES[name].greeting,'ai');speakText(COACHES[name].greeting);
+  S.voiceChatHistory=[];addVoiceLog(name,COACHES[name].greeting,'ai');
+  if(!silent)speakText(COACHES[name].greeting);
 }
 
 function addVoiceLog(who,text,type){
@@ -3971,6 +4179,7 @@ function fallbackSpeak(text){
 }
 
 let isListeningVoice = false;
+let voiceFinalTranscript = '';
 
 function toggleListening(){
   if(voiceState==='processing'||voiceState==='speaking')return;
@@ -3988,48 +4197,32 @@ function startListening(){
   setVoiceState('listening');
   document.getElementById('voice-transcript').textContent='Listening... click again to send';
   document.getElementById('hold-hint').textContent='Click to stop & send';
-  if(!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)){
-    alert('Please use Chrome for voice.');
-    setVoiceState('idle');isListeningVoice=false;
-    document.getElementById('hold-hint').textContent='Click to speak';
-    return;
-  }
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  recognition=new SR();
-  recognition.continuous=true;
-  recognition.interimResults=true;
-  recognition.lang='en-US';
-  let finalTranscript='';
-  recognition.onresult=(e)=>{
-    let interim='';
-    for(let i=e.resultIndex;i<e.results.length;i++){
-      if(e.results[i].isFinal){finalTranscript+=e.results[i][0].transcript+' ';}
-      else{interim+=e.results[i][0].transcript;}
-    }
-    const display=(finalTranscript+interim).trim();
-    if(display)document.getElementById('voice-transcript').textContent=display+' ... click to send';
-  };
-  recognition.onerror=(e)=>{
-    console.warn('Speech error:',e.error);
-    if(e.error==='not-allowed'){
+  const liveEl=document.getElementById('voice-live-transcript');
+  if(liveEl)liveEl.textContent='';
+  ScribeSTT.start({
+    onTranscript:(text,isFinal)=>{
+      if(liveEl)liveEl.textContent=text;
+      const display=text.trim();
+      if(display)document.getElementById('voice-transcript').textContent=display+(isFinal?'':' ... click to send');
+      if(isFinal)voiceFinalTranscript=text;
+    },
+    onError:(err)=>{
+      console.warn('STT error:',err);
       showToast('⚠️','Microphone blocked — allow mic access in browser settings');
       setVoiceState('idle');isListeningVoice=false;
       document.getElementById('hold-hint').textContent='Click to speak';
-    }
-  };
-  recognition.onend=()=>{
-    if(isListeningVoice&&voiceState==='listening'){
-      try{recognition.start();}catch(err){}
-    }
-  };
-  recognition.start();
+    },
+    onStart:()=>{},
+    onStop:()=>{}
+  });
 }
 
 async function stopListening(){
   isListeningVoice=false;
   document.getElementById('hold-hint').textContent='Click to speak';
-  if(recognition){recognition.stop();recognition=null;}
-  const t=document.getElementById('voice-transcript').textContent.replace(' ... click to send','').trim();
+  await ScribeSTT.stop();
+  const t=(voiceFinalTranscript||document.getElementById('voice-transcript').textContent).replace(' ... click to send','').trim();
+  voiceFinalTranscript='';
   if(!t||t==='Listening... click again to send'||t.trim().length<2){
     setVoiceState('idle');
     document.getElementById('voice-transcript').textContent='Your words will appear here as you speak...';
@@ -4110,48 +4303,40 @@ function showToast(icon,msg){const t=document.getElementById('toast');document.g
 const FILLERS = ['um','uh','like','you know','basically','literally','actually','so','right','okay','kind of','sort of','i mean','you see','well','anyway'];
 let fillerCount = 0;
 let fillerDetecting = false;
-let fillerRecognition = null;
 
 function startFillerDetector() {
-  if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) return;
   fillerCount = 0;
   fillerDetecting = true;
   document.getElementById('filler-overlay').style.display = 'flex';
   document.getElementById('filler-total').textContent = '0';
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  fillerRecognition = new SR();
-  fillerRecognition.continuous = true;
-  fillerRecognition.interimResults = true;
-  fillerRecognition.lang = 'en-US';
   let lastProcessed = '';
-  fillerRecognition.onresult = (e) => {
-    let transcript = '';
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      transcript += e.results[i][0].transcript.toLowerCase();
-    }
-    const newText = transcript.replace(lastProcessed, '');
-    if (newText) {
-      FILLERS.forEach(f => {
-        const regex = new RegExp('\\b' + f + '\\b', 'gi');
-        const matches = newText.match(regex);
-        if (matches) {
-          fillerCount += matches.length;
-          document.getElementById('filler-total').textContent = fillerCount;
-          document.getElementById('filler-word-display').textContent = f;
-          const badge = document.getElementById('filler-badge');
-          badge.classList.add('bump');
-          setTimeout(() => badge.classList.remove('bump'), 300);
-        }
-      });
-      lastProcessed = transcript;
-    }
-  };
-  fillerRecognition.start();
+  ScribeSTT.start({
+    onTranscript: (text, isFinal) => {
+      const transcript = text.toLowerCase();
+      const newText = transcript.replace(lastProcessed, '');
+      if (newText) {
+        FILLERS.forEach(f => {
+          const regex = new RegExp('\\b' + f + '\\b', 'gi');
+          const matches = newText.match(regex);
+          if (matches) {
+            fillerCount += matches.length;
+            document.getElementById('filler-total').textContent = fillerCount;
+            document.getElementById('filler-word-display').textContent = f;
+            const badge = document.getElementById('filler-badge');
+            badge.classList.add('bump');
+            setTimeout(() => badge.classList.remove('bump'), 300);
+          }
+        });
+        lastProcessed = transcript;
+      }
+    },
+    onError: (err) => { console.warn('STT error:', err); }
+  });
 }
 
 function stopFillerDetector() {
   fillerDetecting = false;
-  if (fillerRecognition) { fillerRecognition.stop(); fillerRecognition = null; }
+  ScribeSTT.stop();
   document.getElementById('filler-overlay').style.display = 'none';
   return fillerCount;
 }
@@ -4495,7 +4680,7 @@ let debateHistoryA = [], debateHistoryB = [];
 let debateCoachA = 'Blaze', debateCoachB = 'Rex';
 let debateTopic = '', debateSide = 'for';
 let debateRunning = false, debateRound = 0, debateMaxRounds = 3;
-let debateRecognition = null;
+let debateFinalTranscript = '';
 let debateFaceAnimA = null, debateFaceAnimB = null;
 let debateWaveInterval = null;
 let debateStateA = 'idle', debateStateB = 'idle';
@@ -4742,36 +4927,25 @@ function startDebateListening(){
   btn.className='hold-btn recording';btn.textContent='🔴';
   document.getElementById('debate-transcript').textContent='Listening... click again to send';
   document.getElementById('debate-global-status').textContent='';
-  if(!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)){
-    showToast('⚠️','Use Chrome for voice');
-    btn.className='hold-btn idle';btn.textContent='🎙️';isDebateListening=false;return;
-  }
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  debateRecognition=new SR();debateRecognition.continuous=true;debateRecognition.interimResults=true;debateRecognition.lang='en-US';
-  let finalT='';
-  debateRecognition.onresult=(e)=>{
-    let int='';
-    for(let i=e.resultIndex;i<e.results.length;i++){
-      if(e.results[i].isFinal)finalT+=e.results[i][0].transcript+' ';
-      else int+=e.results[i][0].transcript;
+  debateFinalTranscript='';
+  ScribeSTT.start({
+    onTranscript:(text,isFinal)=>{
+      const txt=text.trim();
+      if(txt)document.getElementById('debate-transcript').textContent=txt+(isFinal?'':' ... click to send');
+      if(isFinal)debateFinalTranscript=text;
+    },
+    onError:(err)=>{
+      showToast('⚠️','Mic blocked — allow mic access');isDebateListening=false;
     }
-    const txt=(finalT+int).trim();
-    if(txt)document.getElementById('debate-transcript').textContent=txt+' ... click to send';
-  };
-  debateRecognition.onerror=(e)=>{
-    if(e.error==='not-allowed'){showToast('⚠️','Mic blocked — allow mic access');isDebateListening=false;}
-  };
-  debateRecognition.onend=()=>{
-    if(isDebateListening){try{debateRecognition.start();}catch(err){}}
-  };
-  debateRecognition.start();
+  });
 }
 
 async function stopDebateListening(){
   isDebateListening=false;
-  if(debateRecognition){debateRecognition.stop();debateRecognition=null;}
+  await ScribeSTT.stop();
   const btn=document.getElementById('debate-mic-btn');
-  let text=document.getElementById('debate-transcript').textContent.replace(' ... click to send','').trim();
+  let text=(debateFinalTranscript||document.getElementById('debate-transcript').textContent).replace(' ... click to send','').trim();
+  debateFinalTranscript='';
   if(!text||text==='Listening... click again to send'||text.trim().length<2){btn.className='hold-btn idle';btn.textContent='🎙️';return;}
   btn.className='hold-btn processing';btn.textContent='\u23f3';btn.disabled=true;
   debateRound++;updateDebateRound();
@@ -4867,7 +5041,7 @@ async function scoreDebate(){
 
 function resetDebate(){
   debateRunning=false;debateRound=0;debateSide='for';
-  if(debateRecognition){debateRecognition.stop();debateRecognition=null;}
+  ScribeSTT.stop();
   if(debateFaceAnimA){cancelAnimationFrame(debateFaceAnimA);debateFaceAnimA=null;}
   if(debateFaceAnimB){cancelAnimationFrame(debateFaceAnimB);debateFaceAnimB=null;}
   if(debateWaveInterval){clearInterval(debateWaveInterval);debateWaveInterval=null;}
@@ -5393,7 +5567,7 @@ const COLD_OPEN_SCENARIOS = {
 };;
 let coState = { running: false, type: '', scenario: null, history: [], faceAnim: null, personCoach: 'Echo', turns: 0 };
 let coFaceState = 'idle', coMouth = 0, coBlink = 0;
-let coRecognition = null, isCOListening = false;
+let isCOListening = false, coFinalTranscript = '';
 
 function initColdOpen() {
   if (!coState.running) {
@@ -5514,20 +5688,24 @@ function startCOListening(){
   const btn=document.getElementById('co-mic-btn');
   btn.className='hold-btn recording';btn.textContent='🔴';
   document.getElementById('co-transcript').textContent='Listening... click again to send';
-  if(!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)){showToast('⚠️','Use Chrome for voice');btn.className='hold-btn idle';btn.textContent='🎙️';isCOListening=false;return;}
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  coRecognition=new SR();coRecognition.continuous=true;coRecognition.interimResults=true;coRecognition.lang='en-US';
-  let finalT='';
-  coRecognition.onresult=(e)=>{let int='';for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)finalT+=e.results[i][0].transcript+' ';else int+=e.results[i][0].transcript;}const txt=(finalT+int).trim();if(txt)document.getElementById('co-transcript').textContent=txt+' ... click to send';};
-  coRecognition.onerror=(e)=>{if(e.error==='not-allowed'){showToast('⚠️','Mic blocked');isCOListening=false;}};
-  coRecognition.onend=()=>{if(isCOListening){try{coRecognition.start();}catch(e){}}};
-  coRecognition.start();
+  coFinalTranscript='';
+  ScribeSTT.start({
+    onTranscript:(text,isFinal)=>{
+      const txt=text.trim();
+      if(txt)document.getElementById('co-transcript').textContent=txt+(isFinal?'':' ... click to send');
+      if(isFinal)coFinalTranscript=text;
+    },
+    onError:(err)=>{
+      showToast('⚠️','Mic blocked');isCOListening=false;
+    }
+  });
 }
 
 async function stopCOListening(){
-  isCOListening=false;if(coRecognition){coRecognition.stop();coRecognition=null;}
+  isCOListening=false;await ScribeSTT.stop();
   const btn=document.getElementById('co-mic-btn');
-  let text=document.getElementById('co-transcript').textContent.replace(' ... click to send','').trim();
+  let text=(coFinalTranscript||document.getElementById('co-transcript').textContent).replace(' ... click to send','').trim();
+  coFinalTranscript='';
   if(!text||text==='Listening... click again to send'||text.trim().length<2){btn.className='hold-btn idle';btn.textContent='🎙️';return;}
   btn.className='hold-btn processing';btn.textContent='⏳';btn.disabled=true;
   coState.turns++;
@@ -5744,7 +5922,7 @@ function practiceRandomQ() {
 }
 
 // ── Voice Warmup ──────────────────────────────────────────────────────────────
-let wuListening = false, wuRecognition = null, wuCurrentQuestion = null, wuTranscript = '';
+let wuListening = false, wuCurrentQuestion = null, wuTranscript = '';
 
 async function generateVoiceWarmup() {
 
@@ -5785,30 +5963,19 @@ function startWarmupListening() {
   btn.className = 'hold-btn recording'; btn.textContent = '🔴';
   document.getElementById('wu-status').textContent = 'Listening... click again when done';
   document.getElementById('wu-transcript').textContent = 'Listening...';
-  if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-    showToast('⚠️','Use Chrome for voice'); btn.className='hold-btn idle'; btn.textContent='🎙️'; wuListening=false; return;
-  }
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  wuRecognition = new SR(); wuRecognition.continuous=true; wuRecognition.interimResults=true; wuRecognition.lang='en-US';
-  let finalT = '';
-  wuRecognition.onresult = (e) => {
-    let interim = '';
-    for (let i=e.resultIndex;i<e.results.length;i++) {
-      if (e.results[i].isFinal) finalT += e.results[i][0].transcript + ' ';
-      else interim += e.results[i][0].transcript;
-    }
-    const txt = (finalT + interim).trim();
-    if (txt) document.getElementById('wu-transcript').textContent = txt;
-    wuTranscript = finalT.trim();
-  };
-  wuRecognition.onerror = (e) => { if(e.error==='not-allowed'){showToast('⚠️','Mic blocked');wuListening=false;} };
-  wuRecognition.onend = () => { if(wuListening){try{wuRecognition.start();}catch(e){}} };
-  wuRecognition.start();
+  ScribeSTT.start({
+    onTranscript: (text, isFinal) => {
+      const txt = text.trim();
+      if (txt) document.getElementById('wu-transcript').textContent = txt;
+      if (isFinal) wuTranscript = text.trim();
+    },
+    onError: (err) => { showToast('⚠️','Mic blocked'); wuListening=false; }
+  });
 }
 
 function stopWarmupListening() {
   wuListening = false;
-  if (wuRecognition) { wuRecognition.stop(); wuRecognition = null; }
+  ScribeSTT.stop();
   const btn = document.getElementById('wu-mic-btn');
   btn.className = 'hold-btn idle'; btn.textContent = '🎙️';
   const text = document.getElementById('wu-transcript').textContent;
@@ -5859,7 +6026,7 @@ No markdown.`;
 
 function resetWarmup() {
   wuListening = false; wuTranscript = ''; wuCurrentQuestion = null;
-  if (wuRecognition) { wuRecognition.stop(); wuRecognition = null; }
+  ScribeSTT.stop();
   document.getElementById('wu-question-card').style.display = 'none';
   document.getElementById('wu-score-panel').style.display = 'none';
   showBackBtn(false);
@@ -6043,7 +6210,7 @@ async function loadUserData() {
           if (stats.briefing.improve) document.getElementById('b-improve').value = stats.briefing.improve;
           saveBriefing();
         }
-        if (stats.selected_coach) selectProfile(stats.selected_coach);
+        if (stats.selected_coach) selectProfile(stats.selected_coach, true);
       }
     }
     // Load sessions
@@ -6170,9 +6337,9 @@ async function signOut() {
 const BACK_PAGES = {
   voice: () => { 
     if(voiceState !== 'idle') { 
-      window.speechSynthesis?.cancel(); 
-      if(recognition){recognition.stop();recognition=null;}
-      setVoiceState('idle'); 
+      window.speechSynthesis?.cancel();
+      ScribeSTT.stop();
+      setVoiceState('idle');
     }
     showBackBtn(false);
   },

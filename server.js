@@ -231,7 +231,31 @@ app.post('/api/speak', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
- 
+
+// ── ElevenLabs Scribe STT token (single-use, expires in 15 min) ──────────────
+app.post('/api/stt-token', requireAuth, async (req, res) => {
+  if (!process.env.ELEVENLABS_API_KEY) {
+    return res.status(500).json({ error: 'No ElevenLabs API key configured' });
+  }
+  try {
+    const response = await fetch('https://api.elevenlabs.io/v1/convai/tokens', {
+      method: 'POST',
+      headers: {
+        'xi-api-key': process.env.ELEVENLABS_API_KEY,
+        'Content-Type': 'application/json'
+      }
+    });
+    if (!response.ok) {
+      const err = await response.text();
+      return res.status(response.status).json({ error: err });
+    }
+    const data = await response.json();
+    res.json({ token: data.token });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Catch-all falls back to index.html
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
