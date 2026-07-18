@@ -2430,6 +2430,28 @@ body.compact-mode .page { padding: 20px 24px; }
               transition: all 0.2s;
             "></div>
             <button class="hold-btn idle" id="hold-btn" onclick="toggleListening()">🎙️</button>
+            <button id="voice-done-btn"
+              onclick="ScribeSTT.submitNow()"
+              style="
+                display: none;
+                background: linear-gradient(135deg, #2dd4a0, #38bdf8);
+                border: none;
+                border-radius: 10px;
+                color: #fff;
+                font-family: 'Space Grotesk', sans-serif;
+                font-size: 14px;
+                font-weight: 700;
+                padding: 10px 24px;
+                cursor: pointer;
+                transition: all 0.2s;
+                box-shadow: 0 4px 16px rgba(45,212,160,0.35);
+                margin-top: 8px;
+              "
+              onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 8px 24px rgba(45,212,160,0.5)'"
+              onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(45,212,160,0.35)'"
+            >
+              ✓ Done Speaking
+            </button>
             <div class="hold-hint" id="hold-hint">Click to speak</div>
           </div>
           <div class="voice-controls-side">
@@ -3180,6 +3202,10 @@ const ScribeSTT = {
   onStart: null,       // callback()
   onStop: null,         // callback()
   partialText: '',
+  accumulatedText: '',  // full response built across multiple final transcripts
+  silenceTimer: null,   // timer for auto-submit after long silence
+  autoSubmitDelay: 4000, // ms of silence before auto-submitting (4 seconds)
+  onAutoSubmit: null,   // callback when auto-submit fires
 
   // Fetch a single-use token from our server
   async getToken() {
@@ -3196,13 +3222,57 @@ const ScribeSTT = {
     return data.token;
   },
 
+  // Accumulate transcripts — call this instead of acting on every isFinal directly
+  handleTranscript(text, isFinal) {
+    if (!text || !text.trim()) return;
+    // Always fire the live display callback with partial text
+    if (this.onTranscript) this.onTranscript(text, false);
+
+    if (isFinal) {
+      // Append to accumulated response
+      this.accumulatedText = (this.accumulatedText + ' ' + text).trim();
+      // Update live display with full accumulated text
+      if (this.onTranscript) this.onTranscript(this.accumulatedText, false);
+
+      // Reset the auto-submit silence timer
+      if (this.silenceTimer) clearTimeout(this.silenceTimer);
+      this.silenceTimer = setTimeout(() => {
+        // User has been silent for autoSubmitDelay ms — auto-submit the full response
+        if (this.accumulatedText.trim().length > 0 && this.onAutoSubmit) {
+          const fullText = this.accumulatedText.trim();
+          this.accumulatedText = '';
+          this.onAutoSubmit(fullText);
+        }
+      }, this.autoSubmitDelay);
+    }
+  },
+
+  // Call this when user manually clicks "Done speaking"
+  submitNow() {
+    if (this.silenceTimer) clearTimeout(this.silenceTimer);
+    const fullText = this.accumulatedText.trim();
+    this.accumulatedText = '';
+    if (fullText.length > 0 && this.onAutoSubmit) {
+      this.onAutoSubmit(fullText);
+    }
+    this.stop();
+  },
+
+  // Reset accumulator without submitting
+  resetAccumulator() {
+    if (this.silenceTimer) clearTimeout(this.silenceTimer);
+    this.accumulatedText = '';
+  },
+
   // Start listening
   async start(callbacks = {}) {
     if (this.isListening) return;
+    this.resetAccumulator(); // start every session with a clean slate — no leftover text from a prior cancelled session
     if (callbacks.onTranscript) this.onTranscript = callbacks.onTranscript;
     if (callbacks.onError) this.onError = callbacks.onError;
     if (callbacks.onStart) this.onStart = callbacks.onStart;
     if (callbacks.onStop) this.onStop = callbacks.onStop;
+    if (callbacks.onAutoSubmit) this.onAutoSubmit = callbacks.onAutoSubmit;
 
     try {
       const token = await this.getToken();
@@ -3224,7 +3294,7 @@ const ScribeSTT = {
           language_code: 'en',
           no_verbatim: true,             // removes filler words (um, uh, like)
           filter_background_audio: true, // reduces background noise
-          vad_silence_threshold_secs: 0.8,
+          vad_silence_threshold_secs: 2.5, // wait 2.5 seconds of silence before committing — prevents mid-thought cutoffs
           keyterms: [
             'clarity', 'confidence', 'persuasion', 'storytelling', 'conciseness',
             'interview', 'pitch', 'networking', 'leadership', 'debate',
@@ -3235,11 +3305,9 @@ const ScribeSTT = {
 
       this.connection.on('transcript', (event) => {
         if (event.type === 'partial_transcript') {
-          this.partialText = event.text;
-          if (this.onTranscript) this.onTranscript(event.text, false);
+          if (this.onTranscript) this.onTranscript(this.accumulatedText + ' ' + event.text, false);
         } else if (event.type === 'final_transcript' || event.type === 'committed_transcript') {
-          this.partialText = '';
-          if (this.onTranscript) this.onTranscript(event.text, true);
+          this.handleTranscript(event.text, true);
         }
       });
 
@@ -3261,6 +3329,7 @@ const ScribeSTT = {
 
   // Stop listening
   async stop() {
+    if (this.silenceTimer) { clearTimeout(this.silenceTimer); this.silenceTimer = null; }
     if (!this.isListening) return;
     try {
       if (this.connection) {
@@ -3313,9 +3382,9 @@ const ScribeSTT = {
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
         if (data.message_type === 'partial_transcript') {
-          if (this.onTranscript) this.onTranscript(data.text, false);
+          if (this.onTranscript) this.onTranscript(this.accumulatedText + ' ' + data.text, false);
         } else if (data.message_type === 'final_transcript') {
-          if (this.onTranscript) this.onTranscript(data.text, true);
+          this.handleTranscript(data.text, true);
         }
       };
       ws.onerror = (err) => { if (this.onError) this.onError(err); };
@@ -3347,8 +3416,8 @@ const ScribeSTT = {
         if (e.results[i].isFinal) final += e.results[i][0].transcript;
         else interim += e.results[i][0].transcript;
       }
-      if (interim && this.onTranscript) this.onTranscript(interim, false);
-      if (final && this.onTranscript) this.onTranscript(final, true);
+      if (interim && this.onTranscript) this.onTranscript(this.accumulatedText + ' ' + interim, false);
+      if (final) this.handleTranscript(final, true);
     };
     recognition.onerror = (e) => { if (this.onError) this.onError(e); };
     recognition.onend = () => { if (this.onStop) this.onStop(); };
@@ -4247,7 +4316,6 @@ function fallbackSpeak(text){
 }
 
 let isListeningVoice = false;
-let voiceFinalTranscript = '';
 
 function toggleListening(){
   if(voiceState==='processing'||voiceState==='speaking')return;
@@ -4263,35 +4331,62 @@ function toggleListening(){
 function startListening(){
   window.speechSynthesis?.cancel();
   setVoiceState('listening');
-  document.getElementById('voice-transcript').textContent='Listening... click again to send';
-  document.getElementById('hold-hint').textContent='Click to stop & send';
+  document.getElementById('voice-transcript').textContent='Listening...';
+  document.getElementById('hold-hint').textContent='Click to cancel — pause 4s or hit Done to send';
   const liveEl=document.getElementById('voice-live-transcript');
-  if(liveEl)liveEl.textContent='';
+  if(liveEl){liveEl.textContent='';liveEl.style.color='var(--muted2)';}
+  ScribeSTT.autoSubmitDelay = 4000; // 4 seconds of silence = done speaking
   ScribeSTT.start({
     onTranscript:(text,isFinal)=>{
-      if(liveEl)liveEl.textContent=text;
-      const display=text.trim();
-      if(display)document.getElementById('voice-transcript').textContent=display+(isFinal?'':' ... click to send');
-      if(isFinal)voiceFinalTranscript=text;
+      // Show accumulated text live as user speaks
+      if(liveEl){
+        liveEl.textContent=text||'';
+        liveEl.style.color=isFinal?'var(--text)':'var(--muted2)';
+      }
+      const display=(text||'').trim();
+      if(display)document.getElementById('voice-transcript').textContent=display;
+    },
+    onAutoSubmit:(fullText)=>{
+      // This fires after 4 seconds of silence OR when the user clicks Done
+      ScribeSTT.stop();
+      isListeningVoice=false;
+      document.getElementById('hold-hint').textContent='Click to speak';
+      if(liveEl)liveEl.textContent='';
+      handleVoiceUserResponse(fullText);
     },
     onError:(err)=>{
-      console.warn('STT error:',err);
+      console.error('STT error:',err);
       showToast('⚠️','Microphone blocked — allow mic access in browser settings');
       setVoiceState('idle');isListeningVoice=false;
       document.getElementById('hold-hint').textContent='Click to speak';
     },
-    onStart:()=>{},
-    onStop:()=>{}
+    onStart:()=>{
+      const btn=document.getElementById('voice-done-btn');
+      if(btn)btn.style.display='block';
+    },
+    onStop:()=>{
+      const btn=document.getElementById('voice-done-btn');
+      if(btn)btn.style.display='none';
+    }
   });
 }
 
+// Cancels listening without submitting — clicking the mic mid-listen discards
+// whatever's been captured so far. Submitting happens via auto-submit (4s
+// silence) or the "Done Speaking" button (ScribeSTT.submitNow()).
 async function stopListening(){
   isListeningVoice=false;
   document.getElementById('hold-hint').textContent='Click to speak';
+  ScribeSTT.resetAccumulator();
   await ScribeSTT.stop();
-  const t=(voiceFinalTranscript||document.getElementById('voice-transcript').textContent).replace(' ... click to send','').trim();
-  voiceFinalTranscript='';
-  if(!t||t==='Listening... click again to send'||t.trim().length<2){
+  document.getElementById('voice-transcript').textContent='Your words will appear here as you speak...';
+  const liveEl=document.getElementById('voice-live-transcript');
+  if(liveEl)liveEl.textContent='';
+  setVoiceState('idle');
+}
+
+async function handleVoiceUserResponse(t){
+  if(!t||t.trim().length<2){
     setVoiceState('idle');
     document.getElementById('voice-transcript').textContent='Your words will appear here as you speak...';
     return;
