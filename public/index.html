@@ -2710,10 +2710,6 @@ body.compact-mode .page { padding: 20px 24px; }
                   <div id="co-person-role" style="font-size:12px;color:var(--muted2);font-family:'DM Mono',monospace"></div>
                   <div id="co-status" style="font-size:11px;color:var(--muted);margin-top:8px;min-height:14px"></div>
                 </div>
-                <div class="panel" style="text-align:center">
-                  <div class="panel-title">Your Coach</div>
-                  <div id="coldopen-coach-avatar"></div>
-                </div>
                 <div class="panel">
                   <div class="panel-title">Live Tips</div>
                   <div id="co-tips" style="font-size:13px;color:var(--muted2);line-height:1.9">
@@ -3796,8 +3792,6 @@ function selectProfile(name,silent=false){
   updateChips();
   S.chatHistory=[];
   const c=COACHES[name];
-  document.getElementById('coach-label').textContent=name;
-  document.getElementById('coach-greeting').textContent=c.greeting;
   document.getElementById('chat-messages').innerHTML=`<div class="msg msg-ai"><div class="msg-name">${name}</div><span>${c.greeting}</span></div>`;
   switchVoiceCoach(name,silent);
   if(!silent)showToast('✓','Switched to '+name);
@@ -5608,10 +5602,6 @@ function startColdOpen() {
   document.getElementById('co-transcript').textContent='Click the mic to respond...';
   if(coState.faceAnim)cancelAnimationFrame(coState.faceAnim);
   drawCOFace();
-  const coEl = document.getElementById('coldopen-coach-avatar');
-  if (coEl) {
-    coEl.innerHTML = createCoachAvatar(S.coach, 'sm', false);
-  }
   addCOMsg(scenario.person, scenario.opener, false);
   speakCO(scenario.opener);
   setScenarioCharSpeaking(type, true);
