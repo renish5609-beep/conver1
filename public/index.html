@@ -548,7 +548,12 @@ input:focus, select:focus, textarea:focus {
 .hg-card:hover .hg-link { gap: 9px; }
 
 .home-bottom{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
-.hb-card{background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:18px 20px}
+.hb-card{background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:18px 20px;transition:transform 0.2s,border-color 0.2s,box-shadow 0.2s;animation:hbCardIn 0.4s cubic-bezier(0.4,0,0.2,1) backwards}
+.hb-card:hover{transform:translateY(-3px);border-color:var(--border2);box-shadow:0 10px 26px rgba(0,0,0,0.3)}
+.home-bottom .hb-card:nth-child(1){animation-delay:0ms}
+.home-bottom .hb-card:nth-child(2){animation-delay:70ms}
+.home-bottom .hb-card:nth-child(3){animation-delay:140ms}
+@keyframes hbCardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .hb-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;font-family:'DM Mono',monospace;margin-bottom:6px}
 .hb-value{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:800;letter-spacing:-0.5px}
 .hb-sub{font-size:11.5px;color:var(--muted);margin-top:3px}
@@ -568,7 +573,9 @@ input:focus, select:focus, textarea:focus {
 /* PRACTICE */
 .practice-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
 .score-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
-.score-box{background:var(--bg2);border-radius:10px;padding:14px;text-align:center;border:1px solid var(--border)}
+.score-box{background:var(--bg2);border-radius:10px;padding:14px;text-align:center;border:1px solid var(--border);animation:scoreBoxIn 0.45s cubic-bezier(0.34,1.56,0.64,1) backwards;transition:transform 0.2s,border-color 0.2s}
+.score-box:hover{transform:translateY(-2px);border-color:var(--border2)}
+@keyframes scoreBoxIn{from{opacity:0;transform:translateY(10px) scale(0.92)}to{opacity:1;transform:translateY(0) scale(1)}}
 .score-num{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:800;line-height:1;letter-spacing:-1px}
 .score-num.good{color:var(--green)}.score-num.mid{color:var(--amber)}.score-num.low{color:var(--red)}
 .score-lbl{font-size:10px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:1px;font-family:'DM Mono',monospace}
@@ -602,7 +609,7 @@ input:focus, select:focus, textarea:focus {
 .rm-close:hover{color:var(--text);border-color:rgba(255,255,255,0.2)}
 .rm-meta{font-size:12px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:4px}
 .rm-scores{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px}
-.rm-score-box{background:var(--bg2);border-radius:10px;padding:16px;text-align:center;border:1px solid var(--border)}
+.rm-score-box{background:var(--bg2);border-radius:10px;padding:16px;text-align:center;border:1px solid var(--border);animation:scoreBoxIn 0.45s cubic-bezier(0.34,1.56,0.64,1) backwards}
 .rm-score-num{font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:800;letter-spacing:-1px;line-height:1}
 .rm-score-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-family:'DM Mono',monospace;margin-top:4px}
 .rm-section{margin-bottom:20px}
@@ -715,8 +722,8 @@ input:focus, select:focus, textarea:focus {
 
 /* HISTORY */
 .history-list{display:flex;flex-direction:column;gap:10px}
-.history-item{background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:16px 20px;display:flex;gap:14px;align-items:flex-start;transition:all 0.15s;cursor:pointer}
-.history-item:hover{border-color:var(--border2);background:var(--bg2)}
+.history-item{background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:16px 20px;display:flex;gap:14px;align-items:flex-start;transition:all 0.2s cubic-bezier(0.4,0,0.2,1);cursor:pointer;animation:qbItemIn 0.35s cubic-bezier(0.4,0,0.2,1) backwards}
+.history-item:hover{border-color:var(--border2);background:var(--bg2);transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,0.3)}
 .h-scores{display:flex;gap:6px;margin-top:8px}
 .ms{font-size:10.5px;font-family:'DM Mono',monospace;padding:2px 8px;border-radius:5px}
 .ms-c{background:rgba(79,195,247,0.1);color:var(--accent2)}
@@ -737,8 +744,10 @@ input:focus, select:focus, textarea:focus {
 .toggle input:checked+.toggle-slider::before{transform:translateX(17px)}
 
 /* NOTIFICATION TOAST */
-.toast{position:fixed;bottom:28px;right:28px;background:var(--bg1);border:1px solid var(--border2);border-radius:12px;padding:14px 18px;z-index:2000;display:flex;align-items:center;gap:10px;font-size:13.5px;box-shadow:0 16px 40px rgba(0,0,0,0.4);transform:translateY(80px);opacity:0;transition:all 0.3s ease}
-.toast.show{transform:translateY(0);opacity:1}
+.toast{position:fixed;bottom:28px;right:28px;background:var(--bg1);border:1px solid var(--border2);border-radius:12px;padding:14px 18px;z-index:2000;display:flex;align-items:center;gap:10px;font-size:13.5px;box-shadow:0 16px 40px rgba(0,0,0,0.4);transform:translateY(80px) scale(0.9);opacity:0;transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1)}
+.toast.show{transform:translateY(0) scale(1);opacity:1}
+.toast.show #toast-icon{animation:toastIconPop 0.5s cubic-bezier(0.34,1.56,0.64,1)}
+@keyframes toastIconPop{0%{transform:scale(0.4) rotate(-15deg)}60%{transform:scale(1.25) rotate(8deg)}100%{transform:scale(1) rotate(0)}}
 .toast-icon{font-size:18px}
 
 /* AUTH SCREEN */
@@ -1423,7 +1432,17 @@ body::before{
   padding:22px;cursor:pointer;
   transition:all 0.25s cubic-bezier(0.4,0,0.2,1);
   position:relative;overflow:hidden;
+  animation:hgCardIn 0.45s cubic-bezier(0.4,0,0.2,1) backwards;
 }
+@keyframes hgCardIn{from{opacity:0;transform:translateY(14px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.home-grid .hg-card:nth-child(1){animation-delay:0ms}
+.home-grid .hg-card:nth-child(2){animation-delay:60ms}
+.home-grid .hg-card:nth-child(3){animation-delay:120ms}
+.home-grid .hg-card:nth-child(4){animation-delay:180ms}
+.home-grid .hg-card:nth-child(5){animation-delay:240ms}
+.home-grid .hg-card:nth-child(6){animation-delay:300ms}
+.home-grid .hg-card:nth-child(7){animation-delay:360ms}
+.home-grid .hg-card:nth-child(8){animation-delay:420ms}
 .hg-card::before{
   content:'';position:absolute;top:0;left:0;right:0;height:1px;
   background:linear-gradient(90deg,transparent,rgba(255,255,255,0.07),transparent);
@@ -1921,7 +1940,9 @@ body.compact-mode .page { padding: 20px 24px; }
   transition: all 0.22s;
   position: relative;
   overflow: hidden;
+  animation: coachCardIn 0.4s cubic-bezier(0.4,0,0.2,1) backwards;
 }
+@keyframes coachCardIn{from{opacity:0;transform:translateY(12px) scale(0.96)}to{opacity:1;transform:translateY(0) scale(1)}}
 .coach-profile-card::before {
   content: '';
   position: absolute; inset: 0;
@@ -3553,8 +3574,9 @@ function setScenarioCharSpeaking(category, speaking) {
 function renderCoachProfiles() {
   const grid = document.getElementById('coach-profiles-grid');
   if (!grid) return;
-  grid.innerHTML = Object.entries(COACH_DATA).map(([name, coach]) => `
+  grid.innerHTML = Object.entries(COACH_DATA).map(([name, coach], i) => `
     <div class="coach-profile-card ${coach.cssClass} ${S.coach === name ? 'selected' : ''}"
+         style="animation-delay:${i*60}ms"
          onclick="selectCoach('${name}')">
       ${createCoachAvatar(name, 'md', false)}
       <div class="coach-avatar-name" style="position:relative;z-index:1">${coach.title}</div>
@@ -3874,7 +3896,7 @@ async function analyzeResponse(){
     S.history.unshift(newSession);
     if(S.autosave !== false) saveSessionToCloud(newSession);
     saveUserData();
-    updateChips();renderResults(a);
+    updateChips();renderResults(a,text);
     if(fillerData.count>0){showToast('🚨',`${fillerData.count} filler word${fillerData.count>1?'s':''} detected: ${fillerData.found.slice(0,3).join(', ')}`);}
     if(S.autoReport)setTimeout(()=>openReport(S.history[0]),600);
     showToast('✓','Analysis complete');
@@ -3883,7 +3905,33 @@ async function analyzeResponse(){
 }
 
 function scoreClass(n){return n>=8?'good':n>=5?'mid':'low';}
-function renderResults(a){
+
+// Counts a score number up from 0 to its target, staggering multiple boxes in a container.
+// Skips straight to the final value when reduce-motion is on (transitions collapse to ~0 anyway).
+function animateScoreReveal(container, selector) {
+  const els = (typeof container === 'string' ? document.querySelectorAll(container) : container.querySelectorAll(selector || '.score-num,.rm-score-num'));
+  const reduced = document.body.classList.contains('reducemotion');
+  els.forEach((el, i) => {
+    const box = el.closest('.score-box,.rm-score-box');
+    if (box) box.style.animationDelay = (i*80)+'ms';
+    const target = parseFloat(el.textContent);
+    if (isNaN(target)) return;
+    if (reduced) { el.textContent = target; return; }
+    const isInt = Number.isInteger(target);
+    const start = performance.now();
+    const dur = 650 + i*100;
+    function tick(now) {
+      const t = Math.min(1, (now-start)/dur);
+      const eased = 1 - Math.pow(1-t, 3);
+      const val = target * eased;
+      el.textContent = isInt ? Math.round(val) : val.toFixed(1);
+      if (t < 1) requestAnimationFrame(tick);
+      else el.textContent = target;
+    }
+    requestAnimationFrame(tick);
+  });
+}
+function renderResults(a,originalText){
   document.getElementById('results-area').innerHTML=`
     <div class="score-row">
       <div class="score-box"><div class="score-num ${scoreClass(a.clarity)}">${a.clarity}</div><div class="score-lbl">Clarity</div></div>
@@ -3894,8 +3942,9 @@ function renderResults(a){
     <div class="result-block"><h4>What worked</h4>${a.strengths.map(s=>`<div class="bullet"><span>${s}</span></div>`).join('')}</div>
     <div class="result-block"><h4>To improve</h4>${a.improvements.map(s=>`<div class="bullet"><span>${s}</span></div>`).join('')}</div>
     ${S.filler?`<div class="result-block"><h4>Delivery read</h4><p class="comm-read">${a.filler_feedback}</p></div>`:''}
-    ${S.rewrite?`<div class="result-block"><h4>Stronger version · ${S.coach}</h4><div class="rewrite-box">${a.rewrite}</div></div>${S.showDiff?`<div style="margin-top:8px">${renderDiff(text,a.rewrite)}</div>`:''}`:''}
+    ${S.rewrite?`<div class="result-block"><h4>Stronger version · ${S.coach}</h4><div class="rewrite-box">${a.rewrite}</div></div>${S.showDiff?`<div style="margin-top:8px">${renderDiff(originalText,a.rewrite)}</div>`:''}`:''}
     <button onclick="openReport(S.history[0])" style="width:100%;padding:10px;background:transparent;border:1px solid var(--border2);border-radius:9px;color:var(--muted2);cursor:pointer;font-size:13px;margin-top:4px;transition:all 0.15s" onmouseover="this.style.borderColor='rgba(108,99,255,0.4)';this.style.color='var(--accent3)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted2)'">📄 View Full Report</button>`;
+  animateScoreReveal(document.getElementById('results-area'));
 }
 
 // ── Report Modal ──────────────────────────────────────────────────────────────
@@ -3915,6 +3964,7 @@ function openReport(h){
   const rwSection = document.getElementById('rm-rewrite-section');
   if(rwSection) rwSection.style.display = a.rewrite && a.rewrite.trim() ? 'block' : 'none';
   document.getElementById('report-modal').classList.remove('hidden');
+  animateScoreReveal(document.getElementById('rm-scores'));
 }
 function closeReport(){document.getElementById('report-modal').classList.add('hidden');}
 function printReport(){window.print();}
@@ -4301,7 +4351,7 @@ function renderInsights(){
 function renderHistory(){
   const el=document.getElementById('history-list');
   if(!S.history.length){el.innerHTML=`<div class="empty-state" style="padding:60px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><p>No sessions yet.</p></div>`;return;}
-  el.innerHTML=S.history.map(h=>`<div class="history-item" onclick='openReport(${JSON.stringify(h).replace(/'/g,"&#39;")})'>
+  el.innerHTML=S.history.map((h,i)=>`<div class="history-item" style="animation-delay:${Math.min(i,10)*35}ms" onclick='openReport(${JSON.stringify(h).replace(/'/g,"&#39;")})'>
     <div style="flex:1;min-width:0">
       <div style="font-size:13px;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:8px">${h.scenario}<span style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace">· ${h.coach}</span>${h.question?`<span style="font-size:10.5px;color:var(--muted2)">· "${h.question.slice(0,35)}${h.question.length>35?'…':''}"</span>`:''}</div>
       <div style="font-size:12.5px;color:var(--muted2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h.text.slice(0,110)}${h.text.length>110?'…':''}</div>
@@ -5023,6 +5073,7 @@ async function scoreDebate(){
           <div style="font-size:13px;color:var(--muted2)">${r.top_improvement}</div>
         </div>
       </div>`;
+    animateScoreReveal(document.getElementById('debate-final-scores'));
     // Speak the verdict
     // Wire into Conver Score
     S.sessions++;
@@ -5770,6 +5821,7 @@ async function endColdOpen(){
         </div>
       </div>
       <button onclick="resetColdOpen()" class="btn-primary" style="margin-top:16px">🎲 Try Another</button>`;
+    animateScoreReveal(document.getElementById('co-scores'));
     S.sessions++;
     S.scores.clarity.push(r.naturalness);S.scores.confidence.push(r.warmth);S.scores.persuasion.push(r.impact);
     const lerp=(c,n,t)=>c+(n-c)*t;
@@ -6022,8 +6074,10 @@ No markdown.`;
     const r = JSON.parse(m[0]);
     const score = Math.min(100, Math.max(0, r.score));
     const color = score >= 75 ? 'var(--green)' : score >= 50 ? 'var(--amber)' : 'var(--red)';
-    document.getElementById('wu-score-num').textContent = score;
-    document.getElementById('wu-score-num').style.color = color;
+    const wuNumEl = document.getElementById('wu-score-num');
+    wuNumEl.textContent = score;
+    wuNumEl.style.color = color;
+    animateScoreReveal(wuNumEl.parentElement, '#wu-score-num');
     document.getElementById('wu-score-bar').style.width = score + '%';
     document.getElementById('wu-score-bar').style.background = score >= 75
       ? 'linear-gradient(90deg,#34d399,#059669)'
