@@ -583,10 +583,12 @@ input:focus, select:focus, textarea:focus {
 
 /* SCENARIO PICKER */
 .scenario-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
-.sc-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:all 0.15s}
-.sc-card:hover{border-color:var(--border2);background:var(--bg3)}
+.sc-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:all 0.2s cubic-bezier(0.4,0,0.2,1)}
+.sc-card:hover{border-color:var(--border2);background:var(--bg3);transform:translateY(-3px);box-shadow:0 10px 24px rgba(0,0,0,0.3)}
+.sc-card:active{transform:translateY(-1px) scale(0.98)}
 .sc-card.active{border-color:rgba(108,99,255,0.5);background:rgba(108,99,255,0.08)}
-.sc-icon{font-size:20px;margin-bottom:8px}
+.sc-icon{font-size:20px;margin-bottom:8px;transition:transform 0.2s}
+.sc-card:hover .sc-icon{transform:scale(1.15)}
 .sc-name{font-size:12.5px;font-weight:600;font-family:'Space Grotesk',sans-serif;margin-bottom:3px}
 .sc-hint{font-size:11px;color:var(--muted2);line-height:1.5}
 
@@ -978,8 +980,9 @@ input:focus, select:focus, textarea:focus {
 .qb-cat{padding:8px 12px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--muted2);transition:all 0.15s;border:none;background:none;width:100%;text-align:left;font-family:'Plus Jakarta Sans',sans-serif}
 .qb-cat:hover{background:var(--bg2);color:var(--text)}
 .qb-cat.active{background:rgba(108,99,255,0.12);color:var(--accent3);font-weight:500}
-.qb-item{background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:16px 20px;cursor:pointer;transition:all 0.15s;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
-.qb-item:hover{border-color:var(--border2);background:var(--bg2)}
+.qb-item{background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:16px 20px;cursor:pointer;transition:all 0.2s cubic-bezier(0.4,0,0.2,1);display:flex;justify-content:space-between;align-items:flex-start;gap:12px;animation:qbItemIn 0.35s cubic-bezier(0.4,0,0.2,1) backwards}
+.qb-item:hover{border-color:var(--border2);background:var(--bg2);transform:translateY(-2px);box-shadow:0 10px 28px rgba(0,0,0,0.3)}
+@keyframes qbItemIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 .qb-question{font-size:14px;color:var(--text);line-height:1.6;flex:1}
 .qb-meta{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
 .qb-diff{font-size:10.5px;font-family:'DM Mono',monospace;padding:3px 9px;border-radius:20px}
@@ -987,6 +990,8 @@ input:focus, select:focus, textarea:focus {
 .qb-diff-medium{background:rgba(251,191,36,0.08);color:var(--amber)}
 .qb-diff-hard{background:rgba(248,113,113,0.08);color:var(--red)}
 .qb-practice-btn{font-size:11px;background:var(--accent);border:none;border-radius:7px;color:#fff;padding:5px 12px;cursor:pointer;font-family:'Space Grotesk',sans-serif;font-weight:700;white-space:nowrap;transition:all 0.15s}
+.qb-practice-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(124,111,255,0.4)}
+.qb-practice-btn:active{transform:translateY(0) scale(0.95)}
 .qb-practice-btn:hover{background:#7c74ff}
 
 /* SETTINGS ENHANCED */
@@ -1211,19 +1216,32 @@ body::before{
 }
 
 /* ── TAB NAVIGATION ─────────────────────────────────────────── */
+.app-tabs-wrap{position:relative;flex-shrink:0;z-index:19}
 .app-tabs{
   height:44px;min-height:44px;
   background:rgba(8,9,26,0.88);
   border-bottom:1px solid var(--border);
   display:flex;align-items:center;padding:0 12px;gap:2px;
-  flex-shrink:0;overflow-x:auto;scrollbar-width:none;
-  position:relative;z-index:19;
+  overflow-x:auto;scrollbar-width:thin;scrollbar-color:rgba(124,111,255,0.35) transparent;
+  position:relative;
   backdrop-filter:blur(24px);
+  scroll-behavior:smooth;
 }
-.app-tabs::-webkit-scrollbar{display:none}
+.app-tabs::-webkit-scrollbar{height:4px}
+.app-tabs::-webkit-scrollbar-thumb{background:rgba(124,111,255,0.35);border-radius:3px}
+.app-tabs::-webkit-scrollbar-track{background:transparent}
 .tabs-group{display:flex;align-items:center;gap:2px}
 .tabs-group-right{margin-left:auto}
 .tabs-divider{width:1px;height:20px;background:var(--border);margin:0 8px;flex-shrink:0}
+/* Edge fades — only shown when JS detects there's more to scroll to, so it never lies about hidden tabs */
+.app-tabs-wrap::before,.app-tabs-wrap::after{
+  content:'';position:absolute;top:0;bottom:1px;width:36px;pointer-events:none;
+  z-index:2;opacity:0;transition:opacity 0.2s;
+}
+.app-tabs-wrap::before{left:0;background:linear-gradient(to right,rgba(8,9,26,0.95),transparent)}
+.app-tabs-wrap::after{right:0;background:linear-gradient(to left,rgba(8,9,26,0.95),transparent)}
+.app-tabs-wrap.fade-left::before{opacity:1}
+.app-tabs-wrap.fade-right::after{opacity:1}
 
 .tab-item{
   display:flex;align-items:center;gap:6px;
@@ -1236,6 +1254,7 @@ body::before{
   position:relative;flex-shrink:0;letter-spacing:-0.1px;
 }
 .tab-item:hover{color:var(--text2);background:var(--s3);border-color:var(--border)}
+.tab-item:active{transform:scale(0.95)}
 .tab-item.active{
   color:#ffffff;
   font-weight:700;
@@ -2184,7 +2203,8 @@ body.compact-mode .page { padding: 20px 24px; }
     </div>
   </header>
 
-  <nav class="app-tabs">
+  <div class="app-tabs-wrap" id="app-tabs-wrap">
+  <nav class="app-tabs" id="app-tabs">
     <div class="tabs-group">
       <button class="tab-item active" data-page="home" onclick="navTo('home')"><span class="tab-icon">🏠</span>Overview</button>
       <button class="tab-item" data-page="warmup" onclick="navTo('warmup')"><span class="tab-icon">⚡</span>Warmup</button>
@@ -2207,6 +2227,7 @@ body.compact-mode .page { padding: 20px 24px; }
       <button class="tab-item" data-page="settings" onclick="navTo('settings')"><span class="tab-icon">⚙</span>Settings</button>
     </div>
   </nav>
+  </div>
 
   <main class="app-content">
 
@@ -3615,7 +3636,10 @@ function navTo(page){
   document.getElementById('page-'+page).classList.add('active');
   document.querySelectorAll('.tab-item').forEach(b => b.classList.remove('active'));
   const activeTab = document.querySelector(`.tab-item[data-page="${page}"]`);
-  if (activeTab) activeTab.classList.add('active');
+  if (activeTab) {
+    activeTab.classList.add('active');
+    activeTab.scrollIntoView({block:'nearest', inline:'nearest', behavior:'smooth'});
+  }
   document.getElementById('page-title') && (document.getElementById('page-title').textContent = PAGE_TITLES[page] || page);
   if(page==='insights')renderInsights();
   if(page==='history')renderHistory();
@@ -5872,8 +5896,8 @@ function filterQBank() {
   });
   const container = document.getElementById('qb-list');
   if (!container) return;
-  container.innerHTML = filtered.length ? filtered.map(q => `
-    <div class="qb-item" onclick="practiceQBQuestion('${q.q.replace(/'/g,"&#39;")}')">
+  container.innerHTML = filtered.length ? filtered.map((q,i) => `
+    <div class="qb-item" style="animation-delay:${Math.min(i,10)*35}ms" onclick="practiceQBQuestion('${q.q.replace(/'/g,"&#39;")}')">
       <div>
         <div class="qb-question">${q.q}</div>
         <div style="font-size:11.5px;color:var(--muted2);margin-top:6px;line-height:1.5">💡 ${q.tip}</div>
@@ -6358,6 +6382,30 @@ function handleBackBtn() {
 initUI(); updateChips(); setTimeout(initToneDetector, 500); loadSettings();
 if(window.speechSynthesis){window.speechSynthesis.onvoiceschanged=()=>window.speechSynthesis.getVoices();window.speechSynthesis.getVoices();}
 initAuth();
+
+// ── Tab bar scroll affordance ────────────────────────────────
+// Hidden tabs (Coach Notes, Insights, History, Briefing, Profiles, Settings on
+// narrower screens) must never be silently unreachable — show edge fades when
+// there's more to scroll to, and let vertical wheel scroll pan the bar too.
+(function() {
+  const wrap = document.getElementById('app-tabs-wrap');
+  const nav = document.getElementById('app-tabs');
+  if (!wrap || !nav) return;
+  function updateFade() {
+    const max = nav.scrollWidth - nav.clientWidth;
+    wrap.classList.toggle('fade-left', nav.scrollLeft > 2);
+    wrap.classList.toggle('fade-right', nav.scrollLeft < max - 2);
+  }
+  nav.addEventListener('scroll', updateFade, {passive:true});
+  window.addEventListener('resize', updateFade);
+  nav.addEventListener('wheel', (e) => {
+    if (e.deltaY === 0) return;
+    nav.scrollLeft += e.deltaY;
+    e.preventDefault();
+  }, {passive:false});
+  updateFade();
+  new ResizeObserver(updateFade).observe(nav);
+})();
 
 // ── IN-APP ANIMATIONS ─────────────────────────────────────────
 // Subtle ambient particle system on the sidebar
