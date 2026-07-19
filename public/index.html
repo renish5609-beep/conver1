@@ -2086,6 +2086,28 @@ body.compact-mode .page { padding: 20px 24px; }
 .hg-card:hover .mode-icon-wrap {
   transform: scale(1.1) rotate(-3deg);
 }
+
+/* ── ONBOARDING ────────────────────────────────────────────── */
+.ob-step-dot {
+  width: 28px; height: 4px; border-radius: 2px;
+  background: var(--border2); transition: all 0.3s;
+}
+.ob-step-dot.active { background: var(--accent); width: 40px; }
+.ob-goal-btn {
+  padding: 14px 16px; border-radius: 12px;
+  border: 1px solid var(--border); background: var(--s2);
+  font-size: 14px; font-weight: 600; color: var(--muted2);
+  cursor: pointer; transition: all 0.2s; font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.ob-goal-btn:hover { border-color: var(--border3); color: var(--text); background: var(--s3); }
+.ob-goal-btn.selected { border-color: var(--accent); background: rgba(124,111,255,0.12); color: var(--text); box-shadow: 0 0 16px rgba(124,111,255,0.15); }
+.ob-coach-btn {
+  padding: 16px 12px; border-radius: 12px;
+  border: 1px solid var(--border); background: var(--s2);
+  text-align: center; cursor: pointer; transition: all 0.2s;
+}
+.ob-coach-btn:hover { border-color: var(--border2); transform: translateY(-2px); }
+.ob-coach-btn.selected { border-color: var(--accent); background: rgba(124,111,255,0.1); box-shadow: 0 0 16px rgba(124,111,255,0.15); }
 </style>
 </head>
 <body>
@@ -2254,6 +2276,27 @@ body.compact-mode .page { padding: 20px 24px; }
 
       <!-- HOME -->
       <div class="page active" id="page-home">
+        <div id="welcome-back-banner" class="hidden" style="
+          background:linear-gradient(135deg,rgba(124,111,255,0.08),rgba(56,189,248,0.04));
+          border:1px solid var(--border2);border-radius:14px;
+          padding:16px 22px;margin-bottom:20px;
+          display:flex;align-items:center;justify-content:space-between;gap:16px;
+          position:relative;overflow:hidden;
+        ">
+          <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(124,111,255,0.4),transparent)"></div>
+          <div style="display:flex;align-items:center;gap:14px">
+            <div style="font-size:28px" id="wb-coach-emoji"></div>
+            <div>
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:var(--text);margin-bottom:2px" id="wb-title">Welcome back.</div>
+              <div style="font-size:12.5px;color:var(--muted2)" id="wb-subtitle">Ready to pick up where you left off?</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;flex-shrink:0">
+            <button class="btn-ghost" onclick="navTo('practice')" style="font-size:13px;padding:8px 16px;white-space:nowrap">Continue Practicing →</button>
+            <button onclick="document.getElementById('welcome-back-banner').classList.add('hidden')"
+              style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:4px 8px">×</button>
+          </div>
+        </div>
         <div class="home-hero">
           <div class="hero-main">
             <div class="hero-eyebrow">
@@ -2565,7 +2608,11 @@ body.compact-mode .page { padding: 20px 24px; }
           <div>
             <div class="panel-title" style="font-size:10px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;font-family:'DM Mono',monospace;margin-bottom:14px">Observations</div>
             <div id="coach-notes-list">
-              <div class="notes-empty">Complete at least 2 sessions to generate coach notes.</div>
+              <div style="text-align:center;padding:48px 24px">
+                <div style="font-size:40px;margin-bottom:12px;opacity:0.4">📝</div>
+                <div style="font-family:'Italiana',serif;font-size:22px;color:var(--text);margin-bottom:6px">No notes yet.</div>
+                <p style="font-size:13px;color:var(--muted2);line-height:1.7">After 2+ sessions your coach will start building a picture of your patterns, habits, and growth areas.</p>
+              </div>
             </div>
           </div>
           <div>
@@ -4411,41 +4458,151 @@ async function handleVoiceUserResponse(t){
 }
 
 // ── Insights ──────────────────────────────────────────────────────────────────
-function renderInsights(){
-  const el=document.getElementById('insights-content');
-  if(!S.history.length){el.innerHTML=`<div class="empty-state" style="padding:60px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><p>Complete at least one session.</p></div>`;return;}
-  const avg=arr=>arr.length?(arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1):0;
-  const ac=avg(S.scores.clarity),aco=avg(S.scores.confidence),ap=avg(S.scores.persuasion);
-  const scenarios={};S.history.forEach(h=>{scenarios[h.scenario]=(scenarios[h.scenario]||0)+1;});
-  const top=Object.entries(scenarios).sort((a,b)=>b[1]-a[1])[0];
-  const allNums=[...S.scores.clarity,...S.scores.confidence,...S.scores.persuasion];
-  el.innerHTML=`<div class="insights-grid">
-    <div class="insight-card"><div class="insight-title">Average Scores — ${S.sessions} sessions</div>
-      <div class="bar-group"><div class="bar-label"><span>Clarity</span><span>${ac}/10</span></div><div class="bar-track"><div class="bar-fill" style="width:${ac*10}%;background:var(--accent2)"></div></div></div>
-      <div class="bar-group"><div class="bar-label"><span>Confidence</span><span>${aco}/10</span></div><div class="bar-track"><div class="bar-fill" style="width:${aco*10}%;background:var(--accent3)"></div></div></div>
-      <div class="bar-group"><div class="bar-label"><span>Persuasion</span><span>${ap}/10</span></div><div class="bar-track"><div class="bar-fill" style="width:${ap*10}%;background:var(--green)"></div></div></div>
-    </div>
-    <div class="insight-card"><div class="insight-title">Session Breakdown</div>
-      <div style="font-size:13.5px;color:var(--muted2);line-height:2.1">
-        <div>📊 Total: <strong style="color:var(--text)">${S.sessions}</strong></div>
-        <div>🎯 Top scenario: <strong style="color:var(--text)">${top[0]}</strong></div>
-        <div>🧑‍🏫 Coach: <strong style="color:var(--text)">${S.coach}</strong></div>
-        <div>⭐ Best score: <strong style="color:var(--green)">${Math.max(...allNums)}/10</strong></div>
-        <div>🔥 Streak: <strong style="color:var(--amber)">${S.streak} days</strong></div>
+function renderInsights() {
+  const el = document.getElementById('insights-content');
+  if (!el) return;
+  if (!S.history || !S.history.length) {
+    el.innerHTML = `
+      <div style="text-align:center;padding:80px 40px">
+        <div style="font-size:52px;margin-bottom:16px;opacity:0.4">📊</div>
+        <div style="font-family:'Italiana',serif;font-size:28px;color:var(--text);margin-bottom:8px">No data yet.</div>
+        <p style="font-size:14px;color:var(--muted2);margin-bottom:24px">Complete your first session to unlock insights, patterns, and trends.</p>
+        <button class="btn-primary" onclick="navTo('practice')" style="max-width:220px">Start First Session →</button>
+      </div>`;
+    return;
+  }
+
+  const avg = arr => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : 0;
+  const ac = parseFloat(avg(S.scores.clarity));
+  const aco = parseFloat(avg(S.scores.confidence));
+  const ap = parseFloat(avg(S.scores.persuasion));
+  const overallAvg = ((ac+aco+ap)/3).toFixed(1);
+
+  // Session type breakdown
+  const byType = {};
+  S.history.forEach(h => { byType[h.scenario] = (byType[h.scenario]||0)+1; });
+  const topType = Object.entries(byType).sort((a,b)=>b[1]-a[1])[0]||['—',0];
+
+  // Score trend — last 10
+  const last10 = S.history.slice(0,10).reverse();
+  const trendBars = last10.map(h => {
+    const a = ((h.analysis.clarity+h.analysis.confidence+h.analysis.persuasion)/3);
+    const pct = (a/10*100).toFixed(0);
+    const color = a >= 8 ? 'var(--green)' : a >= 6 ? 'var(--accent)' : 'var(--amber)';
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+      <div style="font-size:9px;color:var(--muted);font-family:'DM Mono',monospace">${a.toFixed(1)}</div>
+      <div style="width:100%;background:rgba(255,255,255,0.05);border-radius:4px 4px 0 0;height:${pct*0.7}px;min-height:4px;background:${color};opacity:0.8"></div>
+      <div style="font-size:9px;color:var(--muted);font-family:'DM Mono',monospace">${(h.scenario||'').slice(0,3)}</div>
+    </div>`;
+  }).join('');
+
+  // Best and worst sessions
+  const sorted = [...S.history].sort((a,b) => {
+    const sa = (a.analysis.clarity+a.analysis.confidence+a.analysis.persuasion)/3;
+    const sb = (b.analysis.clarity+b.analysis.confidence+b.analysis.persuasion)/3;
+    return sb - sa;
+  });
+  const best = sorted[0];
+  const worst = sorted[sorted.length-1];
+
+  // Skill gap analysis
+  const skillGaps = [
+    {name:'Clarity', score:ac, color:'var(--accent2)'},
+    {name:'Confidence', score:aco, color:'var(--accent3)'},
+    {name:'Persuasion', score:ap, color:'var(--green)'},
+    {name:'Storytelling', score:parseFloat(avg(S.history.map(h=>h.analysis.storytelling||0))), color:'var(--amber)'},
+    {name:'Conciseness', score:parseFloat(avg(S.history.map(h=>h.analysis.conciseness||0))), color:'var(--accent4)'},
+  ].sort((a,b)=>a.score-b.score);
+  const weakest = skillGaps[0];
+  const strongest = skillGaps[skillGaps.length-1];
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">
+      <div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:18px;text-align:center">
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:800;color:var(--accent3);letter-spacing:-1px">${S.sessions}</div>
+        <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-top:4px">Total Sessions</div>
+      </div>
+      <div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:18px;text-align:center">
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:800;color:var(--green);letter-spacing:-1px">${overallAvg}</div>
+        <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-top:4px">Avg Score</div>
+      </div>
+      <div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:18px;text-align:center">
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:800;color:var(--amber);letter-spacing:-1px">${S.streak}</div>
+        <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-top:4px">Day Streak 🔥</div>
+      </div>
+      <div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:18px;text-align:center">
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:800;color:var(--accent2);letter-spacing:-1px">Lv.${calcLevelFromXP(S.xp||0)}</div>
+        <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-top:4px">Current Level</div>
       </div>
     </div>
-    <div class="insight-card" style="grid-column:span 2"><div class="insight-title">Score trend — last ${Math.min(S.history.length,10)} sessions</div>
-      <div style="display:flex;gap:8px;align-items:flex-end;height:80px;margin-top:4px">
-        ${S.history.slice(0,10).reverse().map(h=>{const a=((h.analysis.clarity+h.analysis.confidence+h.analysis.persuasion)/3).toFixed(1);const c=COACHES[h.coach];return`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px"><div style="font-size:9.5px;color:var(--muted);font-family:'DM Mono',monospace">${a}</div><div style="width:100%;background:${c.bg};border:1px solid ${c.accent.replace('0.8','0.3')};border-radius:4px 4px 0 0;height:${(a/10)*66}px;min-height:4px"></div><div style="font-size:9.5px;color:var(--muted)">${h.scenario.slice(0,3)}</div></div>`;}).join('')}
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+      <div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:20px">
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted2);margin-bottom:16px">Skill Averages</div>
+        ${skillGaps.slice().reverse().map(s=>`
+          <div style="margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px">
+              <span style="color:var(--muted2)">${s.name}</span>
+              <span style="font-family:'DM Mono',monospace;color:var(--text);font-weight:600">${s.score||0}/10</span>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);border-radius:6px;height:7px;overflow:hidden">
+              <div style="height:100%;border-radius:6px;background:${s.color};width:${(s.score||0)*10}%;transition:width 1s ease"></div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:20px;flex:1">
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted2);margin-bottom:12px">Focus Area</div>
+          <div style="font-family:'Italiana',serif;font-size:22px;color:var(--red);margin-bottom:4px">${weakest.name}</div>
+          <div style="font-size:12.5px;color:var(--muted2)">Your lowest-scoring skill at ${weakest.score||0}/10. Focus here for fastest improvement.</div>
+          <button class="btn-ghost" onclick="navTo('practice')" style="margin-top:12px;font-size:12px;padding:7px 14px">Practice ${weakest.name} →</button>
+        </div>
+        <div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:20px;flex:1">
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted2);margin-bottom:12px">Your Strength</div>
+          <div style="font-family:'Italiana',serif;font-size:22px;color:var(--green);margin-bottom:4px">${strongest.name}</div>
+          <div style="font-size:12.5px;color:var(--muted2)">Strongest at ${strongest.score||0}/10. Use this as your foundation.</div>
+        </div>
       </div>
     </div>
-  </div>`;
+
+    <div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:14px">
+      <div style="font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted2);margin-bottom:16px">Score Trend — Last ${last10.length} Sessions</div>
+      <div style="display:flex;gap:6px;align-items:flex-end;height:80px">${trendBars}</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div style="background:var(--s1);border:1px solid rgba(45,212,160,0.2);border-radius:14px;padding:18px">
+        <div style="font-size:10px;color:var(--green);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Best Session</div>
+        ${best ? `
+          <div style="font-size:13px;color:var(--text);font-weight:600;margin-bottom:4px">${best.scenario} · ${best.coach}</div>
+          <div style="font-size:11.5px;color:var(--muted2);margin-bottom:8px">"${(best.text||'').slice(0,60)}${best.text.length>60?'…':''}"</div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--green)">${((best.analysis.clarity+best.analysis.confidence+best.analysis.persuasion)/3).toFixed(1)}/10</div>
+        ` : '<div style="color:var(--muted)">No sessions yet</div>'}
+      </div>
+      <div style="background:var(--s1);border:1px solid rgba(248,113,113,0.2);border-radius:14px;padding:18px">
+        <div style="font-size:10px;color:var(--red);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Most Practiced</div>
+        <div style="font-family:'Italiana',serif;font-size:22px;color:var(--text);margin-bottom:4px">${topType[0]}</div>
+        <div style="font-size:12.5px;color:var(--muted2)">${topType[1]} session${topType[1]!==1?'s':''} in this mode</div>
+        ${Object.entries(byType).map(([k,v])=>`<div style="font-size:11.5px;color:var(--muted);margin-top:4px;font-family:'DM Mono',monospace">${k}: ${v}</div>`).join('')}
+      </div>
+    </div>
+  `;
 }
 
 // ── History ───────────────────────────────────────────────────────────────────
 function renderHistory(){
   const el=document.getElementById('history-list');
-  if(!S.history.length){el.innerHTML=`<div class="empty-state" style="padding:60px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><p>No sessions yet.</p></div>`;return;}
+  if(!S.history.length){el.innerHTML=`
+    <div style="text-align:center;padding:80px 40px">
+      <div style="font-size:52px;margin-bottom:16px;opacity:0.4">🕐</div>
+      <div style="font-family:'Italiana',serif;font-size:28px;color:var(--text);margin-bottom:8px">No sessions yet.</div>
+      <p style="font-size:14px;color:var(--muted2);margin-bottom:24px;max-width:320px;margin-left:auto;margin-right:auto">
+        Your session history will appear here after your first practice. Each session is saved with full analysis you can revisit.
+      </p>
+      <button class="btn-primary" onclick="navTo('practice')" style="max-width:220px">Start First Session →</button>
+    </div>
+  `;return;}
   el.innerHTML=S.history.map((h,i)=>`<div class="history-item" style="animation-delay:${Math.min(i,10)*35}ms" onclick='openReport(${JSON.stringify(h).replace(/'/g,"&#39;")})'>
     <div style="flex:1;min-width:0">
       <div style="font-size:13px;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:8px">${h.scenario}<span style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace">· ${h.coach}</span>${h.question?`<span style="font-size:10.5px;color:var(--muted2)">· "${h.question.slice(0,35)}${h.question.length>35?'…':''}"</span>`:''}</div>
@@ -4614,7 +4771,13 @@ let coachNotes = JSON.parse(localStorage.getItem('conver_coach_notes') || '[]');
 function renderCoachNotes() {
   const el = document.getElementById('coach-notes-list');
   if (!coachNotes.length) {
-    el.innerHTML = '<div class="notes-empty">No coach notes yet. Complete sessions and hit Generate.</div>';
+    el.innerHTML = `
+      <div style="text-align:center;padding:48px 24px">
+        <div style="font-size:40px;margin-bottom:12px;opacity:0.4">📝</div>
+        <div style="font-family:'Italiana',serif;font-size:22px;color:var(--text);margin-bottom:6px">No notes yet.</div>
+        <p style="font-size:13px;color:var(--muted2);line-height:1.7">After 2+ sessions your coach will start building a picture of your patterns, habits, and growth areas.</p>
+      </div>
+    `;
     return;
   }
   el.innerHTML = coachNotes.map(n => {
@@ -6413,6 +6576,8 @@ async function loadUserData() {
       }
     }
     updateChips();
+    checkOnboarding();
+    showWelcomeBack();
   } catch(e) {
     console.error('Load user data error:', e);
   }
@@ -6492,6 +6657,103 @@ async function signOut() {
   S.streak = 0; S.briefing = null;
   updateChips();
   window.location.href = '/';
+}
+
+// ── ONBOARDING ────────────────────────────────────────────────
+let obGoal = '', obCoach = '';
+function showOnboarding() {
+  const el = document.getElementById('onboarding-overlay');
+  if (el) { el.classList.remove('hidden'); el.style.display = 'flex'; }
+  // Populate coach grid
+  const grid = document.getElementById('ob-coach-grid');
+  if (grid && typeof COACH_DATA !== 'undefined') {
+    grid.innerHTML = Object.entries(COACH_DATA).map(([name, c]) => `
+      <div class="ob-coach-btn" onclick="selectOnboardingCoach('${name}')" data-coach="${name}">
+        <div style="font-size:28px;margin-bottom:6px;filter:drop-shadow(0 0 8px ${c.color})">${c.emoji}</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px">${name}</div>
+        <div style="font-size:10.5px;color:var(--muted);font-family:'DM Mono',monospace">${c.subtitle}</div>
+      </div>
+    `).join('');
+  }
+}
+function selectOnboardingGoal(goal) {
+  obGoal = goal;
+  document.querySelectorAll('.ob-goal-btn').forEach(b => b.classList.toggle('selected', b.dataset.goal === goal));
+  const btn = document.getElementById('ob-next-1');
+  if (btn) { btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; }
+}
+function selectOnboardingCoach(coach) {
+  obCoach = coach;
+  document.querySelectorAll('.ob-coach-btn').forEach(b => b.classList.toggle('selected', b.dataset.coach === coach));
+  const btn = document.getElementById('ob-next-2');
+  if (btn) { btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; }
+}
+function obNext(step) {
+  [1,2,3].forEach(i => {
+    const s = document.getElementById('ob-step-'+i);
+    const d = document.getElementById('ob-dot-'+i);
+    if (s) s.classList.toggle('hidden', i !== step);
+    if (d) d.classList.toggle('active', i === step);
+  });
+  if (step === 3) {
+    const sg = document.getElementById('ob-summary-goal');
+    const sc = document.getElementById('ob-summary-coach');
+    if (sg) sg.textContent = obGoal.charAt(0).toUpperCase() + obGoal.slice(1);
+    if (sc) sc.textContent = obCoach;
+  }
+}
+function finishOnboarding() {
+  // Save selections
+  if (obGoal) S.scenario = obGoal.charAt(0).toUpperCase() + obGoal.slice(1);
+  if (obCoach) S.coach = obCoach;
+  localStorage.setItem('conver_onboarded', '1');
+  saveSettings();
+  updateChips();
+  // Hide onboarding
+  const el = document.getElementById('onboarding-overlay');
+  if (el) { el.style.display = 'none'; el.classList.add('hidden'); }
+  // Send to Practice Lab for first session
+  navTo('practice');
+  showToast('👋', 'Welcome to Conver! Let\'s get your first session in.');
+}
+function checkOnboarding() {
+  // Show onboarding only for first-time signed-in users with no history
+  if (!localStorage.getItem('conver_onboarded') && S.sessions === 0) {
+    setTimeout(() => showOnboarding(), 600);
+  }
+}
+
+// ── WELCOME BACK BANNER ──────────────────────────────────────
+function showWelcomeBack() {
+  if (!S.sessions || S.sessions === 0) return; // no sessions yet, skip
+  const banner = document.getElementById('welcome-back-banner');
+  if (!banner) return;
+  const coach = COACH_DATA?.[S.coach];
+  const emoji = document.getElementById('wb-coach-emoji');
+  if (emoji && coach) emoji.textContent = coach.emoji;
+
+  // Find weakest skill — S.skills is stored on a 0-100 scale, normalize to /10 for display
+  const skillNames = ['clarity','confidence','persuasion','storytelling','conciseness'];
+  const skills = S.skills || {};
+  const weakest = skillNames.reduce((a, b) => (skills[a] || 0) <= (skills[b] || 0) ? a : b);
+  const weakScore = Math.round((skills[weakest] || 0) / 10);
+
+  const title = document.getElementById('wb-title');
+  const sub = document.getElementById('wb-subtitle');
+  if (title) title.textContent = `Welcome back${S.sessions > 1 ? ' — session ' + (S.sessions + 1) + ' awaits' : ''}.`;
+  if (sub) {
+    if (weakScore > 0 && weakScore < 7) {
+      sub.textContent = `Your ${weakest} is at ${weakScore}/10 — ${S.coach} has some thoughts on that.`;
+    } else if (S.streak > 1) {
+      sub.textContent = `${S.streak}-day streak. Keep it alive.`;
+    } else {
+      sub.textContent = `${S.sessions} session${S.sessions > 1 ? 's' : ''} in. ${S.coach} is ready.`;
+    }
+  }
+
+  banner.classList.remove('hidden');
+  // Auto-hide after 8 seconds
+  setTimeout(() => banner.classList.add('hidden'), 8000);
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
@@ -6631,5 +6893,59 @@ const rippleStyle = document.createElement('style');
 rippleStyle.textContent = '@keyframes ripple{to{width:120px;height:120px;opacity:0}}';
 document.head.appendChild(rippleStyle);
 </script>
+
+<div id="onboarding-overlay" class="hidden" style="
+  position:fixed;inset:0;background:rgba(3,3,10,0.92);
+  backdrop-filter:blur(16px);z-index:8000;
+  display:flex;align-items:center;justify-content:center;
+">
+  <div style="
+    background:var(--s1);border:1px solid var(--border2);
+    border-radius:24px;padding:48px 40px;width:560px;max-width:95vw;
+    position:relative;overflow:hidden;
+    box-shadow:0 32px 80px rgba(0,0,0,0.6);
+  ">
+    <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(124,111,255,0.6),transparent)"></div>
+    <!-- Step indicator -->
+    <div style="display:flex;gap:6px;margin-bottom:32px">
+      <div class="ob-step-dot active" id="ob-dot-1"></div>
+      <div class="ob-step-dot" id="ob-dot-2"></div>
+      <div class="ob-step-dot" id="ob-dot-3"></div>
+    </div>
+    <!-- Step 1: Goal -->
+    <div id="ob-step-1">
+      <div style="font-family:'Italiana',serif;font-size:32px;color:var(--text);margin-bottom:8px">What are you practicing for?</div>
+      <p style="font-size:14px;color:var(--muted2);margin-bottom:28px">This shapes the questions, scenarios, and coaching style you'll get.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:28px">
+        <div class="ob-goal-btn" onclick="selectOnboardingGoal('interview')" data-goal="interview">💼 Job Interviews</div>
+        <div class="ob-goal-btn" onclick="selectOnboardingGoal('pitch')" data-goal="pitch">🚀 Pitching & Sales</div>
+        <div class="ob-goal-btn" onclick="selectOnboardingGoal('networking')" data-goal="networking">🤝 Networking</div>
+        <div class="ob-goal-btn" onclick="selectOnboardingGoal('leadership')" data-goal="leadership">⚡ Leadership</div>
+        <div class="ob-goal-btn" onclick="selectOnboardingGoal('public')" data-goal="public">🎤 Public Speaking</div>
+        <div class="ob-goal-btn" onclick="selectOnboardingGoal('social')" data-goal="social">☕ Social Confidence</div>
+      </div>
+      <button class="btn-primary" onclick="obNext(2)" id="ob-next-1" style="opacity:0.4;pointer-events:none">Continue →</button>
+    </div>
+    <!-- Step 2: Coach -->
+    <div id="ob-step-2" class="hidden">
+      <div style="font-family:'Italiana',serif;font-size:32px;color:var(--text);margin-bottom:8px">Pick your coach.</div>
+      <p style="font-size:14px;color:var(--muted2);margin-bottom:24px">You can change this any time. Choose whoever matches how you like to be challenged.</p>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:28px" id="ob-coach-grid"></div>
+      <button class="btn-primary" onclick="obNext(3)" id="ob-next-2" style="opacity:0.4;pointer-events:none">Continue →</button>
+    </div>
+    <!-- Step 3: Ready -->
+    <div id="ob-step-3" class="hidden">
+      <div style="font-family:'Italiana',serif;font-size:38px;color:var(--text);margin-bottom:12px;line-height:1.1">You're all set.<br><em style="background:var(--g-brand);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Let's get to work.</em></div>
+      <p style="font-size:14px;color:var(--muted2);margin-bottom:28px;line-height:1.75">Your first session takes about 5 minutes. Submit a response, get scored across 5 dimensions, and see exactly what to improve.</p>
+      <div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:24px;font-size:13px;color:var(--muted2);line-height:1.9">
+        <div>🎯 Goal: <strong style="color:var(--text)" id="ob-summary-goal">—</strong></div>
+        <div>🧑‍🏫 Coach: <strong style="color:var(--accent3)" id="ob-summary-coach">—</strong></div>
+        <div>✨ Scoring: Clarity, Confidence, Persuasion, Storytelling, Conciseness</div>
+      </div>
+      <button class="btn-primary" onclick="finishOnboarding()">Start My First Session →</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
