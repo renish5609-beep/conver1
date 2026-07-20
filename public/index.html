@@ -6340,17 +6340,14 @@ function startColdOpenVoice(scenario) {
   overlay.classList.add('active');
   overlay.style.display = 'flex';
 
-  // Show the scenario character instead of a coach
+  // Show the actual person you're talking to (coState.personCoach drives the avatar
+  // visual, same as the rest of the app) — NOT the cold-open category's generic icon,
+  // which is shared by every random scenario in that category and isn't "the person".
   const avatarContainer = document.getElementById('ve-coach-avatar-container');
-  const cat = S.coldOpenCategory || 'networking';
-  const char = typeof SCENARIO_CHARACTERS !== 'undefined' ? SCENARIO_CHARACTERS[cat] : null;
-  if (avatarContainer) {
-    const avatarHtml = char
-      ? `<div style="font-size:80px;filter:drop-shadow(0 0 24px ${char.color});animation:charFloat 4s ease-in-out infinite">${char.emoji}</div>`
-      : (typeof createCoachAvatar === 'function' ? createCoachAvatar(coState.personCoach || 'Echo', 'lg', false) : '');
-    avatarContainer.innerHTML = avatarHtml + '<div id="ve-mic-ring" class="ve-mic-ring ve-ring-idle"></div>';
+  if (avatarContainer && typeof createCoachAvatar === 'function') {
+    avatarContainer.innerHTML = createCoachAvatar(coState.personCoach || 'Echo', 'lg', false) + '<div id="ve-mic-ring" class="ve-mic-ring ve-ring-idle"></div>';
   }
-  document.getElementById('ve-coach-name').textContent = char?.name || scenario.person;
+  document.getElementById('ve-coach-name').textContent = scenario.person;
   document.getElementById('ve-coach-role').textContent = scenario.role;
   document.getElementById('ve-history').innerHTML = '';
 
