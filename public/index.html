@@ -2538,6 +2538,10 @@ body.reducemotion .ve-mic-ring { animation: none !important; }
             <div class="vc-card"><div class="vc-title">Tips</div><div style="font-size:12.5px;color:var(--muted2);line-height:1.9"><div>🎙️ Go Live to start talking</div><div>🔊 Coach speaks back to you</div><div>📋 Set a briefing for better context</div><div>🔄 Switch coaches any time</div></div></div>
           </div>
         </div>
+        <div id="voice-score-panel" style="display:none;margin-top:16px;max-width:380px;margin-left:auto;margin-right:auto;background:var(--bg1);border:1px solid var(--border);border-radius:14px;padding:24px">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:16px">Session Report</div>
+          <div id="voice-scores"></div>
+        </div>
       </div>
 
       <!-- COMPANION -->
@@ -4589,6 +4593,10 @@ function startVoiceSession() {
   const coach = currentVoiceCoach || S.coach || 'Blaze';
   const coachData = COACH_DATA?.[coach] || { emoji:'🎙️', subtitle:'Your Coach', color:'#7c6fff' };
 
+  // Clear any score panel left over from a previous session
+  const scorePanel = document.getElementById('voice-score-panel');
+  if (scorePanel) scorePanel.style.display = 'none';
+
   // Show immersive overlay
   const overlay = document.getElementById('voice-immersive-overlay');
   overlay.classList.add('active');
@@ -4697,6 +4705,91 @@ function endVoiceNativeSession() {
     resetWarmup();
   } else if (mode === 'voice') {
     showBackBtn(false);
+    const realTurns = S.voiceChatHistory.filter(m => m.role === 'user').length;
+    if (realTurns >= 1) scoreVoiceSession(); else {
+      const p = document.getElementById('voice-score-panel');
+      if (p) p.style.display = 'none';
+    }
+  }
+}
+
+// Voice Session had no end-of-session feedback at all before this — it just
+// stopped. This scores the FULL conversation as one arc (not a single
+// isolated response), same as Cold Open/Debate, and feeds it into
+// Insights/History/Conver Score like every other mode already does.
+async function scoreVoiceSession() {
+  const panel = document.getElementById('voice-score-panel');
+  const container = document.getElementById('voice-scores');
+  if (!panel || !container) return;
+  panel.style.display = 'block';
+  container.innerHTML = `<div class="loading-dots"><span></span><span></span><span></span></div>`;
+
+  const convText = S.voiceChatHistory.map(m => `${m.role === 'user' ? 'You' : currentVoiceCoach}: ${m.content}`).join('\n');
+  const prompt = `You are ${S.coach}, a communication coach reviewing this full voice conversation the user just had with ${currentVoiceCoach}.\n\nConversation:\n${convText}\n\nAnalyze this as a full arc, not isolated lines: did their clarity and confidence build or fade as the conversation went on? Did they actually engage with what the coach asked/said, or just talk past it? What does their communication style across the whole conversation reveal, not just their best or worst line? Return ONLY valid JSON:\n{"clarity":<1-10>,"confidence":<1-10>,"persuasion":<1-10>,"storytelling":<1-10>,"conciseness":<1-10>,"verdict":"<2-3 sentence overall assessment>","arc":"<1-2 sentences on how they evolved across the conversation>","top_strength":"<one thing>","top_improvement":"<one thing>"}\nNo markdown.\nCRITICAL: Never use asterisks for actions or stage directions. Never write things like *laughs*, *shifts*, *coughs*, *leans forward*, *smiles*, or any physical action in asterisks or brackets. Speak only in plain spoken words as if you are actually talking. No stage directions of any kind.`;
+
+  try {
+    let raw = await callAI([{role:'user', content: prompt}]);
+    raw = raw.replace(/\`\`\`json|\`\`\`/g, '').trim();
+    const m = raw.match(/\{[\s\S]*\}/); if (!m) throw new Error('No JSON');
+    const r = JSON.parse(m[0]);
+
+    container.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+        <div class="score-box"><div class="score-num ${scoreClass(r.clarity)}">${r.clarity}</div><div class="score-lbl">Clarity</div></div>
+        <div class="score-box"><div class="score-num ${scoreClass(r.confidence)}">${r.confidence}</div><div class="score-lbl">Confidence</div></div>
+        <div class="score-box"><div class="score-num ${scoreClass(r.persuasion)}">${r.persuasion}</div><div class="score-lbl">Persuasion</div></div>
+      </div>
+      <div style="background:rgba(108,99,255,0.07);border:1px solid rgba(108,99,255,0.15);border-radius:10px;padding:14px;margin-bottom:12px">
+        <div style="font-size:10px;color:var(--accent3);font-family:'DM Mono',monospace;margin-bottom:6px">VERDICT</div>
+        <div style="font-size:13.5px;color:var(--text);line-height:1.7">${r.verdict}</div>
+      </div>
+      ${r.arc ? `
+      <div style="background:rgba(251,191,36,0.07);border:1px solid rgba(251,191,36,0.2);border-radius:10px;padding:14px;margin-bottom:12px">
+        <div style="font-size:10px;color:var(--amber);font-family:'DM Mono',monospace;margin-bottom:6px">HOW IT EVOLVED</div>
+        <div style="font-size:13.5px;color:var(--text);line-height:1.7">${r.arc}</div>
+      </div>` : ''}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="background:rgba(52,211,153,0.07);border:1px solid rgba(52,211,153,0.2);border-radius:9px;padding:12px">
+          <div style="font-size:10px;color:var(--green);font-family:'DM Mono',monospace;margin-bottom:5px">TOP STRENGTH</div>
+          <div style="font-size:13px;color:var(--muted2)">${r.top_strength}</div>
+        </div>
+        <div style="background:rgba(248,113,113,0.07);border:1px solid rgba(248,113,113,0.2);border-radius:9px;padding:12px">
+          <div style="font-size:10px;color:var(--red);font-family:'DM Mono',monospace;margin-bottom:5px">WORK ON</div>
+          <div style="font-size:13px;color:var(--muted2)">${r.top_improvement}</div>
+        </div>
+      </div>`;
+    animateScoreReveal(container);
+
+    // Wire into Conver Score / Insights / History, same as every other mode
+    S.sessions++;
+    S.scores.clarity.push(r.clarity);
+    S.scores.confidence.push(r.confidence);
+    S.scores.persuasion.push(r.persuasion);
+    const lerp=(c,n,t)=>c+(n-c)*t; const lt=0.3;
+    S.skills.clarity=lerp(S.skills.clarity,r.clarity*10,lt);
+    S.skills.confidence=lerp(S.skills.confidence,r.confidence*10,lt);
+    S.skills.persuasion=lerp(S.skills.persuasion,r.persuasion*10,lt);
+    S.skills.storytelling=lerp(S.skills.storytelling,(r.storytelling||5)*10,lt);
+    S.skills.conciseness=lerp(S.skills.conciseness,(r.conciseness||5)*10,lt);
+    updateStreak();
+
+    const newSession = {
+      scenario: 'Voice Session', coach: currentVoiceCoach,
+      question: '', text: S.voiceChatHistory.filter(m=>m.role==='user').map(m=>m.content).join(' | '),
+      analysis: {
+        clarity:r.clarity, confidence:r.confidence, persuasion:r.persuasion,
+        storytelling:r.storytelling||5, conciseness:r.conciseness||5,
+        strengths:[r.top_strength], improvements:[r.top_improvement],
+        rewrite:'', overall:r.verdict, filler_feedback:''
+      },
+      time: new Date()
+    };
+    S.history.unshift(newSession);
+    if (S.autosave !== false) saveSessionToCloud(newSession);
+    updateChips(); saveUserData();
+    showToast('📊', 'Session added to your Conver Score!');
+  } catch(e) {
+    container.innerHTML = `<div style="color:var(--red);font-size:13px;padding:8px 0">Couldn't score this session: ${e.message}</div>`;
   }
 }
 
@@ -5600,8 +5693,13 @@ async function stopDebateListening(){
 async function scoreDebate(){
   document.getElementById('debate-global-status').textContent='Scoring your performance...';
   const yourSide=debateSide==='for'?'FOR':'AGAINST';
-  const argsText=debateUserArgs.map((a,i)=>`Round ${i+1}: "${a}"`).join('\n');
-  const prompt=`You are ${debateCoachA}, scoring the user's debate performance. Topic: "${debateTopic}". User argued ${yourSide}.\n\nTheir arguments:\n${argsText}\n\nScore them on 1-10 across 3 dimensions and give an overall verdict. Return ONLY valid JSON:\n{"clarity":<1-10>,"persuasion":<1-10>,"confidence":<1-10>,"verdict":"<2-3 sentence overall assessment of how well they argued>","top_strength":"<one thing they did best>","top_improvement":"<one thing to work on>"}\nNo markdown.\nCRITICAL: Never use asterisks for actions or stage directions. Never write things like *laughs*, *shifts*, *coughs*, *leans forward*, *smiles*, or any physical action in asterisks or brackets. Speak only in plain spoken words as if you are actually talking. No stage directions of any kind.`;
+  // Interleave both sides so the model can actually see what each of the user's
+  // arguments was responding to — scoring only the user's isolated statements
+  // makes it structurally impossible to assess how they handled pushback.
+  const exchangeText=debateUserArgs.map((a,i)=>
+    `Round ${i+1} — You: "${a}"${debateOppResponses[i]?`\nRound ${i+1} — Opponent countered: "${debateOppResponses[i]}"`:''}`
+  ).join('\n\n');
+  const prompt=`You are ${debateCoachA}, scoring the user's debate performance. Topic: "${debateTopic}". User argued ${yourSide}.\n\nFull exchange, in order:\n${exchangeText}\n\nScore them on 1-10 across 3 dimensions and give an overall verdict. Specifically look at the ARC across rounds, not just isolated statements: did their arguments get sharper or weaker as the opponent's counters got tougher? Did they actually engage with the opponent's specific points, or just repeat their own? Did they stay composed or get rattled/defensive under pressure? Let that trajectory inform the scores and verdict, and call it out directly in pressure_response. Return ONLY valid JSON:\n{"clarity":<1-10>,"persuasion":<1-10>,"confidence":<1-10>,"verdict":"<2-3 sentence overall assessment of how well they argued>","top_strength":"<one thing they did best>","top_improvement":"<one thing to work on>","pressure_response":"<1-2 sentences on how they evolved across rounds as the opponent pushed back harder — did they adapt, engage with the actual counter-arguments, and hold up, or did they get repetitive/rattled?>"}\nNo markdown.\nCRITICAL: Never use asterisks for actions or stage directions. Never write things like *laughs*, *shifts*, *coughs*, *leans forward*, *smiles*, or any physical action in asterisks or brackets. Speak only in plain spoken words as if you are actually talking. No stage directions of any kind.`;
   try{
     let raw=await callAI([{role:'user',content:prompt}]);
     raw=raw.replace(/\`\`\`json|\`\`\`/g,'').trim();
@@ -5619,6 +5717,11 @@ async function scoreDebate(){
         <div style="font-size:10px;color:var(--accent3);font-family:'DM Mono',monospace;margin-bottom:6px">VERDICT</div>
         <div style="font-size:13.5px;color:var(--text);line-height:1.7">${r.verdict}</div>
       </div>
+      ${r.pressure_response?`
+      <div style="background:rgba(251,191,36,0.07);border:1px solid rgba(251,191,36,0.2);border-radius:10px;padding:14px;margin-bottom:12px">
+        <div style="font-size:10px;color:var(--amber);font-family:'DM Mono',monospace;margin-bottom:6px">UNDER PRESSURE — ACROSS THE ROUNDS</div>
+        <div style="font-size:13.5px;color:var(--text);line-height:1.7">${r.pressure_response}</div>
+      </div>`:''}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div style="background:rgba(52,211,153,0.07);border:1px solid rgba(52,211,153,0.2);border-radius:9px;padding:12px">
           <div style="font-size:10px;color:var(--green);font-family:'DM Mono',monospace;margin-bottom:5px">TOP STRENGTH</div>
@@ -6406,7 +6509,7 @@ async function endColdOpen(){
   document.getElementById('co-mic-btn').disabled=true;
   document.getElementById('co-status').textContent='Scoring your cold open...';
   const convText=coState.history.map((m,i)=>`${i%2===0?'You':'Them'}: ${m.content}`).join('\n');
-  const prompt=`You are ${S.coach}, a communication coach. Analyze this cold open:\n\nContext: ${coState.scenario.setup}\nOpener: "${coState.scenario.opener}"\n\nConversation:\n${convText}\n\nReturn ONLY valid JSON:\n{"naturalness":<1-10>,"warmth":<1-10>,"impact":<1-10>,"verdict":"<2-3 sentence assessment>","best_moment":"<one thing>","missed_opportunity":"<one thing>"}\nNo markdown.\nCRITICAL: Never use asterisks for actions or stage directions. Never write things like *laughs*, *shifts*, *coughs*, *leans forward*, *smiles*, or any physical action in asterisks or brackets. Speak only in plain spoken words as if you are actually talking. No stage directions of any kind.`;
+  const prompt=`You are ${S.coach}, a communication coach. Analyze this cold open:\n\nContext: ${coState.scenario.setup}\nOpener: "${coState.scenario.opener}"\n\nConversation:\n${convText}\n\nLook at this as a full arc, not isolated lines: how did their energy/warmth shift from the opener to the close? Did they actually pick up on cues the other person dropped and follow them, or steamroll past them with their own agenda? Was their conversational personality consistent throughout, or did it shift noticeably (e.g. confident opener, awkward middle)? Let that trajectory shape the scores, verdict, and arc field below. Return ONLY valid JSON:\n{"naturalness":<1-10>,"warmth":<1-10>,"impact":<1-10>,"verdict":"<2-3 sentence assessment>","best_moment":"<one thing>","missed_opportunity":"<one thing>","arc":"<1-2 sentences on how they evolved from opener to close — did they warm up, stay consistent, or lose steam, and did they actually follow the other person's cues?>"}\nNo markdown.\nCRITICAL: Never use asterisks for actions or stage directions. Never write things like *laughs*, *shifts*, *coughs*, *leans forward*, *smiles*, or any physical action in asterisks or brackets. Speak only in plain spoken words as if you are actually talking. No stage directions of any kind.`;
   try{
     let raw=await callAI([{role:'user',content:prompt}]);
     raw=raw.replace(/\`\`\`json|\`\`\`/g,'').trim();
@@ -6423,6 +6526,11 @@ async function endColdOpen(){
         <div style="font-size:10px;color:var(--accent3);font-family:'DM Mono',monospace;margin-bottom:6px">ASSESSMENT</div>
         <div style="font-size:13.5px;color:var(--text);line-height:1.7">${r.verdict}</div>
       </div>
+      ${r.arc?`
+      <div style="background:rgba(251,191,36,0.07);border:1px solid rgba(251,191,36,0.2);border-radius:10px;padding:14px;margin-bottom:12px">
+        <div style="font-size:10px;color:var(--amber);font-family:'DM Mono',monospace;margin-bottom:6px">HOW IT EVOLVED</div>
+        <div style="font-size:13.5px;color:var(--text);line-height:1.7">${r.arc}</div>
+      </div>`:''}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div style="background:rgba(52,211,153,0.07);border:1px solid rgba(52,211,153,0.2);border-radius:9px;padding:12px">
           <div style="font-size:10px;color:var(--green);font-family:'DM Mono',monospace;margin-bottom:5px">BEST MOMENT</div>
