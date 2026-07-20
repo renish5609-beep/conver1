@@ -5372,6 +5372,7 @@ function startDailyChallenge() {
     document.getElementById('p-question').value = dailyChallenge.question;
     document.getElementById('p-text').focus();
     showToast('⚡', 'Daily challenge loaded — go!');
+    speakText(dailyChallenge.question);
   }, 200);
 }
 
@@ -6953,6 +6954,7 @@ function practiceQBQuestion(question) {
     document.getElementById('p-question').value = question;
     document.getElementById('p-text').focus();
     showToast('📚', 'Question loaded — go!');
+    speakText(question);
   }, 200);
 }
 
