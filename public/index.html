@@ -3347,29 +3347,34 @@ const ScribeSTT = {
     return data.token;
   },
 
-  // Accumulate transcripts — call this instead of acting on every isFinal directly
+  // Accumulate transcripts — call this for EVERY transcript event, partial or final.
+  // The silence timer resets on any activity, not just finalized chunks — otherwise
+  // a long response with a slow-to-finalize chunk in the middle looks like silence
+  // to the timer even while the user is still actively talking, and gets cut off.
   handleTranscript(text, isFinal) {
     if (!text || !text.trim()) return;
-    // Always fire the live display callback with partial text
-    if (this.onTranscript) this.onTranscript(text, false);
-
     if (isFinal) {
       // Append to accumulated response
       this.accumulatedText = (this.accumulatedText + ' ' + text).trim();
       // Update live display with full accumulated text
       if (this.onTranscript) this.onTranscript(this.accumulatedText, false);
-
-      // Reset the auto-submit silence timer
-      if (this.silenceTimer) clearTimeout(this.silenceTimer);
-      this.silenceTimer = setTimeout(() => {
-        // User has been silent for autoSubmitDelay ms — auto-submit the full response
-        if (this.accumulatedText.trim().length > 0 && this.onAutoSubmit) {
-          const fullText = this.accumulatedText.trim();
-          this.accumulatedText = '';
-          this.onAutoSubmit(fullText);
-        }
-      }, this.autoSubmitDelay);
+    } else {
+      // Live partial — show accumulated text plus what's still being said
+      if (this.onTranscript) this.onTranscript((this.accumulatedText + ' ' + text).trim(), false);
     }
+
+    // Any transcript activity — partial or final — means the user is still
+    // talking. Reset the auto-submit silence timer so it only fires after real
+    // silence, not merely "time since the last finalized chunk."
+    if (this.silenceTimer) clearTimeout(this.silenceTimer);
+    this.silenceTimer = setTimeout(() => {
+      // User has been truly silent for autoSubmitDelay ms — auto-submit the full response
+      if (this.accumulatedText.trim().length > 0 && this.onAutoSubmit) {
+        const fullText = this.accumulatedText.trim();
+        this.accumulatedText = '';
+        this.onAutoSubmit(fullText);
+      }
+    }, this.autoSubmitDelay);
   },
 
   // Call this when user manually clicks "Done speaking"
@@ -3430,7 +3435,7 @@ const ScribeSTT = {
 
       this.connection.on('transcript', (event) => {
         if (event.type === 'partial_transcript') {
-          if (this.onTranscript) this.onTranscript(this.accumulatedText + ' ' + event.text, false);
+          this.handleTranscript(event.text, false);
         } else if (event.type === 'final_transcript' || event.type === 'committed_transcript') {
           this.handleTranscript(event.text, true);
         }
@@ -3507,7 +3512,7 @@ const ScribeSTT = {
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
         if (data.message_type === 'partial_transcript') {
-          if (this.onTranscript) this.onTranscript(this.accumulatedText + ' ' + data.text, false);
+          this.handleTranscript(data.text, false);
         } else if (data.message_type === 'final_transcript') {
           this.handleTranscript(data.text, true);
         }
@@ -3541,7 +3546,7 @@ const ScribeSTT = {
         if (e.results[i].isFinal) final += e.results[i][0].transcript;
         else interim += e.results[i][0].transcript;
       }
-      if (interim && this.onTranscript) this.onTranscript(this.accumulatedText + ' ' + interim, false);
+      if (interim) this.handleTranscript(interim, false);
       if (final) this.handleTranscript(final, true);
     };
     recognition.onerror = (e) => { if (this.onError) this.onError(e); };
@@ -3984,7 +3989,9 @@ function initUI(){
     b.className='cp-btn'+(name===S.coach?' active':'');
     b.id='vcp-'+name.toLowerCase();
     b.innerHTML=`<span class="cp-init" style="color:${c.color}">${name[0]}</span>${name}`;
-    b.onclick=()=>switchVoiceCoach(name);
+    // Silent — this sidebar is just for picking who you'll talk to. The actual
+    // spoken greeting happens once, when you go live, not when you switch here.
+    b.onclick=()=>switchVoiceCoach(name,true);
     vcp.appendChild(b);
   });
   // Waveform bars
@@ -4760,7 +4767,7 @@ VOICE RULES — CRITICAL:
       // Speak then auto-listen
       await VoiceEngine.speakThenListen(reply, null, coach);
     } catch(e) {
-      console.error('Voice session error:', e);
+      _veHandleError(e);
     }
   });
 
@@ -4789,6 +4796,39 @@ function _veAddHistory(who, text, isUser) {
   container.scrollTop = container.scrollHeight;
   // Keep only last 6 items
   while (container.children.length > 6) container.removeChild(container.firstChild);
+}
+
+// Shared error recovery for voice-native modes — a failed AI/TTS call must never
+// leave the user stuck staring at a frozen "Thinking..." overlay with a dead mic.
+// Surfaces the error and reopens the mic so they can just try again.
+function _veHandleError(err) {
+  console.error('Voice-native error:', err);
+  if (typeof showToast === 'function') showToast('⚠️', 'Something went wrong — try again');
+  if (VoiceEngine.active) VoiceEngine._startListening();
+}
+
+// Ends the immersive session AND cleans up the mode-specific state behind it —
+// not just closing the overlay and leaving coState.running / debateRunning stuck
+// true, which would leave the page behind the overlay in a stale, confusing state.
+// If the user made real progress, score what they did rather than discarding it.
+function endVoiceNativeSession() {
+  const mode = VoiceEngine.mode;
+  VoiceEngine.stop();
+  const overlay = document.getElementById('voice-immersive-overlay');
+  overlay.classList.remove('active');
+  overlay.style.display = 'none';
+
+  if (mode === 'coldopen') {
+    if (coState.turns >= 1) endColdOpen(); else resetColdOpen();
+  } else if (mode === 'debate') {
+    if (debateRound >= 1) scoreDebate(); else resetDebate();
+  } else if (mode === 'warmup') {
+    resetWarmup();
+  } else if (mode === 'voice') {
+    setVoiceState('idle');
+    const t = document.getElementById('voice-transcript');
+    if (t) t.textContent = 'Your words will appear here as you speak...';
+  }
 }
 
 // ── Insights ──────────────────────────────────────────────────────────────────
@@ -5465,7 +5505,7 @@ function startDebateVoice() {
       } else {
         await VoiceEngine.speakThenListen(reply, null, debateCoachB);
       }
-    } catch(e) { console.error('Debate voice error:', e); }
+    } catch(e) { _veHandleError(e); }
   });
 
   // Opponent opens with the topic position
@@ -6378,7 +6418,7 @@ function startColdOpenVoice(scenario) {
       } else {
         await VoiceEngine.speakThenListen(reply, coState.voiceId, S.coach);
       }
-    } catch(e) { console.error('Cold Open voice error:', e); }
+    } catch(e) { _veHandleError(e); }
   });
 
   // Scenario person speaks the opener first
@@ -6766,7 +6806,7 @@ function startWarmupVoice(question) {
         saveUserData();
         showToast('⚡', 'Warmup complete!');
       }, 1200);
-    } catch(e) { console.error('Warmup voice error:', e); }
+    } catch(e) { _veHandleError(e); }
   });
 
   // Coach reads the question first
@@ -7454,7 +7494,7 @@ document.head.appendChild(rippleStyle);
   <div style="position:absolute;top:0;left:0;right:0;padding:20px 28px;display:flex;align-items:center;justify-content:space-between;z-index:2">
     <div style="font-family:'Italiana',serif;font-size:20px;background:linear-gradient(135deg,#7c6fff,#b48cff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Conver</div>
     <div id="ve-state-label" style="font-size:11px;color:var(--muted,#6b7494);font-family:'DM Mono',monospace;letter-spacing:1px;text-transform:uppercase"></div>
-    <button onclick="VoiceEngine.stop();document.getElementById('voice-immersive-overlay').classList.remove('active');document.getElementById('voice-immersive-overlay').style.display='none'"
+    <button onclick="endVoiceNativeSession()"
       style="background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.25);border-radius:8px;color:#f87171;font-size:12px;padding:7px 16px;cursor:pointer;font-family:'DM Mono',monospace">
       End Session
     </button>
