@@ -3063,7 +3063,7 @@ body.reducemotion .coach-orb-wave { animation: none !important; }
             <button class="btn-primary" onclick="startColdOpen()" style="max-width:200px">🎲 Drop Me In</button>
           </div>
           <div id="coldopen-live" style="display:none">
-            <div style="display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:start">
+            <div id="co-live-chat" style="display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:start">
               <div>
                 <div style="background:rgba(251,191,36,0.07);border:1px solid rgba(251,191,36,0.2);border-radius:12px;padding:16px 20px;margin-bottom:16px">
                   <div style="font-size:10px;color:var(--amber);font-family:'DM Mono',monospace;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">Your Scenario</div>
@@ -6600,6 +6600,8 @@ async function startColdOpen() {
   coState = { running:true, type, scenario, history:[], faceAnim:null, personCoach:['Echo','Luna','Sage','Nova'][Math.floor(Math.random()*4)], turns:0, voiceId:null };
   document.getElementById('coldopen-setup').style.display='none';
   document.getElementById('coldopen-live').style.display='block';
+  const chatSection=document.getElementById('co-live-chat');
+  if(chatSection)chatSection.style.display='grid';
   showBackBtn(true,'Cold Open Setup');
   document.getElementById('co-score-panel').style.display='none';
   document.getElementById('co-scenario-text').textContent=scenario.setup;
@@ -6755,8 +6757,14 @@ async function stopCOListening(){
 
 async function endColdOpen(){
   if(coState.turns<1){resetColdOpen();return;}
-  document.getElementById('co-mic-btn').disabled=true;
-  document.getElementById('co-status').textContent='Scoring your cold open...';
+  // Go straight to scoring — don't show the old chat-log/mic UI behind the
+  // overlay at all, since the whole conversation already happened in the
+  // immersive overlay and the user never saw this view during the session.
+  const chatSection=document.getElementById('co-live-chat');
+  if(chatSection)chatSection.style.display='none';
+  const panel=document.getElementById('co-score-panel');
+  panel.style.display='block';
+  document.getElementById('co-scores').innerHTML=`<div class="loading-dots"><span></span><span></span><span></span></div>`;
   const convText=coState.history.map((m,i)=>`${i%2===0?'You':'Them'}: ${m.content}`).join('\n');
   const prompt=`You are ${S.coach}, a communication coach. Analyze this cold open:\n\nContext: ${coState.scenario.setup}\nOpener: "${coState.scenario.opener}"\n\nConversation:\n${convText}\n\nLook at this as a full arc, not isolated lines: how did their energy/warmth shift from the opener to the close? Did they actually pick up on cues the other person dropped and follow them, or steamroll past them with their own agenda? Was their conversational personality consistent throughout, or did it shift noticeably (e.g. confident opener, awkward middle)? Let that trajectory shape the scores, verdict, and arc field below. Return ONLY valid JSON:\n{"naturalness":<1-10>,"warmth":<1-10>,"impact":<1-10>,"verdict":"<2-3 sentence assessment>","best_moment":"<one thing>","missed_opportunity":"<one thing>","arc":"<1-2 sentences on how they evolved from opener to close — did they warm up, stay consistent, or lose steam, and did they actually follow the other person's cues?>"}\nNo markdown.\nCRITICAL: Never use asterisks for actions or stage directions. Never write things like *laughs*, *shifts*, *coughs*, *leans forward*, *smiles*, or any physical action in asterisks or brackets. Speak only in plain spoken words as if you are actually talking. No stage directions of any kind.`;
   try{
@@ -6764,7 +6772,6 @@ async function endColdOpen(){
     raw=raw.replace(/\`\`\`json|\`\`\`/g,'').trim();
     const m=raw.match(/\{[\s\S]*\}/);if(!m)throw new Error('No JSON');
     const r=JSON.parse(m[0]);
-    const panel=document.getElementById('co-score-panel');panel.style.display='block';
     document.getElementById('co-scores').innerHTML=`
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
         <div class="score-box"><div class="score-num ${scoreClass(r.naturalness)}">${r.naturalness}</div><div class="score-lbl">Natural</div></div>
@@ -6816,8 +6823,13 @@ async function endColdOpen(){
     S.history.unshift(coSession);
     saveSessionToCloud(coSession);
     updateChips();saveUserData();showToast('📊','Cold Open score added to Conver Score!');
-    panel.scrollIntoView({behavior:'smooth'});
-  }catch(e){document.getElementById('co-status').textContent='Scoring error: '+e.message;}
+    // No scrollIntoView here — the score panel now sits right at the top of the
+    // page (the chat section above it is hidden), so it's already in view. An
+    // auto-scroll was previously pushing the page's scroll position too far,
+    // tucking the page title up underneath the tab bar.
+  }catch(e){
+    document.getElementById('co-scores').innerHTML=`<div style="color:var(--red);font-size:13px;padding:8px 0">Couldn't score this session: ${e.message}</div><button onclick="resetColdOpen()" class="btn-primary" style="margin-top:16px">🎲 Try Another</button>`;
+  }
 }
 
 function resetColdOpen(){
