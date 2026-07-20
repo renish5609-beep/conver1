@@ -673,8 +673,9 @@ input:focus, select:focus, textarea:focus {
 .send-btn:disabled{opacity:0.45;cursor:not-allowed}
 .quick-prompts{display:flex;flex-direction:column;gap:7px;margin-top:8px}
 
-/* VOICE */
-.voice-layout{display:grid;grid-template-columns:1fr 320px;gap:22px;align-items:start}
+/* VOICE — the full conversation now happens in the immersive overlay
+   (VoiceEngine); this page is just the pre-session picker/log sidebar. */
+.voice-layout{max-width:380px;margin:0 auto}
 .voice-stage{background:var(--bg1);border:1px solid var(--border);border-radius:18px;padding:36px 28px;display:flex;flex-direction:column;align-items:center;gap:22px;min-height:480px;justify-content:center}
 .coach-face-wrap{position:relative;width:170px;height:170px}
 .coach-face-canvas{width:170px;height:170px;border-radius:50%}
@@ -2527,59 +2528,14 @@ body.reducemotion .ve-mic-ring { animation: none !important; }
 
       <!-- VOICE -->
       <div class="page" id="page-voice">
-        <div class="section-head"><h2>Voice Session</h2><p>Hold the button to speak. Your coach listens and responds out loud.</p></div>
+        <div class="section-head"><h2>Voice Session</h2><p>Pick your coach, then go live — the full conversation happens on screen, hands-free.</p></div>
         <div class="voice-layout">
-          <div class="voice-stage">
-            <div class="coach-face-wrap"><canvas class="coach-face-canvas" id="face-canvas" width="170" height="170"></canvas><div class="coach-face-ring" id="face-ring"></div></div>
-            <div class="voice-coach-name" id="voice-coach-name">Blaze</div>
-            <div class="voice-status" id="voice-status">Hold the mic to speak</div>
-            <div class="waveform" id="waveform"></div>
-            <div class="voice-transcript" id="voice-transcript">Your words will appear here as you speak...</div>
-            <div id="voice-live-transcript" style="
-              min-height: 28px;
-              font-size: 14px;
-              color: var(--muted2);
-              font-family: 'Plus Jakarta Sans', sans-serif;
-              font-style: italic;
-              text-align: center;
-              padding: 8px 16px;
-              border-radius: 8px;
-              background: rgba(124,111,255,0.05);
-              border: 1px solid var(--border);
-              margin: 12px 0;
-              min-width: 300px;
-              transition: all 0.2s;
-            "></div>
-            <button class="hold-btn idle" id="hold-btn" onclick="startVoiceSession()">🎙️</button>
-            <button id="voice-done-btn"
-              onclick="ScribeSTT.submitNow()"
-              style="
-                display: none;
-                background: linear-gradient(135deg, #2dd4a0, #38bdf8);
-                border: none;
-                border-radius: 10px;
-                color: #fff;
-                font-family: 'Space Grotesk', sans-serif;
-                font-size: 14px;
-                font-weight: 700;
-                padding: 10px 24px;
-                cursor: pointer;
-                transition: all 0.2s;
-                box-shadow: 0 4px 16px rgba(45,212,160,0.35);
-                margin-top: 8px;
-              "
-              onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 8px 24px rgba(45,212,160,0.5)'"
-              onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(45,212,160,0.35)'"
-            >
-              ✓ Done Speaking
-            </button>
-            <div class="hold-hint" id="hold-hint">Click to speak</div>
-          </div>
           <div class="voice-controls-side">
+            <button class="btn-primary" onclick="startVoiceSession()" style="margin-bottom:4px">🎙️ Go Live</button>
             <div id="voice-coach-avatar" class="coach-session-card"></div>
             <div class="vc-card"><div class="vc-title">Switch Coach</div><div class="coach-picker" id="voice-coach-picker"></div></div>
             <div class="vc-card"><div class="vc-title">Conversation Log</div><div class="voice-log" id="voice-log"><div style="font-size:13px;color:var(--muted);text-align:center;padding:16px 0">Conversation will appear here</div></div></div>
-            <div class="vc-card"><div class="vc-title">Tips</div><div style="font-size:12.5px;color:var(--muted2);line-height:1.9"><div>🎙️ Hold button while speaking</div><div>🔊 Coach speaks back to you</div><div>📋 Set a briefing for better context</div><div>🔄 Switch coaches mid-session</div></div></div>
+            <div class="vc-card"><div class="vc-title">Tips</div><div style="font-size:12.5px;color:var(--muted2);line-height:1.9"><div>🎙️ Go Live to start talking</div><div>🔊 Coach speaks back to you</div><div>📋 Set a briefing for better context</div><div>🔄 Switch coaches any time</div></div></div>
           </div>
         </div>
       </div>
@@ -3994,9 +3950,9 @@ function initUI(){
     b.onclick=()=>switchVoiceCoach(name,true);
     vcp.appendChild(b);
   });
-  // Waveform bars
+  // Waveform bars (element only exists in the old in-page Voice Session UI)
   const wf=document.getElementById('waveform');
-  for(let i=0;i<9;i++){const b=document.createElement('div');b.className='wave-bar';b.id='wb'+i;b.style.height='6px';wf.appendChild(b);}
+  if(wf)for(let i=0;i<9;i++){const b=document.createElement('div');b.className='wave-bar';b.id='wb'+i;b.style.height='6px';wf.appendChild(b);}
   // Streak days
   renderStreakDays();
 }
@@ -4018,9 +3974,6 @@ function navTo(page){
   if(page==='history')renderHistory();
   if(page==='skills'){renderSkills();drawRadar();}
   if(page==='voice'){
-    if(!faceAnimFrame)drawFace();
-    startWaveformIdle();
-    if(voiceState!=='idle')showBackBtn(true,'Voice Session');
     const voiceAvatarEl = document.getElementById('voice-coach-avatar');
     if (voiceAvatarEl) {
       voiceAvatarEl.innerHTML = createCoachAvatar(currentVoiceCoach||S.coach, 'lg', true);
@@ -4528,17 +4481,22 @@ function startWaveformIdle(){
 }
 
 function setVoiceState(state){
+  // Note: hold-btn/voice-status/face-ring only exist on the old in-page Voice
+  // Session UI, which the immersive overlay replaced — but setVoiceState() is
+  // still called by speakText() (e.g. the Profiles page coach greeting), so
+  // this must stay null-safe rather than assume those elements exist.
   voiceState=state;const btn=document.getElementById('hold-btn');const status=document.getElementById('voice-status');const ring=document.getElementById('face-ring');
-  btn.className='hold-btn '+state;ring.className='coach-face-ring '+state;
-  if(state==='idle'){btn.textContent='🎙️';status.textContent='Click to speak';status.className='voice-status';isListeningVoice=false;setCoachIdle(currentVoiceCoach);}
-  else if(state==='listening'){btn.textContent='🔴';status.textContent='Listening...';status.className='voice-status listening';showBackBtn(true,'Voice Session');setCoachListening(currentVoiceCoach,true);}
-  else if(state==='processing'){btn.textContent='⏳';status.textContent='Processing...';status.className='voice-status';setCoachIdle(currentVoiceCoach);}
-  else if(state==='speaking'){btn.textContent='🔊';status.textContent=currentVoiceCoach+' is speaking...';status.className='voice-status speaking';setCoachSpeaking(currentVoiceCoach,true);}
+  if(btn)btn.className='hold-btn '+state;
+  if(ring)ring.className='coach-face-ring '+state;
+  if(state==='idle'){if(btn)btn.textContent='🎙️';if(status){status.textContent='Click to speak';status.className='voice-status';}isListeningVoice=false;setCoachIdle(currentVoiceCoach);}
+  else if(state==='listening'){if(btn)btn.textContent='🔴';if(status){status.textContent='Listening...';status.className='voice-status listening';}showBackBtn(true,'Voice Session');setCoachListening(currentVoiceCoach,true);}
+  else if(state==='processing'){if(btn)btn.textContent='⏳';if(status){status.textContent='Processing...';status.className='voice-status';}setCoachIdle(currentVoiceCoach);}
+  else if(state==='speaking'){if(btn)btn.textContent='🔊';if(status){status.textContent=currentVoiceCoach+' is speaking...';status.className='voice-status speaking';}setCoachSpeaking(currentVoiceCoach,true);}
 }
 
 function switchVoiceCoach(name,silent=false){
   currentVoiceCoach=name;
-  document.getElementById('voice-coach-name').textContent=name;
+  const nameEl=document.getElementById('voice-coach-name');if(nameEl)nameEl.textContent=name;
   document.querySelectorAll('.cp-btn').forEach(b=>b.classList.remove('active'));
   const btn=document.getElementById('vcp-'+name.toLowerCase());if(btn)btn.classList.add('active');
   const voiceAvatarEl = document.getElementById('voice-coach-avatar');
@@ -4620,98 +4578,11 @@ function fallbackSpeak(text){
 
 let isListeningVoice = false;
 
-function toggleListening(){
-  if(voiceState==='processing'||voiceState==='speaking')return;
-  if(isListeningVoice){
-    isListeningVoice=false;
-    stopListening();
-  } else {
-    isListeningVoice=true;
-    startListening();
-  }
-}
-
-function startListening(){
-  window.speechSynthesis?.cancel();
-  setVoiceState('listening');
-  document.getElementById('voice-transcript').textContent='Listening...';
-  document.getElementById('hold-hint').textContent='Click to cancel — pause 4s or hit Done to send';
-  const liveEl=document.getElementById('voice-live-transcript');
-  if(liveEl){liveEl.textContent='';liveEl.style.color='var(--muted2)';}
-  ScribeSTT.autoSubmitDelay = 4000; // 4 seconds of silence = done speaking
-  ScribeSTT.start({
-    onTranscript:(text,isFinal)=>{
-      // Show accumulated text live as user speaks
-      if(liveEl){
-        liveEl.textContent=text||'';
-        liveEl.style.color=isFinal?'var(--text)':'var(--muted2)';
-      }
-      const display=(text||'').trim();
-      if(display)document.getElementById('voice-transcript').textContent=display;
-    },
-    onAutoSubmit:(fullText)=>{
-      // This fires after 4 seconds of silence OR when the user clicks Done
-      ScribeSTT.stop();
-      isListeningVoice=false;
-      document.getElementById('hold-hint').textContent='Click to speak';
-      if(liveEl)liveEl.textContent='';
-      handleVoiceUserResponse(fullText);
-    },
-    onError:(err)=>{
-      console.error('STT error:',err);
-      showToast('⚠️','Microphone blocked — allow mic access in browser settings');
-      setVoiceState('idle');isListeningVoice=false;
-      document.getElementById('hold-hint').textContent='Click to speak';
-    },
-    onStart:()=>{
-      const btn=document.getElementById('voice-done-btn');
-      if(btn)btn.style.display='block';
-    },
-    onStop:()=>{
-      const btn=document.getElementById('voice-done-btn');
-      if(btn)btn.style.display='none';
-    }
-  });
-}
-
-// Cancels listening without submitting — clicking the mic mid-listen discards
-// whatever's been captured so far. Submitting happens via auto-submit (4s
-// silence) or the "Done Speaking" button (ScribeSTT.submitNow()).
-async function stopListening(){
-  isListeningVoice=false;
-  document.getElementById('hold-hint').textContent='Click to speak';
-  ScribeSTT.resetAccumulator();
-  await ScribeSTT.stop();
-  document.getElementById('voice-transcript').textContent='Your words will appear here as you speak...';
-  const liveEl=document.getElementById('voice-live-transcript');
-  if(liveEl)liveEl.textContent='';
-  setVoiceState('idle');
-}
-
-async function handleVoiceUserResponse(t){
-  if(!t||t.trim().length<2){
-    setVoiceState('idle');
-    document.getElementById('voice-transcript').textContent='Your words will appear here as you speak...';
-    return;
-  }
-  setVoiceState('processing');
-  addVoiceLog('You',t,'user');
-  S.voiceChatHistory.push({role:'user',content:t});
-  const c=COACHES[currentVoiceCoach];
-  const briefCtx=S.briefing?`Briefing: "${S.briefing.preparing}", role "${S.briefing.role}".`:'';
-  const settingsCtx=typeof buildSystemPromptExtras==='function'?buildSystemPromptExtras():'';
-  const system=`You are ${currentVoiceCoach} on Conver. ${c.style} ${briefCtx} ${settingsCtx} VOICE conversation — natural spoken language. No markdown. No bullet points.\nCRITICAL: Never use asterisks for actions or stage directions. Never write things like *laughs*, *shifts*, *coughs*, *leans forward*, *smiles*, or any physical action in asterisks or brackets. Speak only in plain spoken words as if you are actually talking. No stage directions of any kind.`;
-  try{
-    const reply=await callAI(S.voiceChatHistory,system);
-    S.voiceChatHistory.push({role:'assistant',content:reply});
-    addVoiceLog(currentVoiceCoach,reply,'ai');
-    document.getElementById('voice-transcript').textContent='Click the mic to speak...';
-    speakText(reply);
-  }catch(e){
-    setVoiceState('idle');
-    document.getElementById('voice-transcript').textContent='Error: '+e.message;
-  }
-}
+// (The old hold-to-talk startListening/stopListening/handleVoiceUserResponse
+// flow lived here — replaced entirely by the VoiceEngine-driven immersive
+// session below. Removed rather than left in place since it referenced
+// in-page elements that no longer exist now that this page is just the
+// pre-session picker.)
 
 // ── VOICE-NATIVE: fully immersive Voice Session (VoiceEngine-driven) ──────────
 function startVoiceSession() {
@@ -4825,9 +4696,7 @@ function endVoiceNativeSession() {
   } else if (mode === 'warmup') {
     resetWarmup();
   } else if (mode === 'voice') {
-    setVoiceState('idle');
-    const t = document.getElementById('voice-transcript');
-    if (t) t.textContent = 'Your words will appear here as you speak...';
+    showBackBtn(false);
   }
 }
 
