@@ -2868,6 +2868,8 @@ body.reducemotion .coach-orb-wave { animation: none !important; }
               <div style="position:relative;border-radius:16px;overflow:hidden;background:#000;aspect-ratio:16/9;margin-bottom:16px">
                 <video id="rt-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1)"></video>
                 <canvas id="rt-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;transform:scaleX(-1)"></canvas>
+                <!-- Hidden composite canvas for recording — camera + overlay burned together -->
+                <canvas id="rt-record-canvas" style="display:none"></canvas>
 
                 <!-- Live metric overlays on camera -->
                 <div style="position:absolute;top:12px;left:12px;display:flex;gap:8px;flex-wrap:wrap">
@@ -2890,12 +2892,24 @@ body.reducemotion .coach-orb-wave { animation: none !important; }
 
               <!-- Question / prompt area -->
               <div id="rt-prompt-area" style="padding:16px 20px;background:var(--s1);border:1px solid var(--border2);border-radius:12px;margin-bottom:14px">
-                <div style="font-size:10px;color:var(--accent);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Current Prompt</div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                  <div style="font-size:10px;color:var(--accent);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px">Current Prompt</div>
+                  <div id="rt-mic-status" onclick="_rtStartListening()" style="font-size:10.5px;font-family:'DM Mono',monospace;color:var(--muted);cursor:pointer" title="Click to retry mic">🔇 Mic idle</div>
+                </div>
                 <div id="rt-prompt-text" style="font-size:15px;color:var(--text);line-height:1.65">Starting...</div>
               </div>
 
               <!-- Live transcript -->
               <div id="rt-transcript" style="min-height:60px;padding:12px 16px;background:var(--s2);border:1px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--muted2);font-style:italic;line-height:1.7">Your speech will appear here...</div>
+
+              <!-- Explicit end-and-save control, separate from the emergency
+                   End & Score button on the camera overlay itself, so it's
+                   obvious there IS a normal way to finish and save the session -->
+              <button class="btn-primary" onclick="endRealTimeSession()" style="margin-top:14px">✅ End Session & Save</button>
+              <!-- Download button — shown after session ends -->
+              <button id="rt-download-btn" style="display:none;margin-top:12px;width:100%;padding:11px;background:linear-gradient(135deg,#7c6fff,#b48cff);border:none;border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;cursor:pointer" onclick="downloadRecording()">
+                ⬇ Download Recording (WebM — plays in Chrome, Firefox, VLC)
+              </button>
             </div>
 
             <!-- Right: live metrics panel -->
@@ -3960,6 +3974,10 @@ const RealTimeAnalyzer = {
   blinkCount: 0,
   wasEyeOpen: true,
   expressionSamples: [],
+  prevNose: null,        // previous frame's nose position, for movement (not absolute-offset) based stability
+  movementSamples: [],   // rolling frame-to-frame head movement, scale-normalized
+  lastFeedbackTips: [],  // last few tips shown, so we don't repeat the same one back-to-back
+  lastAiTipAt: 0,        // session-time (ms) of the last AI-generated coaching aside
 
   // Session data
   sessionStart: null,
@@ -3971,6 +3989,15 @@ const RealTimeAnalyzer = {
 
   // Live score
   liveNonverbalScore: 0,
+
+  // Recording engine — camera + AI overlay burned into a single composite
+  // canvas, then captured by MediaRecorder so the download has the scoring
+  // panel actually baked into the video frames, not added after the fact.
+  mediaRecorder: null,
+  recordedChunks: [],
+  compositeCtx: null,
+  compositeAnimFrame: null,
+  overlayData: { eyePct:0, headPct:0, liveScore:0, exprLabel:'—', currentTip:'', elapsed:0, currentPrompt:'' },
 
   async init() {
     if (this.faceMesh) return; // already initialized
@@ -4002,52 +4029,71 @@ const RealTimeAnalyzer = {
 
     const landmarks = results.multiFaceLandmarks[0];
 
+    // A stable per-face reference distance (outer eye corner to outer eye
+    // corner) that scales with how close the face is to the camera. Used to
+    // normalize everything else below so the metrics don't drift just because
+    // someone sits closer to or further from their webcam.
+    const leftEyeLeft = landmarks[33];
+    const rightEyeRight = landmarks[263];
+    const faceScale = Math.hypot(rightEyeRight.x - leftEyeLeft.x, rightEyeRight.y - leftEyeLeft.y) || 1;
+
     // ── EYE CONTACT DETECTION ───────────────────────────────
-    // Iris landmarks: 468-472 (left), 473-477 (right) when refineLandmarks=true
-    // Check if iris is centered relative to eye corners
+    // Iris landmarks: 468-472 (left), 473-477 (right) when refineLandmarks=true.
+    // Check how far the iris sits from the eye's geometric center, in BOTH
+    // axes — the original version only checked horizontal offset, so looking
+    // straight up or down at the camera (a very common webcam angle, since
+    // most laptop cameras sit above eye level) still counted as "eye contact."
     const leftIris = landmarks[468];
     const rightIris = landmarks[473];
-    const leftEyeLeft = landmarks[33];
     const leftEyeRight = landmarks[133];
     const rightEyeLeft = landmarks[362];
-    const rightEyeRight = landmarks[263];
+    const leftEyeTop = landmarks[159], leftEyeBottom = landmarks[145];
+    const rightEyeTop = landmarks[386], rightEyeBottom = landmarks[374];
 
-    const leftEyeCenterX = (leftEyeLeft.x + leftEyeRight.x) / 2;
-    const rightEyeCenterX = (rightEyeLeft.x + rightEyeRight.x) / 2;
-    const leftOffsetX = Math.abs(leftIris.x - leftEyeCenterX);
-    const rightOffsetX = Math.abs(rightIris.x - rightEyeCenterX);
-    const avgOffset = (leftOffsetX + rightOffsetX) / 2;
+    const leftCenterX = (leftEyeLeft.x + leftEyeRight.x) / 2;
+    const leftCenterY = (leftEyeTop.y + leftEyeBottom.y) / 2;
+    const rightCenterX = (rightEyeLeft.x + rightEyeRight.x) / 2;
+    const rightCenterY = (rightEyeTop.y + rightEyeBottom.y) / 2;
 
-    // Eye width for normalization
-    const eyeWidth = Math.abs(leftEyeRight.x - leftEyeLeft.x);
-    const normalizedOffset = eyeWidth > 0 ? avgOffset / eyeWidth : 1;
-    const isLookingAtCamera = normalizedOffset < 0.15; // threshold for "looking at camera"
+    const leftOffset = Math.hypot(leftIris.x - leftCenterX, leftIris.y - leftCenterY);
+    const rightOffset = Math.hypot(rightIris.x - rightCenterX, rightIris.y - rightCenterY);
+    const normalizedOffset = ((leftOffset + rightOffset) / 2) / faceScale;
+    const isLookingAtCamera = normalizedOffset < 0.10; // threshold for "looking at camera"
     if (isLookingAtCamera) this.eyeContactFrames++;
 
     // ── BLINK DETECTION ─────────────────────────────────────
-    const upperLid = landmarks[159]; // upper eyelid
-    const lowerLid = landmarks[145]; // lower eyelid
-    const eyeOpenness = Math.abs(upperLid.y - lowerLid.y);
-    const isEyeOpen = eyeOpenness > 0.01;
+    // Normalized by faceScale — a fixed absolute-distance threshold falsely
+    // reads as "always open" for someone sitting far from the camera (their
+    // whole face, eyes included, occupies fewer normalized units) and
+    // "always blinking" for someone sitting close.
+    const eyeOpenness = (Math.abs(leftEyeTop.y - leftEyeBottom.y) + Math.abs(rightEyeTop.y - rightEyeBottom.y)) / 2 / faceScale;
+    const isEyeOpen = eyeOpenness > 0.06;
     if (this.wasEyeOpen && !isEyeOpen) this.blinkCount++;
     this.wasEyeOpen = isEyeOpen;
 
     // ── HEAD POSE STABILITY ──────────────────────────────────
-    // Nose tip vs face center — if stable, head is steady
+    // Tracks frame-to-frame MOVEMENT of the nose tip (scale-normalized),
+    // not absolute distance from a computed "center" — the original version
+    // treated anyone framed slightly off-center (extremely common with laptop
+    // webcams) as permanently "unstable" even while holding perfectly still.
+    // Stability is about steadiness over time, not centeredness in the frame.
     const noseTip = landmarks[1];
-    const forehead = landmarks[10];
-    const chin = landmarks[152];
-    const faceCenterX = (forehead.x + chin.x) / 2;
-    const headTilt = Math.abs(noseTip.x - faceCenterX);
-    const isHeadStable = headTilt < 0.04;
-    if (isHeadStable) this.headStableFrames++;
+    if (this.prevNose) {
+      const movement = Math.hypot(noseTip.x - this.prevNose.x, noseTip.y - this.prevNose.y) / faceScale;
+      this.movementSamples.push(movement);
+      if (this.movementSamples.length > 30) this.movementSamples.shift();
+      const isHeadStable = movement < 0.01;
+      if (isHeadStable) this.headStableFrames++;
+    }
+    this.prevNose = { x: noseTip.x, y: noseTip.y };
 
     // ── EXPRESSION ANALYSIS ──────────────────────────────────
-    // Mouth corner position relative to mouth center — higher = smile
+    // Mouth corner position relative to mouth center — higher = smile.
+    // Normalized by faceScale for the same distance-invariance reason as above.
     const leftMouthCorner = landmarks[61];
     const rightMouthCorner = landmarks[291];
     const mouthCenter = landmarks[13];
-    const mouthCornerHeight = mouthCenter.y - ((leftMouthCorner.y + rightMouthCorner.y) / 2);
+    const mouthCornerHeight = (mouthCenter.y - ((leftMouthCorner.y + rightMouthCorner.y) / 2)) / faceScale;
     this.expressionSamples.push(mouthCornerHeight);
     if (this.expressionSamples.length > 30) this.expressionSamples.shift();
 
@@ -4091,28 +4137,96 @@ const RealTimeAnalyzer = {
       document.getElementById('rt-live-score').textContent = liveScore;
       document.getElementById('rt-live-score').style.color = liveScore>=75?'var(--green)':liveScore>=50?'var(--amber)':'var(--red)';
 
-      // Live coaching tip (every 30 frames)
+      // Live coaching tip (every 30 frames) — nonverbal, instant, rule-based
       if (this.frames % 30 === 0) {
         this.addLiveFeedback(eyePct, headPct, avgExpr, blinkPerMin);
       }
+      // Deeper, content-aware AI coaching aside — every ~20s of session time,
+      // not every frame, since it's a real API call and looks at what you've
+      // actually been saying, not just face geometry. Fire-and-forget: never
+      // blocks the frame loop.
+      if (this.sessionStart && Date.now() - this.lastAiTipAt > 20000) {
+        this.lastAiTipAt = Date.now();
+        this.addAICoachingTip(eyePct, headPct, avgExpr, blinkPerMin);
+      }
+
+      // Keep overlayData synced so the recording canvas burns in current values
+      this.overlayData = {
+        eyePct, headPct, liveScore,
+        exprLabel: document.getElementById('rt-expr-label')?.textContent || '—',
+        currentTip: document.getElementById('rt-feedback-log')?.lastElementChild?.textContent || '',
+        elapsed: this.sessionStart ? (Date.now() - this.sessionStart) / 1000 : 0,
+        currentPrompt: document.getElementById('rt-prompt-text')?.textContent || ''
+      };
     }
   },
 
+  // Much larger, tiered tip pool than a single generic line per metric — and
+  // never repeats the tip that was just shown, so a sustained issue (e.g.
+  // consistently low eye contact) still reads as fresh coaching rather than
+  // the same two sentences on loop.
   addLiveFeedback(eyePct, headPct, avgExpr, blinkPerMin) {
     const tips = [];
-    if (eyePct < 50) tips.push('👁️ Look directly at the camera');
-    if (headPct < 60) tips.push('🧍 Keep your head still and centered');
-    if (avgExpr < 0) tips.push('😊 Relax your face — you look tense');
-    if (blinkPerMin > 25) tips.push('😮‍💨 Slow down — breathe and blink less');
-    if (eyePct >= 75 && headPct >= 75) tips.push('✓ Great presence — keep it up');
+    if (eyePct < 30) {
+      tips.push('👁️ You\'re barely looking at the camera — that reads as disengaged or unprepared');
+      tips.push('👁️ Find the camera lens, not the screen — that\'s where their eyes are');
+    } else if (eyePct < 55) {
+      tips.push('👁️ Your gaze keeps drifting off-camera — pull it back');
+      tips.push('👁️ Good moments of eye contact, but too much time looking away');
+    }
+    if (headPct < 40) {
+      tips.push('🧍 A lot of head movement — plant yourself and settle in');
+      tips.push('🧍 Try resting your elbows on the desk to steady your upper body');
+    } else if (headPct < 65) {
+      tips.push('🧍 Some restlessness in your posture — take a breath and steady up');
+    }
+    if (avgExpr < -0.01) {
+      tips.push('😬 Your jaw and brow look tight — consciously relax your face for a second');
+      tips.push('😬 A lot of tension showing — drop your shoulders, unclench your jaw');
+    } else if (avgExpr < 0) {
+      tips.push('😐 Your expression is pretty flat — a little more animation reads as more engaged');
+    }
+    if (blinkPerMin > 30) {
+      tips.push('😮‍💨 Blink rate is spiking — that often tracks with nerves, try slowing your breathing');
+    } else if (blinkPerMin > 0 && blinkPerMin < 6) {
+      tips.push('👀 You\'re barely blinking — natural, relaxed blinking reads better than a fixed stare');
+    }
+    if (eyePct >= 75 && headPct >= 75 && avgExpr >= 0) {
+      tips.push('✓ Strong presence right now — steady, present, engaged. Keep this up');
+      tips.push('✓ This is exactly the energy to bring — camera contact and composure are both landing');
+    }
     if (tips.length === 0) return;
 
-    const tip = tips[Math.floor(Math.random() * tips.length)];
+    // Filter out whichever tip(s) we just showed, unless that's literally all we have
+    const fresh = tips.filter(t => !this.lastFeedbackTips.includes(t));
+    const pool = fresh.length ? fresh : tips;
+    const tip = pool[Math.floor(Math.random() * pool.length)];
+    this.lastFeedbackTips = [tip, ...this.lastFeedbackTips].slice(0, 2);
+    this._appendFeedbackLog(tip);
+  },
+
+  // Content-aware feedback from Claude, looking at what was actually said in
+  // the last stretch of speech (not just face geometry) — the thing that was
+  // missing entirely before, when every tip was generic nonverbal coaching.
+  async addAICoachingTip(eyePct, headPct, avgExpr, blinkPerMin) {
+    const recentTranscript = (RealTimeAnalyzer.currentTranscript || '').trim();
+    if (recentTranscript.length < 15) return; // nothing substantive to react to yet
+    try {
+      const exprNote = avgExpr > 0.005 ? 'engaged/warm' : avgExpr < -0.005 ? 'tense' : 'neutral';
+      const prompt = `You are a communication coach watching someone live, mid-response, in a ${rtMode || 'practice'} session. Their current nonverbal read: ${eyePct}% eye contact, ${headPct}% head stability, expression is ${exprNote}. What they're saying right now (may be a fragment, they're still talking): "${recentTranscript.slice(-400)}"\n\nGive ONE short, specific, spoken-style piece of coaching (max 18 words) — react to the actual content if there's something concrete to react to (vague claim, strong point, rambling, filler words), otherwise coach the delivery. No generic praise. No stage directions or asterisks.`;
+      const tip = await callAI([{role:'user', content: prompt}]);
+      if (tip && tip.trim()) this._appendFeedbackLog('💬 ' + tip.trim(), true);
+    } catch(e) { /* non-fatal — live tips are a bonus, not required */ }
+  },
+
+  _appendFeedbackLog(text, isAI) {
     const log = document.getElementById('rt-feedback-log');
     if (!log) return;
     const div = document.createElement('div');
-    div.style.cssText = 'font-size:11.5px;color:var(--text);padding:5px 8px;border-radius:6px;background:var(--s2);animation:pageIn 0.2s ease';
-    div.textContent = tip;
+    div.style.cssText = isAI
+      ? 'font-size:11.5px;color:var(--accent3);padding:5px 8px;border-radius:6px;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.15);animation:pageIn 0.2s ease'
+      : 'font-size:11.5px;color:var(--text);padding:5px 8px;border-radius:6px;background:var(--s2);animation:pageIn 0.2s ease';
+    div.textContent = text;
     log.appendChild(div);
     log.scrollTop = log.scrollHeight;
     while (log.children.length > 8) log.removeChild(log.firstChild);
@@ -4153,10 +4267,18 @@ const RealTimeAnalyzer = {
     const videoEl = document.getElementById('rt-video');
     const canvas = document.getElementById('rt-canvas');
 
+    // Request camera AND mic together, in one prompt. Speech transcription
+    // (ScribeSTT) requests its own mic stream separately later, once prompts
+    // load — if that came as a SECOND, delayed permission prompt appearing
+    // after the user is already looking at their live camera feed, it reads
+    // as a glitch and gets ignored/dismissed, which looks exactly like "the
+    // system isn't hearing me at all." Pre-authorizing mic access here means
+    // that later getUserMedia call resolves silently, no second prompt.
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { width: 1280, height: 720, facingMode: 'user' },
-      audio: false
+      audio: true
     });
+    stream.getAudioTracks().forEach(t => t.stop()); // don't need this track ourselves — ScribeSTT manages its own mic capture
     videoEl.srcObject = stream;
     await new Promise(resolve => videoEl.onloadedmetadata = resolve);
     canvas.width = videoEl.videoWidth;
@@ -4179,10 +4301,189 @@ const RealTimeAnalyzer = {
     this.headStableFrames = 0;
     this.blinkCount = 0;
     this.expressionSamples = [];
+    this.prevNose = null;
+    this.movementSamples = [];
+    this.lastFeedbackTips = [];
+    this.lastAiTipAt = 0;
+    this.userResponses = [];
+    this.currentTranscript = '';
+  },
+
+  // ── RECORDING ENGINE ─────────────────────────────────────────
+  startRecording() {
+    const recordCanvas = document.getElementById('rt-record-canvas');
+    const videoEl = document.getElementById('rt-video');
+    // Match canvas to video dimensions
+    recordCanvas.width = videoEl.videoWidth || 1280;
+    recordCanvas.height = videoEl.videoHeight || 720;
+    this.compositeCtx = recordCanvas.getContext('2d');
+
+    // Start drawing composite frames
+    this._drawCompositeFrame();
+
+    // Record the canvas stream at 30fps
+    const stream = recordCanvas.captureStream(30);
+    this.recordedChunks = [];
+    this.mediaRecorder = new MediaRecorder(stream, {
+      mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+        ? 'video/webm;codecs=vp9'
+        : 'video/webm'
+    });
+    this.mediaRecorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) this.recordedChunks.push(e.data);
+    };
+    this.mediaRecorder.start(100); // collect chunks every 100ms
+    console.log('✓ Recording started');
+  },
+
+  _drawCompositeFrame() {
+    if (!this.active || !this.compositeCtx) return;
+    const ctx = this.compositeCtx;
+    const canvas = document.getElementById('rt-record-canvas');
+    const videoEl = document.getElementById('rt-video');
+
+    // Draw camera frame (mirrored like display)
+    ctx.save();
+    ctx.scale(-1, 1);
+    ctx.drawImage(videoEl, -canvas.width, 0, canvas.width, canvas.height);
+    ctx.restore();
+
+    // Draw scoring overlay panel — top right corner
+    this._drawScoringOverlay(ctx, canvas.width, canvas.height);
+
+    // Continue animation loop
+    this.compositeAnimFrame = requestAnimationFrame(() => this._drawCompositeFrame());
+  },
+
+  _drawScoringOverlay(ctx, cw, ch) {
+    const od = this.overlayData;
+    const panelW = 260;
+    const panelH = 280;
+    const panelX = cw - panelW - 16;
+    const panelY = 16;
+    const r = 12; // border radius
+
+    // Panel background
+    ctx.save();
+    ctx.globalAlpha = 0.88;
+    ctx.fillStyle = '#07080f';
+    this._roundRect(ctx, panelX, panelY, panelW, panelH, r);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // Panel border
+    ctx.strokeStyle = 'rgba(124,111,255,0.5)';
+    ctx.lineWidth = 1.5;
+    this._roundRect(ctx, panelX, panelY, panelW, panelH, r);
+    ctx.stroke();
+
+    // Top gradient line
+    const grad = ctx.createLinearGradient(panelX, panelY, panelX+panelW, panelY);
+    grad.addColorStop(0, 'transparent');
+    grad.addColorStop(0.5, 'rgba(124,111,255,0.8)');
+    grad.addColorStop(1, 'transparent');
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(panelX+r, panelY); ctx.lineTo(panelX+panelW-r, panelY); ctx.stroke();
+
+    const tx = panelX + 14;
+    let ty = panelY + 20;
+
+    // "CONVER AI" label
+    ctx.font = 'bold 9px "DM Mono", monospace';
+    ctx.fillStyle = 'rgba(124,111,255,0.7)';
+    ctx.fillText('CONVER AI · LIVE ANALYSIS', tx, ty);
+    ty += 18;
+
+    // Live score — big number
+    const scoreColor = od.liveScore >= 75 ? '#2dd4a0' : od.liveScore >= 50 ? '#fbbf24' : '#f87171';
+    ctx.font = 'bold 38px "Space Grotesk", sans-serif';
+    ctx.fillStyle = scoreColor;
+    ctx.fillText(od.liveScore || '—', tx, ty + 28);
+    ctx.font = '10px "DM Mono", monospace';
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.fillText('/ 100 PRESENCE SCORE', tx + 56, ty + 22);
+    ty += 44;
+
+    // Separator
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(panelX+10, ty); ctx.lineTo(panelX+panelW-10, ty); ctx.stroke();
+    ty += 12;
+
+    // Metrics rows
+    const metrics = [
+      { label: 'EYE CONTACT', value: od.eyePct + '%', color: od.eyePct >= 70 ? '#2dd4a0' : od.eyePct >= 40 ? '#fbbf24' : '#f87171' },
+      { label: 'HEAD STABILITY', value: od.headPct + '%', color: od.headPct >= 70 ? '#38bdf8' : od.headPct >= 40 ? '#fbbf24' : '#f87171' },
+      { label: 'EXPRESSION', value: od.exprLabel || '—', color: '#c084fc' },
+      { label: 'ELAPSED', value: this._formatTime(od.elapsed), color: 'rgba(255,255,255,0.5)' },
+    ];
+    metrics.forEach(m => {
+      ctx.font = '9px "DM Mono", monospace';
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.fillText(m.label, tx, ty);
+      ctx.font = 'bold 11px "Space Grotesk", sans-serif';
+      ctx.fillStyle = m.color;
+      ctx.fillText(m.value, panelX + panelW - 14 - ctx.measureText(m.value).width, ty);
+      ty += 18;
+    });
+    ty += 6;
+
+    // Separator
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(panelX+10, ty); ctx.lineTo(panelX+panelW-10, ty); ctx.stroke();
+    ty += 10;
+
+    // Live tip
+    if (od.currentTip) {
+      ctx.font = '10px "Plus Jakarta Sans", sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      const tipWords = od.currentTip.split(' ');
+      let line = '', lineY = ty;
+      tipWords.forEach(word => {
+        const test = line + word + ' ';
+        if (ctx.measureText(test).width > panelW - 28) {
+          ctx.fillText(line.trim(), tx, lineY);
+          line = word + ' '; lineY += 13;
+        } else { line = test; }
+      });
+      if (line.trim()) ctx.fillText(line.trim(), tx, lineY);
+    }
+
+    ctx.restore();
+  },
+
+  _roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x+r, y);
+    ctx.lineTo(x+w-r, y);
+    ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+    ctx.lineTo(x+w, y+h-r);
+    ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+    ctx.lineTo(x+r, y+h);
+    ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+    ctx.lineTo(x, y+r);
+    ctx.quadraticCurveTo(x, y, x+r, y);
+    ctx.closePath();
+  },
+
+  _formatTime(seconds) {
+    const m = Math.floor(seconds/60), s = Math.floor(seconds%60);
+    return m + ':' + s.toString().padStart(2,'0');
+  },
+
+  stopRecording() {
+    if (this.compositeAnimFrame) { cancelAnimationFrame(this.compositeAnimFrame); this.compositeAnimFrame = null; }
+    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      this.mediaRecorder.stop();
+    }
+    console.log('✓ Recording stopped, chunks:', this.recordedChunks.length);
   },
 
   stop() {
     this.active = false;
+    this.stopRecording();
     if (this.camera) { this.camera.stop(); this.camera = null; }
     const video = document.getElementById('rt-video');
     if (video && video.srcObject) {
@@ -4233,6 +4534,7 @@ async function startRealTimeSession() {
   try {
     await RealTimeAnalyzer.init();
     await RealTimeAnalyzer.startCamera();
+    RealTimeAnalyzer.startRecording();
   } catch(e) {
     btn.disabled = false; btn.textContent = '📹 Start Camera & Begin';
     showToast('❌', 'Camera error: ' + e.message + '. Make sure Chrome has camera permission.');
@@ -4241,6 +4543,11 @@ async function startRealTimeSession() {
 
   document.getElementById('rt-setup').classList.add('hidden');
   document.getElementById('rt-session').classList.remove('hidden');
+  const feedbackLog = document.getElementById('rt-feedback-log');
+  if (feedbackLog) feedbackLog.innerHTML = '<div style="font-size:12px;color:var(--muted2)">Feedback appears here during your session...</div>';
+  _rtSetMicStatus('🔇 Mic idle', 'var(--muted)');
+  const dlBtn = document.getElementById('rt-download-btn');
+  if (dlBtn) dlBtn.style.display = 'none';
 
   // Start timer
   RealTimeAnalyzer.timerInterval = setInterval(() => {
@@ -4295,28 +4602,55 @@ async function loadRTPrompts() {
     RealTimeAnalyzer.promptQueue = ['Speak freely. Talk about anything — we are analyzing your delivery.'];
   }
 
-  if (promptEl && RealTimeAnalyzer.promptQueue.length > 0) {
-    promptEl.textContent = RealTimeAnalyzer.promptQueue[0];
-  }
+  // Speak the first prompt aloud (if enabled), then start listening — a real
+  // back-and-forth instead of a silent question appearing as text while the
+  // user talks to no one.
+  await _rtSpeakThenListen(RealTimeAnalyzer.promptQueue[0] || '');
+}
 
-  // Start Scribe STT for transcript
-  if (typeof ScribeSTT !== 'undefined') {
-    ScribeSTT.autoSubmitDelay = 5000;
-    ScribeSTT.start({
-      onTranscript: (text) => {
-        const el = document.getElementById('rt-transcript');
-        if (el) el.textContent = text;
-        RealTimeAnalyzer.currentTranscript = text;
-      },
-      onAutoSubmit: (fullText) => _rtHandleResponse(fullText)
-    });
+function _rtSetMicStatus(text, color) {
+  const el = document.getElementById('rt-mic-status');
+  if (el) { el.textContent = text; el.style.color = color; }
+}
+
+// Speaks the given prompt aloud (respecting the Auto-play Coach Response
+// setting) then starts listening — shared by the first prompt and every
+// subsequent one so there's exactly one place that wires STT callbacks,
+// instead of a duplicated inline copy per call site.
+async function _rtSpeakThenListen(promptText) {
+  const promptEl = document.getElementById('rt-prompt-text');
+  if (promptEl) promptEl.textContent = promptText;
+  const el = document.getElementById('rt-transcript');
+  if (el) el.textContent = 'Listening...';
+
+  if (promptText && S.autoplay !== false) {
+    _rtSetMicStatus('🔊 Speaking prompt...', 'var(--accent2)');
+    await VoiceEngine._playTTS(promptText, null, S.coach);
   }
+  _rtStartListening();
+}
+
+function _rtStartListening() {
+  if (typeof ScribeSTT === 'undefined') return;
+  ScribeSTT.autoSubmitDelay = 5000;
+  ScribeSTT.resetAccumulator();
+  ScribeSTT.start({
+    onStart: () => _rtSetMicStatus('🎤 Listening...', 'var(--green)'),
+    onTranscript: (text) => {
+      const el = document.getElementById('rt-transcript');
+      if (el) el.textContent = text;
+      RealTimeAnalyzer.currentTranscript = text;
+    },
+    onError: (err) => {
+      _rtSetMicStatus('⚠️ Mic blocked — click to retry', 'var(--red)');
+      showToast('⚠️', 'Mic blocked — allow microphone access, then click the mic status to retry');
+    },
+    onAutoSubmit: (fullText) => _rtHandleResponse(fullText)
+  });
 }
 
 // Advances to the next prompt after a response comes in, or ends the session
-// once the queue is exhausted. Pulled out of the ScribeSTT callback (rather
-// than nesting a second inline callback the way the original draft did) so
-// each response — first or Nth — goes through the exact same path.
+// once the queue is exhausted.
 function _rtHandleResponse(fullText) {
   RealTimeAnalyzer.userResponses.push({
     prompt: RealTimeAnalyzer.promptQueue[RealTimeAnalyzer.currentPromptIdx] || '',
@@ -4325,15 +4659,7 @@ function _rtHandleResponse(fullText) {
   RealTimeAnalyzer.currentPromptIdx++;
 
   if (RealTimeAnalyzer.currentPromptIdx < RealTimeAnalyzer.promptQueue.length) {
-    const promptEl = document.getElementById('rt-prompt-text');
-    if (promptEl) promptEl.textContent = RealTimeAnalyzer.promptQueue[RealTimeAnalyzer.currentPromptIdx];
-    const el = document.getElementById('rt-transcript');
-    if (el) el.textContent = 'Listening for next response...';
-    ScribeSTT.resetAccumulator();
-    ScribeSTT.start({
-      onTranscript: (t) => { const el2 = document.getElementById('rt-transcript'); if (el2) el2.textContent = t; },
-      onAutoSubmit: (ft) => _rtHandleResponse(ft)
-    });
+    _rtSpeakThenListen(RealTimeAnalyzer.promptQueue[RealTimeAnalyzer.currentPromptIdx]);
   } else {
     endRealTimeSession();
   }
@@ -4347,38 +4673,95 @@ async function endRealTimeSession() {
 
   document.getElementById('rt-session').classList.add('hidden');
   document.getElementById('rt-debrief').classList.remove('hidden');
+  const dlBtn = document.getElementById('rt-download-btn');
+  if (dlBtn) dlBtn.style.display = RealTimeAnalyzer.recordedChunks.length ? 'block' : 'none';
 
-  // Score verbal responses
+  // Score verbal responses — same numeric rubric as Practice Lab's
+  // analyzeResponse(), not a vague "score 1-10" ask, so Real-Time sessions
+  // are held to the same bar as every other mode instead of a mushier one.
+  const combinedResponseText = RealTimeAnalyzer.userResponses.map(r => r.response).join(' ');
+  const substance = checkResponseSubstance(combinedResponseText);
   let verbalScores = null;
-  if (RealTimeAnalyzer.userResponses.length > 0) {
+  if (RealTimeAnalyzer.userResponses.length > 0 && substance.valid) {
     try {
       const allResponses = RealTimeAnalyzer.userResponses.map((r,i)=>`Q${i+1}: "${r.prompt}"\nA: "${r.response}"`).join('\n\n');
       const raw = await callAI([{role:'user',content:allResponses}],
-        `You are a communication coach scoring a ${rtMode} session.
-Score verbal performance across: clarity (1-10), confidence (1-10), persuasion (1-10), storytelling (1-10), conciseness (1-10).
-Also give 2 strengths and 2 improvements specific to what was said.
-Return ONLY JSON: {"clarity":,"confidence":,"persuasion":,"storytelling":,"conciseness":,"strengths":["...","..."],"improvements":["...","..."],"verbal_overall":"<2 sentences>"}`
+        `You are a communication coach scoring a ${rtMode} session recorded on camera.
+
+${STRICT_SCORING_RUBRIC}
+
+Give 2 strengths and 2 improvements — MUST quote or directly reference what the user actually said, not generic advice. Format each as: "When you said [their words], that worked because [reason]" or "Your phrase [their words] was weak because [reason]. Instead try: [specific rewrite]."
+Return ONLY JSON: {"clarity":,"confidence":,"persuasion":,"storytelling":,"conciseness":,"strengths":["...","..."],"improvements":["...","..."],"verbal_overall":"<First sentence quotes ONE specific thing they said and why it worked or didn't. Second sentence names the single most important change with a specific example.>"}
+CRITICAL: Never use asterisks for actions or stage directions.`
       );
       const m = raw.replace(/```json|```/g,'').match(/\{[\s\S]*\}/);
       if (m) verbalScores = JSON.parse(m[0]);
     } catch(e) { /* non-fatal */ }
   }
 
-  // Combined score
+  // Combined score. No responses / no real substance = floor score, not a
+  // sympathetic "5" default — silence shouldn't land in the "average" band.
   const verbalComposite = verbalScores
     ? (verbalScores.clarity*0.25 + verbalScores.confidence*0.20 + verbalScores.persuasion*0.25 + verbalScores.storytelling*0.15 + verbalScores.conciseness*0.15)
-    : 5;
+    : (RealTimeAnalyzer.userResponses.length === 0 ? 1 : 2);
   const combinedScore = ((verbalComposite * 0.6) + (metrics.nonverbalComposite * 0.4)).toFixed(1);
 
-  // XP — routed through the shared awardXP() helper so this mode respects the
-  // same "XP Notifications" / "Level Up Celebration" Settings toggles, and
-  // updates S.xpLevel (not S.level — that's the separate Settings "Experience
-  // Level" string, and conflating the two silently breaks that setting).
-  const xpEarned = Math.round(parseFloat(combinedScore) * 12 + 15);
-  awardXP(xpEarned, 'for Real-Time session');
+  // Wire into Conver Score / Insights / History / Skills — same as every
+  // other mode. This was entirely missing before: the session scored fine
+  // but never actually got saved anywhere, so it never showed up in
+  // History or Insights and never moved the skill radar.
   S.sessions++;
   checkSessionMilestone();
-  updateStreak(); updateChips(); updateConverScore(); saveUserData();
+  if (verbalScores) {
+    S.scores.clarity.push(verbalScores.clarity);
+    S.scores.confidence.push(verbalScores.confidence);
+    S.scores.persuasion.push(verbalScores.persuasion);
+    const lerp=(cur,next,t)=>cur+(next-cur)*t; const lt=0.3;
+    S.skills.clarity=lerp(S.skills.clarity,verbalScores.clarity*10,lt);
+    S.skills.confidence=lerp(S.skills.confidence,verbalScores.confidence*10,lt);
+    S.skills.persuasion=lerp(S.skills.persuasion,verbalScores.persuasion*10,lt);
+    S.skills.storytelling=lerp(S.skills.storytelling,(verbalScores.storytelling||5)*10,lt);
+    S.skills.conciseness=lerp(S.skills.conciseness,(verbalScores.conciseness||5)*10,lt);
+  }
+  updateStreak();
+
+  const rtSession = {
+    scenario: 'Real-Time (' + rtMode + ')',
+    coach: S.coach,
+    question: RealTimeAnalyzer.promptQueue[0] || '',
+    text: RealTimeAnalyzer.userResponses.map(r=>r.response).join(' | '),
+    analysis: verbalScores ? {
+      clarity: verbalScores.clarity, confidence: verbalScores.confidence, persuasion: verbalScores.persuasion,
+      storytelling: verbalScores.storytelling, conciseness: verbalScores.conciseness,
+      strengths: verbalScores.strengths, improvements: verbalScores.improvements,
+      rewrite: '', overall: verbalScores.verbal_overall || '', filler_feedback: '',
+      nonverbal: metrics, combinedScore: parseFloat(combinedScore)
+    } : {
+      clarity: verbalComposite, confidence: verbalComposite, persuasion: verbalComposite, storytelling: verbalComposite, conciseness: verbalComposite,
+      strengths: [], improvements: [RealTimeAnalyzer.userResponses.length === 0 ? 'No verbal responses recorded' : 'Responses were too short or filler-only to score — say something substantive'],
+      rewrite: '', overall: RealTimeAnalyzer.userResponses.length === 0 ? 'Nonverbal-only session — no verbal responses recorded.' : 'Responses lacked enough substance to score meaningfully.', filler_feedback: '',
+      nonverbal: metrics, combinedScore: parseFloat(combinedScore)
+    },
+    time: new Date()
+  };
+  S.history.unshift(rtSession);
+  if (S.autosave !== false) saveSessionToCloud(rtSession);
+
+  // XP — a flat "combinedScore * 12 + 15" formula meant a 1.8/10 session
+  // still earned 37 XP; applying the same composite-based floor/ceiling
+  // tiers as calcSessionXP() so a weak Real-Time session is capped the same
+  // way a weak session in any other mode is, and awardXP() so this mode
+  // respects the "XP Notifications" / "Level Up Celebration" Settings
+  // toggles and updates S.xpLevel (not S.level — that's the separate
+  // Settings "Experience Level" string; conflating the two silently breaks it).
+  const rtBaseXP = Math.round(parseFloat(combinedScore) * 12 + 15);
+  const rtComposite = parseFloat(combinedScore);
+  const xpEarned = rtComposite < 3 ? Math.min(8, Math.max(2, Math.round(rtBaseXP * 0.15)))
+    : rtComposite < 5 ? Math.min(35, Math.max(8, Math.round(rtBaseXP * 0.5)))
+    : rtComposite < 7 ? Math.min(65, Math.max(15, rtBaseXP))
+    : Math.min(120, Math.max(40, rtBaseXP));
+  awardXP(xpEarned, 'for Real-Time session');
+  updateChips(); updateConverScore(); saveUserData();
 
   document.getElementById('rt-debrief-content').innerHTML = `
     <div style="font-family:'Italiana',serif;font-size:32px;color:var(--text);margin-bottom:4px">Session Complete</div>
@@ -4403,7 +4786,7 @@ Return ONLY JSON: {"clarity":,"confidence":,"persuasion":,"storytelling":,"conci
           <span style="color:var(--muted2)">${l}</span>
           <span style="font-family:'DM Mono',monospace;color:${v>=8?'var(--green)':v>=6?'var(--text)':'var(--red)'};font-weight:600">${v}/10</span>
         </div>
-        `).join('') : '<div style="font-size:12px;color:var(--muted2)">No verbal responses recorded</div>'}
+        `).join('') : `<div style="font-size:12px;color:var(--muted2)">${RealTimeAnalyzer.userResponses.length === 0 ? 'No verbal responses recorded' : 'Responses were too short or filler-only to score'}</div>`}
       </div>
 
       <!-- Nonverbal breakdown -->
@@ -4436,6 +4819,43 @@ Return ONLY JSON: {"clarity":,"confidence":,"persuasion":,"storytelling":,"conci
     <div style="padding:12px 16px;background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.2);border-radius:10px">
       ⚡ <strong>+${xpEarned} XP</strong> · Level ${S.xpLevel}
     </div>
+
+    <!-- Account progress summary — the session score in isolation doesn't
+         show the bigger picture, so surface overall XP/level/streak here too -->
+    <div style="margin-top:16px;padding:16px 20px;background:var(--s1);border:1px solid var(--border);border-radius:14px">
+      <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px">Your Progress</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+        <div style="text-align:center">
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:800;color:var(--accent3)">Lv.${S.xpLevel||1}</div>
+          <div style="font-size:9px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;margin-top:2px">Level</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:800;color:var(--accent2)">${(S.xp||0).toLocaleString()}</div>
+          <div style="font-size:9px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;margin-top:2px">Total XP</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:800;color:var(--green)">${S.sessions||0}</div>
+          <div style="font-size:9px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;margin-top:2px">Sessions</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:800;color:var(--amber)">${S.streak||0}</div>
+          <div style="font-size:9px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;margin-top:2px">Streak</div>
+        </div>
+      </div>
+      ${(() => {
+        const prog = getXPProgress(S.xp||0);
+        const tier = getLevelTier(S.xpLevel||1);
+        return `<div style="margin-top:12px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted2);font-family:'DM Mono',monospace;margin-bottom:5px">
+            <span>${tier.name} Tier</span>
+            <span>${prog.current.toLocaleString()} / ${prog.needed.toLocaleString()} XP to Level ${(S.xpLevel||1)+1}</span>
+          </div>
+          <div style="background:var(--s3);border-radius:4px;height:6px;overflow:hidden">
+            <div style="height:100%;border-radius:4px;background:${tier.color};width:${(prog.pct*100).toFixed(1)}%;transition:width 0.5s ease"></div>
+          </div>
+        </div>`;
+      })()}
+    </div>
   `;
 
   showToast('📹', `Real-Time session complete! +${xpEarned} XP`);
@@ -4447,6 +4867,54 @@ function resetRealTime() {
   document.getElementById('rt-config').classList.add('hidden');
   document.querySelectorAll('[id^=rt-mode-]').forEach(c => { c.style.borderColor=''; c.style.background=''; });
   rtMode = null;
+  const dlBtn = document.getElementById('rt-download-btn');
+  if (dlBtn) dlBtn.style.display = 'none';
+  RealTimeAnalyzer.recordedChunks = [];
+}
+
+// Chrome's MediaRecorder only produces .webm (VP9), not .mp4 — true MP4 would
+// need a server-side transcode (FFmpeg), which is out of scope here. .webm
+// plays natively in Chrome, Firefox, and VLC, and has the overlay burned in
+// identically — functionally the same file, just not natively Windows-Media-
+// Player-friendly. Labeled honestly in the button rather than promised as MP4.
+function downloadRecording() {
+  const chunks = RealTimeAnalyzer.recordedChunks;
+  if (!chunks || chunks.length === 0) {
+    showToast('❌', 'No recording data — try again');
+    return;
+  }
+  const blob = new Blob(chunks, { type: 'video/webm' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const date = new Date().toISOString().slice(0,10);
+  const mode = (rtMode || 'session').charAt(0).toUpperCase() + (rtMode || 'session').slice(1);
+  a.href = url;
+  a.download = `Conver-${mode}-${date}.webm`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('⬇', 'Recording downloaded! Open in Chrome, Firefox, or VLC.');
+}
+
+// Real-Time has no full-screen immersive overlay like Voice/Debate/Cold Open —
+// the top nav stays clickable during a session, so nothing stops the user from
+// switching tabs while the camera is still running. Called from navTo() and
+// the back button so leaving the page always turns the camera off, instead of
+// it silently running in the background. Discards the in-progress session
+// rather than auto-scoring it — the user didn't ask for a score, they left.
+function stopRealTimeIfActive() {
+  if (!RealTimeAnalyzer.active) return;
+  ScribeSTT?.stop();
+  RealTimeAnalyzer.stop();
+  document.getElementById('rt-session')?.classList.add('hidden');
+  document.getElementById('rt-debrief')?.classList.add('hidden');
+  document.getElementById('rt-setup')?.classList.remove('hidden');
+  document.getElementById('rt-config')?.classList.add('hidden');
+  document.querySelectorAll('[id^=rt-mode-]').forEach(c => { c.style.borderColor=''; c.style.background=''; });
+  rtMode = null;
+  const dlBtn = document.getElementById('rt-download-btn');
+  if (dlBtn) dlBtn.style.display = 'none';
+  RealTimeAnalyzer.recordedChunks = [];
+  showToast('📹', 'Real-Time session ended — camera turned off');
 }
 
 // ── VOICE ENGINE — fully immersive voice conversation loop ────
@@ -4924,6 +5392,7 @@ function initUI(){
 // ── Navigation ────────────────────────────────────────────────────────────────
 document.querySelectorAll('.nav-item[data-page]').forEach(btn=>{btn.addEventListener('click',()=>navTo(btn.dataset.page));});
 function navTo(page){
+  if (page !== 'realtime') stopRealTimeIfActive();
   showBackBtn(false);
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
@@ -5082,6 +5551,61 @@ function checkDailyReminders() {
 
 // ── Conver Score ──────────────────────────────────────────────────────────────
 // ── XP & LEVEL SYSTEM ────────────────────────────────────────
+// Shared strict scoring rubric — used by every scoring prompt (Practice Lab,
+// Real-Time, Debate, Cold Open, Voice Session) so a middling response can't
+// drift up into the 5-7 range just because Claude has no floor to anchor to.
+// Previously each mode had its own loose "1-10, use your judgment" prompt,
+// which meant saying nothing at all still scored a 5-7 "average" — there was
+// no calibration point telling the model what "nothing" should score.
+const STRICT_SCORING_RUBRIC = `STRICT SCORING RUBRIC — You must apply this exactly. There is NO default middle score.
+
+CRITICAL PRE-CHECK — apply BEFORE scoring:
+- If the response is empty, blank, or under 5 words → ALL scores = 1. Stop here.
+- If the response is ONLY filler words (um, uh, like, you know, basically) → ALL scores = 2. Stop here.
+- If the response does not address the question/scenario at all → ALL scores = 2-3. Stop here.
+
+SCORING SCALE — most real responses score 4-6. You need to EARN a 7+.
+1 = Nothing. Empty, incoherent, or pure filler.
+2 = Barely attempted. A few words that don't form a meaningful response.
+3 = Attempted but failed. The point exists but is completely unclear or misdirected.
+4 = Mediocre. Gets the basic point across but weak structure, hedging, or generic content.
+5 = Average. Understandable but forgettable. No story, no specificity, some hedging.
+6 = Decent. Clear enough, some structure, minor weak spots. This is passing.
+7 = Good. Specific, structured, confident. Above average human performance.
+8 = Strong. Memorable, well-structured, confident, persuasive. Interview-ready.
+9 = Excellent. Near-perfect delivery, specific story, compelling, no weak spots.
+10 = Elite. Rare. Would genuinely impress in a high-stakes real situation.
+
+CALIBRATION — these are real examples:
+"Um... I think I would... try to communicate better or something." → Clarity:2, Confidence:2, Persuasion:1, Storytelling:1, Conciseness:3
+"I want to work here because it seems like a good company." → Clarity:4, Confidence:3, Persuasion:2, Storytelling:1, Conciseness:5
+"I'm passionate about building products people love, and your company's focus on user experience aligns with my 3 years at Stripe." → Clarity:7, Confidence:7, Persuasion:7, Storytelling:5, Conciseness:7
+"Three years ago I watched our product launch fail because I assumed my team understood the deadline. I sent one Slack message and called it done. Since then I send written confirmation with a signed-off deadline for every critical milestone. Zero missed launches since." → Clarity:9, Confidence:8, Persuasion:9, Storytelling:10, Conciseness:8
+
+YOU MUST SCORE WHAT WAS ACTUALLY SAID. If they said nothing meaningful, score it as nothing meaningful.
+DO NOT be kind. DO NOT inflate scores to encourage the user. Real improvement requires honest assessment.`;
+
+// A minimum-substance check shared by every mode that scores spoken/typed
+// text — run this BEFORE calling the API at all so "said nothing" never
+// even reaches Claude to be scored generously; it's scored as nothing
+// directly, with no API round-trip needed.
+function checkResponseSubstance(text) {
+  if (!text || text.trim().length === 0) return { valid: false, reason: 'empty' };
+  const words = text.trim().split(/\s+/).filter(w => w.length > 1);
+  if (words.length < 4) return { valid: false, reason: 'too_short' };
+  // Filler/stopword list — deliberately broad (matches the filler vocabulary
+  // already used elsewhere for filler-word detection) so genuinely
+  // content-free input like "um uh like you know basically" is actually
+  // caught. A narrower list here would let exactly that kind of input slip
+  // through as "valid" and go straight to the API to be scored generously.
+  const fillerOnly = words.every(w =>
+    ['um','uh','like','okay','yeah','so','well','right','you','know','i','the','a','and','or','but',
+     'basically','literally','honestly','actually','sort','kind','of','totally','really','just','stuff','thing','things'
+    ].includes(w.toLowerCase()));
+  if (fillerOnly) return { valid: false, reason: 'filler_only' };
+  return { valid: true };
+}
+
 // Weighted composite score from a session analysis object
 function calcSessionScore(analysis) {
   if (!analysis) return 0;
@@ -5128,8 +5652,16 @@ function calcSessionXP(analysis, wordCount, fillerCount, sessionNumber) {
 
   const finalXP = Math.round(baseXP * consistencyMult * wcMult * fillerPenalty * earlyBonus * excellenceBonus);
 
-  // Cap per session: 15 minimum, 120 maximum
-  return Math.max(15, Math.min(120, finalXP));
+  // Composite-based floor/ceiling — a flat 15 XP minimum meant near-empty
+  // responses still earned real XP, which rewarded submitting nothing.
+  // Composite under 3 = they said almost nothing = max 8 XP
+  // Composite 3-5 = mediocre = max 35 XP
+  // Composite 5-7 = decent = 15-65 XP
+  // Composite 7+ = good work = 40-120 XP
+  if (composite < 3) return Math.min(8, Math.max(2, Math.round(finalXP * 0.15)));
+  if (composite < 5) return Math.min(35, Math.max(8, Math.round(finalXP * 0.5)));
+  if (composite < 7) return Math.min(65, Math.max(15, finalXP));
+  return Math.min(120, Math.max(40, finalXP));
 }
 
 // Level thresholds — harder as you go. Level 50 requires elite sustained performance.
@@ -5323,8 +5855,37 @@ async function callAI(messages,system){
 async function analyzeResponse(){
   const text=document.getElementById('p-text').value.trim();
   const question=document.getElementById('p-question').value.trim();
-  if(!text){alert('Please enter a response.');return;}
   const btn=document.getElementById('analyze-btn');
+
+  // Empty / near-empty response guard — score it as nothing directly,
+  // without even calling the API, instead of letting Claude default to a
+  // sympathetic middle score for a response with nothing to actually judge.
+  // This also covers a totally blank submission (previously just blocked by
+  // an alert() and discarded) — a blank attempt now honestly logs as a 1/10
+  // rather than silently vanishing.
+  const substance = checkResponseSubstance(text);
+  if (!substance.valid) {
+    S.sessions++;
+    const emptyAnalysis = {
+      clarity:1, confidence:1, persuasion:1, storytelling:1, conciseness:1,
+      composite: 1.0,
+      strengths: ['You showed up — that counts.'],
+      improvements: ['You need to actually respond to the prompt.', 'Aim for at least 30-50 words before submitting.'],
+      filler_feedback: 'No meaningful speech detected.',
+      weak_skill: 'All skills',
+      weak_skill_tip: 'Start by speaking at least 2-3 full sentences before submitting.',
+      rewrite: 'A strong response would address the question directly with a specific example or clear point of view.',
+      overall: 'No substantive response was given. Submit something real to get scored.'
+    };
+    const xpEarned = 5; // minimal XP for attempting
+    awardXP(xpEarned, '');
+    updateStreak(); updateChips(); updateConverScore(); saveUserData();
+    renderResults(emptyAnalysis, text);
+    showToast('⚠', 'Too short to score properly. Try again with a real response.');
+    btn.disabled = false; btn.textContent = 'Analyze Response';
+    return; // stop here, don't call API
+  }
+
   btn.disabled=true;btn.textContent='Analyzing…';
   document.getElementById('results-area').innerHTML=`<div class="loading-dots"><span></span><span></span><span></span></div>`;
   const c=COACHES[S.coach];
@@ -5348,12 +5909,7 @@ OBJECTIVE METRICS:
 - Avg words per sentence: ${avgWordsPerSentence} (ideal: 15-25)
 - Filler words: ${fillerCount} (ideal: 0-2)
 
-SCORING RUBRIC — apply STRICTLY. Most responses score 4-7. Reserve 8-9 for excellent work. 10 is near-perfect only.
-CLARITY: 1-2=incomprehensible, 3-4=main point buried, 5-6=clear but imprecise, 7-8=immediately clear, 9-10=crystal clear and perfectly structured
-CONFIDENCE: 1-2=scared/defeated, 3-4=constant hedging/weak, 5-6=adequate but uncertain phrases, 7-8=grounded and assured, 9-10=commanding authority
-PERSUASION: 1-2=no persuasion, 3-4=weak argument, 5-6=makes point but doesn't land, 7-8=genuinely compelling, 9-10=airtight and emotionally resonant
-STORYTELLING: 1-2=no story, 3-4=vague irrelevant example, 5-6=generic underdeveloped, 7-8=specific vivid relevant, 9-10=masterful narrative
-CONCISENESS: 1-2=rambling, 3-4=significant filler/repetition, 5-6=acceptable but paddy, 7-8=tight every sentence earns it, 9-10=not a word wasted
+${STRICT_SCORING_RUBRIC}
 
 COACH PERSONA: You are ${S.coach}. ${c.style} Your feedback tone must match this persona entirely.
 
@@ -5364,15 +5920,22 @@ Return ONLY valid JSON, no markdown, no explanation outside the JSON:
 "persuasion": ,
 "storytelling": ,
 "conciseness": ,
-"composite": ,
+"composite": <MUST be exactly: (clarity*0.25 + confidence*0.20 + persuasion*0.25 + storytelling*0.15 + conciseness*0.15), rounded to 1 decimal. If all individual scores are under 3, composite cannot exceed 3.0>,
 "scoring_confidence": "<1-10: how confident YOU are in the accuracy of these scores, given how much material you had to go on — a 15-word response gives you less to judge than a 150-word one>",
-"strengths": ["", ""],
-"improvements": ["", "", ""],
+"strengths": [
+  "<MUST quote or directly reference something the user actually said. Format: 'When you said [their words], that worked because [reason].'>",
+  "<Another specific strength tied to their actual words or structure.>"
+],
+"improvements": [
+  "<MUST be specific to what they said. Not generic advice. Format: 'Your phrase [their words] was weak because [reason]. Instead try: [specific rewrite of that phrase].'>",
+  "<Another specific improvement with a concrete rewrite of their actual phrasing.>",
+  "<Optional third: a structural or delivery note specific to this response.>"
+],
 "filler_feedback": "",
 "weak_skill": "",
 "weak_skill_tip": "",
 "rewrite": "",
-"overall": "<2 sentences: first sentence names what they did well, second sentence names the single most important thing to work on. Be specific to their actual words.>"
+"overall": "<First sentence: quote ONE specific thing they said and why it worked or didn't. Second sentence: name the single most important change with a specific example of how to say it differently. Reference their actual words.>"
 }
 CRITICAL: Never use asterisks for actions or stage directions. Never write things like *laughs*, *shifts*, *coughs*, *leans forward*, *smiles*, or any physical action in asterisks or brackets. Speak only in plain spoken words as if you are actually talking. No stage directions of any kind.`;
   try{
@@ -5972,11 +6535,24 @@ async function scoreVoiceSession() {
   panel.style.display = 'block';
   container.innerHTML = `<div class="loading-dots"><span></span><span></span><span></span></div>`;
 
+  const userLines = S.voiceChatHistory.filter(m => m.role === 'user').map(m => m.content).join(' ');
+  const voiceSubstance = checkResponseSubstance(userLines);
   const convText = S.voiceChatHistory.map(m => `${m.role === 'user' ? 'You' : currentVoiceCoach}: ${m.content}`).join('\n');
-  const prompt = `You are ${S.coach}, a communication coach reviewing this full voice conversation the user just had with ${currentVoiceCoach}.\n\nConversation:\n${convText}\n\nAnalyze this as a full arc, not isolated lines: did their clarity and confidence build or fade as the conversation went on? Did they actually engage with what the coach asked/said, or just talk past it? What does their communication style across the whole conversation reveal, not just their best or worst line? Return ONLY valid JSON:\n{"clarity":<1-10>,"confidence":<1-10>,"persuasion":<1-10>,"storytelling":<1-10>,"conciseness":<1-10>,"verdict":"<2-3 sentence overall assessment>","arc":"<1-2 sentences on how they evolved across the conversation>","top_strength":"<one thing>","top_improvement":"<one thing>"}\nNo markdown.\nCRITICAL: Never use asterisks for actions or stage directions. Never write things like *laughs*, *shifts*, *coughs*, *leans forward*, *smiles*, or any physical action in asterisks or brackets. Speak only in plain spoken words as if you are actually talking. No stage directions of any kind.`;
+  const prompt = `You are ${S.coach}, a communication coach reviewing this full voice conversation the user just had with ${currentVoiceCoach}.\n\nConversation:\n${convText}\n\nAnalyze this as a full arc, not isolated lines: did their clarity and confidence build or fade as the conversation went on? Did they actually engage with what the coach asked/said, or just talk past it? What does their communication style across the whole conversation reveal, not just their best or worst line?\n\n${STRICT_SCORING_RUBRIC}\n\ntop_strength and top_improvement MUST quote or directly reference what the user actually said.\nReturn ONLY valid JSON:\n{"clarity":<1-10>,"confidence":<1-10>,"persuasion":<1-10>,"storytelling":<1-10>,"conciseness":<1-10>,"verdict":"<2-3 sentence overall assessment>","arc":"<1-2 sentences on how they evolved across the conversation>","top_strength":"<quote their actual words>","top_improvement":"<quote their actual words, with a specific rewrite>"}\nNo markdown.\nCRITICAL: Never use asterisks for actions or stage directions. Never write things like *laughs*, *shifts*, *coughs*, *leans forward*, *smiles*, or any physical action in asterisks or brackets. Speak only in plain spoken words as if you are actually talking. No stage directions of any kind.`;
 
   try {
-    let raw = await callAI([{role:'user', content: prompt}]);
+    let raw;
+    if (!voiceSubstance.valid) {
+      raw = JSON.stringify({
+        clarity: 1, confidence: 1, persuasion: 1, storytelling: 1, conciseness: 1,
+        verdict: 'Not enough was actually said in this conversation to score meaningfully.',
+        arc: "Can't assess an arc — there wasn't enough real conversation to track.",
+        top_strength: 'You showed up and started the conversation.',
+        top_improvement: 'Give real, substantive answers instead of filler or one-word replies.'
+      });
+    } else {
+      raw = await callAI([{role:'user', content: prompt}]);
+    }
     raw = raw.replace(/\`\`\`json|\`\`\`/g, '').trim();
     const m = raw.match(/\{[\s\S]*\}/); if (!m) throw new Error('No JSON');
     const r = JSON.parse(m[0]);
@@ -6038,9 +6614,12 @@ async function scoreVoiceSession() {
     updateChips(); saveUserData();
     showToast('📊', 'Session added to your Conver Score!');
 
-    // Voice Session XP — based on conversation length
-    const voiceTurns = S.voiceChatHistory.filter(m => m.role === 'user').length;
-    const voiceXP = Math.round(15 + (voiceTurns * 10));
+    // Voice Session XP — was a flat "turns × 10" formula regardless of what was
+    // actually said, so a session of pure filler earned the same XP as a
+    // strong one. Now routed through the same composite-based calcSessionXP()
+    // every other mode uses, so XP actually reflects the score.
+    const voiceWordCount = userLines.trim().split(/\s+/).filter(Boolean).length;
+    const voiceXP = calcSessionXP(r, voiceWordCount, 0, S.sessions);
     awardXP(voiceXP, 'for voice session');
     updateConverScore();
     saveUserData();
@@ -7011,12 +7590,25 @@ async function scoreDebate(){
   const exchangeText=debateUserArgs.map((a,i)=>
     `Round ${i+1} — You: "${a}"${debateOppResponses[i]?`\nRound ${i+1} — Opponent countered: "${debateOppResponses[i]}"`:''}`
   ).join('\n\n');
-  const prompt=`You are ${debateCoachA}, scoring the user's debate performance. Topic: "${debateTopic}". User argued ${yourSide}.\n\nFull exchange, in order:\n${exchangeText}\n\nScore them on 1-10 across 3 dimensions and give an overall verdict. Specifically look at the ARC across rounds, not just isolated statements: did their arguments get sharper or weaker as the opponent's counters got tougher? Did they actually engage with the opponent's specific points, or just repeat their own? Did they stay composed or get rattled/defensive under pressure? Let that trajectory inform the scores and verdict, and call it out directly in pressure_response. Return ONLY valid JSON:\n{"clarity":<1-10>,"persuasion":<1-10>,"confidence":<1-10>,"verdict":"<2-3 sentence overall assessment of how well they argued>","top_strength":"<one thing they did best>","top_improvement":"<one thing to work on>","pressure_response":"<1-2 sentences on how they evolved across rounds as the opponent pushed back harder — did they adapt, engage with the actual counter-arguments, and hold up, or did they get repetitive/rattled?>"}\nNo markdown.\nCRITICAL: Never use asterisks for actions or stage directions. Never write things like *laughs*, *shifts*, *coughs*, *leans forward*, *smiles*, or any physical action in asterisks or brackets. Speak only in plain spoken words as if you are actually talking. No stage directions of any kind.`;
+  const debateSubstance = checkResponseSubstance(debateUserArgs.join(' '));
+  const prompt=`You are ${debateCoachA}, scoring the user's debate performance. Topic: "${debateTopic}". User argued ${yourSide}.\n\nFull exchange, in order:\n${exchangeText}\n\n${STRICT_SCORING_RUBRIC}\n\nSpecifically look at the ARC across rounds, not just isolated statements: did their arguments get sharper or weaker as the opponent's counters got tougher? Did they actually engage with the opponent's specific points, or just repeat their own? Did they stay composed or get rattled/defensive under pressure? Let that trajectory inform the scores and verdict, and call it out directly in pressure_response.\n\ntop_strength and top_improvement MUST quote or directly reference what the user actually said — not generic advice.\nReturn ONLY valid JSON:\n{"clarity":<1-10>,"persuasion":<1-10>,"confidence":<1-10>,"verdict":"<2-3 sentence overall assessment of how well they argued>","top_strength":"<quote their actual words: one thing they did best>","top_improvement":"<quote their actual words: one thing to work on, with a specific rewrite>","pressure_response":"<1-2 sentences on how they evolved across rounds as the opponent pushed back harder — did they adapt, engage with the actual counter-arguments, and hold up, or did they get repetitive/rattled?>"}\nNo markdown.\nCRITICAL: Never use asterisks for actions or stage directions. Never write things like *laughs*, *shifts*, *coughs*, *leans forward*, *smiles*, or any physical action in asterisks or brackets. Speak only in plain spoken words as if you are actually talking. No stage directions of any kind.`;
   try{
-    let raw=await callAI([{role:'user',content:prompt}]);
-    raw=raw.replace(/\`\`\`json|\`\`\`/g,'').trim();
-    const m=raw.match(/\{[\s\S]*\}/);if(!m)throw new Error('No JSON');
-    const r=JSON.parse(m[0]);
+    let r;
+    if (!debateSubstance.valid) {
+      // Barely said anything — score it as nothing, don't ask Claude to be generous.
+      r = {
+        clarity: 1, persuasion: 1, confidence: 1,
+        verdict: "You didn't give the opponent much to actually respond to. A debate needs real arguments to score.",
+        top_strength: 'You showed up — that counts.',
+        top_improvement: 'Make an actual case next time: state your position and back it with a reason.',
+        pressure_response: "Can't assess how you handled pressure — there wasn't enough there to evaluate."
+      };
+    } else {
+      let raw=await callAI([{role:'user',content:prompt}]);
+      raw=raw.replace(/\`\`\`json|\`\`\`/g,'').trim();
+      const m=raw.match(/\{[\s\S]*\}/);if(!m)throw new Error('No JSON');
+      r=JSON.parse(m[0]);
+    }
     document.getElementById('debate-final-scores').innerHTML=`
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
         <div class="score-box"><div class="score-num ${scoreClass(r.clarity)}">${r.clarity}</div><div class="score-lbl">Clarity</div></div>
@@ -7845,9 +8437,22 @@ async function endColdOpen(){
   panel.style.display='block';
   document.getElementById('co-scores').innerHTML=`<div class="loading-dots"><span></span><span></span><span></span></div>`;
   const convText=coState.history.map((m,i)=>`${i%2===0?'You':'Them'}: ${m.content}`).join('\n');
-  const prompt=`You are ${S.coach}, a communication coach. Analyze this cold open:\n\nContext: ${coState.scenario.setup}\nOpener: "${coState.scenario.opener}"\n\nConversation:\n${convText}\n\nLook at this as a full arc, not isolated lines: how did their energy/warmth shift from the opener to the close? Did they actually pick up on cues the other person dropped and follow them, or steamroll past them with their own agenda? Was their conversational personality consistent throughout, or did it shift noticeably (e.g. confident opener, awkward middle)? Let that trajectory shape the scores, verdict, and arc field below. Return ONLY valid JSON:\n{"naturalness":<1-10>,"warmth":<1-10>,"impact":<1-10>,"verdict":"<2-3 sentence assessment>","best_moment":"<one thing>","missed_opportunity":"<one thing>","arc":"<1-2 sentences on how they evolved from opener to close — did they warm up, stay consistent, or lose steam, and did they actually follow the other person's cues?>"}\nNo markdown.\nCRITICAL: Never use asterisks for actions or stage directions. Never write things like *laughs*, *shifts*, *coughs*, *leans forward*, *smiles*, or any physical action in asterisks or brackets. Speak only in plain spoken words as if you are actually talking. No stage directions of any kind.`;
+  const userLines = coState.history.filter((m,i)=>i%2===0).map(m=>m.content).join(' ');
+  const coSubstance = checkResponseSubstance(userLines);
+  const prompt=`You are ${S.coach}, a communication coach. Analyze this cold open:\n\nContext: ${coState.scenario.setup}\nOpener: "${coState.scenario.opener}"\n\nConversation:\n${convText}\n\nLook at this as a full arc, not isolated lines: how did their energy/warmth shift from the opener to the close? Did they actually pick up on cues the other person dropped and follow them, or steamroll past them with their own agenda? Was their conversational personality consistent throughout, or did it shift noticeably (e.g. confident opener, awkward middle)? Let that trajectory shape the scores, verdict, and arc field below.\n\nSTRICT SCORING — there is no default middle score. If their turns were mostly filler, one-word replies, or didn't really engage, score 1-3 across the board. Most genuine engaged effort scores 4-6. Reserve 7+ for responses that were specific, warm, and actually built on what the other person said. Do not inflate scores to be kind.\n\nReturn ONLY valid JSON:\n{"naturalness":<1-10>,"warmth":<1-10>,"impact":<1-10>,"verdict":"<2-3 sentence assessment, must reference something specific they actually said>","best_moment":"<quote or reference something they actually said>","missed_opportunity":"<quote or reference something they actually said, with what a stronger reply would've looked like>","arc":"<1-2 sentences on how they evolved from opener to close — did they warm up, stay consistent, or lose steam, and did they actually follow the other person's cues?>"}\nNo markdown.\nCRITICAL: Never use asterisks for actions or stage directions. Never write things like *laughs*, *shifts*, *coughs*, *leans forward*, *smiles*, or any physical action in asterisks or brackets. Speak only in plain spoken words as if you are actually talking. No stage directions of any kind.`;
   try{
-    let raw=await callAI([{role:'user',content:prompt}]);
+    let raw;
+    if (!coSubstance.valid) {
+      raw = JSON.stringify({
+        naturalness: 1, warmth: 1, impact: 1,
+        verdict: "You didn't really engage — mostly filler or one-word replies. There's not much here to work with.",
+        best_moment: 'You showed up and started the conversation — that counts.',
+        missed_opportunity: 'Actually respond to what they said with something specific, not just filler.',
+        arc: "Can't assess an arc — there wasn't enough real conversation to track."
+      });
+    } else {
+      raw=await callAI([{role:'user',content:prompt}]);
+    }
     raw=raw.replace(/\`\`\`json|\`\`\`/g,'').trim();
     const m=raw.match(/\{[\s\S]*\}/);if(!m)throw new Error('No JSON');
     const r=JSON.parse(m[0]);
@@ -7904,8 +8509,16 @@ async function endColdOpen(){
     saveSessionToCloud(coSession);
     updateChips();saveUserData();showToast('📊','Cold Open score added to Conver Score!');
 
-    // Cold Open XP — based on number of turns and quality
-    const coXP = Math.round(20 + (coState.turns * 8));
+    // Cold Open XP — was "turns × 8" regardless of quality, so a filler-only
+    // exchange earned the same XP as an engaged one. Now floored by actual
+    // composite (same tiers as calcSessionXP, remapped since Cold Open scores
+    // naturalness/warmth/impact rather than the standard 5 skills).
+    const coComposite = (r.naturalness + r.warmth + r.impact) / 3;
+    const coBaseXP = Math.round(20 + (coState.turns * 8));
+    const coXP = coComposite < 3 ? Math.min(8, Math.max(2, Math.round(coBaseXP * 0.15)))
+      : coComposite < 5 ? Math.min(35, Math.max(8, Math.round(coBaseXP * 0.5)))
+      : coComposite < 7 ? Math.min(65, Math.max(15, coBaseXP))
+      : Math.min(120, Math.max(40, coBaseXP));
     awardXP(coXP, 'for Cold Open session');
     updateConverScore();
     saveUserData();
