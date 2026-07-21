@@ -2866,8 +2866,8 @@ body.reducemotion .coach-orb-wave { animation: none !important; }
             <div>
               <!-- Camera feed -->
               <div style="position:relative;border-radius:16px;overflow:hidden;background:#000;aspect-ratio:16/9;margin-bottom:16px">
-                <video id="rt-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1)"></video>
-                <canvas id="rt-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;transform:scaleX(-1)"></canvas>
+                <video id="rt-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1);will-change:transform;backface-visibility:hidden"></video>
+                <canvas id="rt-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;transform:scaleX(-1);will-change:contents;backface-visibility:hidden"></canvas>
                 <!-- Hidden composite canvas for recording — camera + overlay burned together -->
                 <canvas id="rt-record-canvas" style="display:none"></canvas>
 
@@ -4005,6 +4005,8 @@ const RealTimeAnalyzer = {
   compositeCtx: null,
   compositeAnimFrame: null,
   overlayData: { eyePct:0, headPct:0, liveScore:0, exprLabel:'—', currentTip:'', elapsed:0, currentPrompt:'' },
+  _overlayCanvas: null,      // offscreen canvas — the panel is only ever redrawn onto this
+  _lastOverlayValues: '',    // stringified last-drawn values, for change detection
 
   async init() {
     if (this.faceMesh) return; // already initialized
@@ -4013,9 +4015,10 @@ const RealTimeAnalyzer = {
     });
     this.faceMesh.setOptions({
       maxNumFaces: 1,
-      refineLandmarks: true,
-      minDetectionConfidence: 0.5,
-      minTrackingConfidence: 0.5
+      refineLandmarks: false, // iris tracking needs GPU, drops to ~5fps on CPU — biggest single perf win
+      minDetectionConfidence: 0.6,
+      minTrackingConfidence: 0.6,
+      selfieMode: true // slight perf boost for front-facing camera
     });
     this.faceMesh.onResults((results) => this.onFrame(results));
     console.log('✓ MediaPipe FaceMesh initialized');
@@ -4044,35 +4047,39 @@ const RealTimeAnalyzer = {
     const rightEyeRight = landmarks[263];
     const faceScale = Math.hypot(rightEyeRight.x - leftEyeLeft.x, rightEyeRight.y - leftEyeLeft.y) || 1;
 
+    const noseTip = landmarks[1];
+    const forehead = landmarks[10];
+    const chin = landmarks[152];
+
     // ── EYE CONTACT DETECTION ───────────────────────────────
-    // Iris landmarks: 468-472 (left), 473-477 (right) when refineLandmarks=true.
-    // Check how far the iris sits from the eye's geometric center, in BOTH
-    // axes — the original version only checked horizontal offset, so looking
-    // straight up or down at the camera (a very common webcam angle, since
-    // most laptop cameras sit above eye level) still counted as "eye contact."
-    const leftIris = landmarks[468];
-    const rightIris = landmarks[473];
-    const leftEyeRight = landmarks[133];
-    const rightEyeLeft = landmarks[362];
-    const leftEyeTop = landmarks[159], leftEyeBottom = landmarks[145];
-    const rightEyeTop = landmarks[386], rightEyeBottom = landmarks[374];
+    // Was iris-based (landmarks 468-477), which requires refineLandmarks:true
+    // — a second neural network that adds 40-60ms per frame on CPU. Now
+    // inferred from head pose instead: if the nose is centered and level
+    // relative to the face, the face is pointed at the camera. Less precise
+    // than tracking the iris directly, but the cheek/forehead/chin landmarks
+    // used here don't need refineLandmarks at all, so this runs at full speed.
+    const leftCheek = landmarks[234];
+    const rightCheek = landmarks[454];
+    const faceCenterX = (leftCheek.x + rightCheek.x) / 2;
+    const faceWidth = Math.abs(rightCheek.x - leftCheek.x);
+    const noseOffset = Math.abs(noseTip.x - faceCenterX);
+    const normalizedNoseOffset = faceWidth > 0 ? noseOffset / faceWidth : 1;
 
-    const leftCenterX = (leftEyeLeft.x + leftEyeRight.x) / 2;
-    const leftCenterY = (leftEyeTop.y + leftEyeBottom.y) / 2;
-    const rightCenterX = (rightEyeLeft.x + rightEyeRight.x) / 2;
-    const rightCenterY = (rightEyeTop.y + rightEyeBottom.y) / 2;
+    const faceHeight = Math.abs(chin.y - forehead.y);
+    const noseVertOffset = Math.abs(noseTip.y - (forehead.y + faceHeight * 0.5));
+    const normalizedVertOffset = faceHeight > 0 ? noseVertOffset / faceHeight : 1;
 
-    const leftOffset = Math.hypot(leftIris.x - leftCenterX, leftIris.y - leftCenterY);
-    const rightOffset = Math.hypot(rightIris.x - rightCenterX, rightIris.y - rightCenterY);
-    const normalizedOffset = ((leftOffset + rightOffset) / 2) / faceScale;
-    const isLookingAtCamera = normalizedOffset < 0.10; // threshold for "looking at camera"
+    const isLookingAtCamera = normalizedNoseOffset < 0.08 && normalizedVertOffset < 0.15;
     if (isLookingAtCamera) this.eyeContactFrames++;
 
     // ── BLINK DETECTION ─────────────────────────────────────
-    // Normalized by faceScale — a fixed absolute-distance threshold falsely
-    // reads as "always open" for someone sitting far from the camera (their
-    // whole face, eyes included, occupies fewer normalized units) and
-    // "always blinking" for someone sitting close.
+    // Eyelid contour landmarks (159/145/386/374) — part of the base 468-point
+    // model, not the iris refinement, so this still works with
+    // refineLandmarks:false. Normalized by faceScale — a fixed absolute-
+    // distance threshold falsely reads as "always open" for someone sitting
+    // far from the camera and "always blinking" for someone sitting close.
+    const leftEyeTop = landmarks[159], leftEyeBottom = landmarks[145];
+    const rightEyeTop = landmarks[386], rightEyeBottom = landmarks[374];
     const eyeOpenness = (Math.abs(leftEyeTop.y - leftEyeBottom.y) + Math.abs(rightEyeTop.y - rightEyeBottom.y)) / 2 / faceScale;
     const isEyeOpen = eyeOpenness > 0.06;
     if (this.wasEyeOpen && !isEyeOpen) this.blinkCount++;
@@ -4084,7 +4091,6 @@ const RealTimeAnalyzer = {
     // treated anyone framed slightly off-center (extremely common with laptop
     // webcams) as permanently "unstable" even while holding perfectly still.
     // Stability is about steadiness over time, not centeredness in the frame.
-    const noseTip = landmarks[1];
     if (this.prevNose) {
       const movement = Math.hypot(noseTip.x - this.prevNose.x, noseTip.y - this.prevNose.y) / faceScale;
       this.movementSamples.push(movement);
@@ -4104,8 +4110,15 @@ const RealTimeAnalyzer = {
     this.expressionSamples.push(mouthCornerHeight);
     if (this.expressionSamples.length > 30) this.expressionSamples.shift();
 
-    // ── UPDATE UI EVERY 15 FRAMES ────────────────────────────
-    if (this.frames % 15 === 0) {
+    // ── UPDATE UI AT 4FPS ─────────────────────────────────────
+    // Was every 15 frames of MediaPipe processing — now time-based, since
+    // MediaPipe itself is throttled to 8fps (see the Camera() onFrame
+    // wrapper in startCamera()), so a frame-count condition would fire at an
+    // unpredictable rate. DOM writes are comparatively expensive; 4x/sec is
+    // plenty for numbers a human is reading, not 15-30x/sec.
+    const nowUI = Date.now();
+    if (nowUI - (this._lastUIUpdate || 0) >= 250) {
+      this._lastUIUpdate = nowUI;
       const eyePct = Math.round((this.eyeContactFrames / this.frames) * 100);
       const headPct = Math.round((this.headStableFrames / this.frames) * 100);
       const avgExpr = this.expressionSamples.reduce((a,b)=>a+b,0) / this.expressionSamples.length;
@@ -4144,8 +4157,11 @@ const RealTimeAnalyzer = {
       document.getElementById('rt-live-score').textContent = liveScore;
       document.getElementById('rt-live-score').style.color = liveScore>=75?'var(--green)':liveScore>=50?'var(--amber)':'var(--red)';
 
-      // Live coaching tip (every 30 frames) — nonverbal, instant, rule-based
-      if (this.frames % 30 === 0) {
+      // Live coaching tip — nonverbal, instant, rule-based. Max once every
+      // 5 seconds so it doesn't feel spammy (was tied to frame count, which
+      // now fires unpredictably since MediaPipe itself is throttled).
+      if (nowUI - (this._lastTip || 0) >= 5000) {
+        this._lastTip = nowUI;
         this.addLiveFeedback(eyePct, headPct, avgExpr, blinkPerMin);
       }
       // Deeper, content-aware AI coaching aside — every ~20s of session time,
@@ -4281,8 +4297,15 @@ const RealTimeAnalyzer = {
     // as a glitch and gets ignored/dismissed, which looks exactly like "the
     // system isn't hearing me at all." Pre-authorizing mic access here means
     // that later getUserMedia call resolves silently, no second prompt.
+    // 480p, not 720p — plenty sharp for this use case and roughly half the
+    // pixels MediaPipe and the recording canvas have to process per frame.
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: { width: 1280, height: 720, facingMode: 'user' },
+      video: {
+        width: { ideal: 640, max: 854 },
+        height: { ideal: 480, max: 480 },
+        facingMode: 'user',
+        frameRate: { ideal: 30, max: 30 }
+      },
       audio: true
     });
     stream.getAudioTracks().forEach(t => t.stop()); // don't need this track ourselves — ScribeSTT manages its own mic capture
@@ -4291,13 +4314,20 @@ const RealTimeAnalyzer = {
     canvas.width = videoEl.videoWidth;
     canvas.height = videoEl.videoHeight;
 
+    // MediaPipe processes at low res — the camera display is CSS-scaled up,
+    // so visual quality on screen is unaffected by the lower capture size.
     this.camera = new Camera(videoEl, {
       onFrame: async () => {
-        if (this.active && this.faceMesh) {
-          await this.faceMesh.send({ image: videoEl });
-        }
+        if (!this.active || !this.faceMesh) return;
+        // Throttle MediaPipe to 8fps max — a neural network doesn't need to
+        // run at full 30fps camera rate to give useful eye-contact/head-pose
+        // readings; this was the single biggest CPU cost in the whole pipeline.
+        const now = Date.now();
+        if (now - (this._lastMPFrame || 0) < 125) return; // 125ms = 8fps
+        this._lastMPFrame = now;
+        await this.faceMesh.send({ image: videoEl });
       },
-      width: 1280, height: 720
+      width: 640, height: 480
     });
     this.camera.start();
 
@@ -4314,27 +4344,38 @@ const RealTimeAnalyzer = {
     this.lastAiTipAt = 0;
     this.userResponses = [];
     this.currentTranscript = '';
+    this._lastMPFrame = 0;
+    this._lastUIUpdate = 0;
+    this._lastTip = 0;
+    this._lastRecordFrame = 0;
   },
 
   // ── RECORDING ENGINE ─────────────────────────────────────────
   startRecording() {
     const recordCanvas = document.getElementById('rt-record-canvas');
     const videoEl = document.getElementById('rt-video');
-    // Match canvas to video dimensions
-    recordCanvas.width = videoEl.videoWidth || 1280;
-    recordCanvas.height = videoEl.videoHeight || 720;
+    // Record at 640x480 — clean enough for review, half the pixels to
+    // draw/encode per frame versus the previous 1280x720.
+    recordCanvas.width = 640;
+    recordCanvas.height = 480;
     this.compositeCtx = recordCanvas.getContext('2d');
 
     // Start drawing composite frames
     this._drawCompositeFrame();
 
-    // Record the canvas stream at 30fps
+    // Record the canvas stream at 30fps (the recording draw loop itself is
+    // throttled to 24fps internally — see _drawCompositeFrame)
     const stream = recordCanvas.captureStream(30);
     this.recordedChunks = [];
+    // VP8 is lighter than VP9 to encode in real time — VP9 gives smaller
+    // files but costs more CPU during encoding, which is exactly what's
+    // being throttled everywhere else in this pipeline.
+    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8')
+      ? 'video/webm;codecs=vp8'
+      : 'video/webm';
     this.mediaRecorder = new MediaRecorder(stream, {
-      mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
-        ? 'video/webm;codecs=vp9'
-        : 'video/webm'
+      mimeType,
+      videoBitsPerSecond: 1_500_000 // 1.5 Mbps — good quality, low encoding cost
     });
     this.mediaRecorder.ondataavailable = (e) => {
       if (e.data && e.data.size > 0) this.recordedChunks.push(e.data);
@@ -4345,23 +4386,47 @@ const RealTimeAnalyzer = {
 
   _drawCompositeFrame() {
     if (!this.active || !this.compositeCtx) return;
-    const ctx = this.compositeCtx;
-    const canvas = document.getElementById('rt-record-canvas');
-    const videoEl = document.getElementById('rt-video');
 
-    // Draw camera frame (mirrored like display)
-    ctx.save();
-    ctx.scale(-1, 1);
-    ctx.drawImage(videoEl, -canvas.width, 0, canvas.width, canvas.height);
-    ctx.restore();
-
-    // Draw scoring overlay panel — top right corner
-    this._drawScoringOverlay(ctx, canvas.width, canvas.height);
+    // Throttle recording canvas to 24fps — smooth on playback but decoupled
+    // from the 60fps requestAnimationFrame loop it runs on, so it's not
+    // competing 1:1 with MediaPipe and UI updates for the same CPU budget.
+    const now = Date.now();
+    const targetInterval = 1000 / 24;
+    if (now - (this._lastRecordFrame || 0) >= targetInterval) {
+      this._lastRecordFrame = now;
+      const ctx = this.compositeCtx;
+      const canvas = document.getElementById('rt-record-canvas');
+      const videoEl = document.getElementById('rt-video');
+      if (canvas && videoEl && videoEl.readyState >= 2) {
+        // Draw camera frame (mirrored like display)
+        ctx.save();
+        ctx.scale(-1, 1);
+        ctx.drawImage(videoEl, -canvas.width, 0, canvas.width, canvas.height);
+        ctx.restore();
+        // Draw scoring overlay panel — top right corner
+        this._drawScoringOverlay(ctx, canvas.width, canvas.height);
+      }
+    }
 
     // Continue animation loop
     this.compositeAnimFrame = requestAnimationFrame(() => this._drawCompositeFrame());
   },
 
+  _getOrCreateOverlayCanvas() {
+    if (!this._overlayCanvas) {
+      this._overlayCanvas = document.createElement('canvas');
+      this._overlayCanvas.width = 280;
+      this._overlayCanvas.height = 300;
+    }
+    return this._overlayCanvas;
+  },
+
+  // The panel used to be fully redrawn onto the main recording canvas every
+  // single frame (24x/sec), even though its values only actually change 4x/
+  // sec (tied to the UI update throttle). Now it's rendered once onto a
+  // small offscreen canvas whenever the values change, and just blitted
+  // (a single drawImage, far cheaper than re-running every fillText/stroke)
+  // onto the recording canvas every frame.
   _drawScoringOverlay(ctx, cw, ch) {
     const od = this.overlayData;
     const panelW = 260;
@@ -4370,95 +4435,109 @@ const RealTimeAnalyzer = {
     const panelY = 16;
     const r = 12; // border radius
 
-    // Panel background
-    ctx.save();
-    ctx.globalAlpha = 0.88;
-    ctx.fillStyle = '#07080f';
-    this._roundRect(ctx, panelX, panelY, panelW, panelH, r);
-    ctx.fill();
-    ctx.globalAlpha = 1;
+    const overlayCanvas = this._getOrCreateOverlayCanvas();
+    const valStr = `${od.liveScore}|${od.eyePct}|${od.headPct}|${od.exprLabel}|${Math.floor(od.elapsed/2)}|${od.currentTip?.slice(0,20)}`;
+    const needsRedraw = valStr !== this._lastOverlayValues;
 
-    // Panel border
-    ctx.strokeStyle = 'rgba(124,111,255,0.5)';
-    ctx.lineWidth = 1.5;
-    this._roundRect(ctx, panelX, panelY, panelW, panelH, r);
-    ctx.stroke();
+    if (needsRedraw) {
+      this._lastOverlayValues = valStr;
+      const oc = overlayCanvas.getContext('2d');
+      oc.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+      oc.save();
 
-    // Top gradient line
-    const grad = ctx.createLinearGradient(panelX, panelY, panelX+panelW, panelY);
-    grad.addColorStop(0, 'transparent');
-    grad.addColorStop(0.5, 'rgba(124,111,255,0.8)');
-    grad.addColorStop(1, 'transparent');
-    ctx.strokeStyle = grad;
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(panelX+r, panelY); ctx.lineTo(panelX+panelW-r, panelY); ctx.stroke();
+      // Panel background — coordinates relative to (0,0) of the offscreen canvas
+      oc.globalAlpha = 0.88;
+      oc.fillStyle = '#07080f';
+      this._roundRect(oc, 0, 0, panelW, panelH, r);
+      oc.fill();
+      oc.globalAlpha = 1;
 
-    const tx = panelX + 14;
-    let ty = panelY + 20;
+      // Panel border
+      oc.strokeStyle = 'rgba(124,111,255,0.5)';
+      oc.lineWidth = 1.5;
+      this._roundRect(oc, 0, 0, panelW, panelH, r);
+      oc.stroke();
 
-    // "CONVER AI" label
-    ctx.font = 'bold 9px "DM Mono", monospace';
-    ctx.fillStyle = 'rgba(124,111,255,0.7)';
-    ctx.fillText('CONVER AI · LIVE ANALYSIS', tx, ty);
-    ty += 18;
+      // Top gradient line
+      const grad = oc.createLinearGradient(0, 0, panelW, 0);
+      grad.addColorStop(0, 'transparent');
+      grad.addColorStop(0.5, 'rgba(124,111,255,0.8)');
+      grad.addColorStop(1, 'transparent');
+      oc.strokeStyle = grad;
+      oc.lineWidth = 1;
+      oc.beginPath(); oc.moveTo(r, 0); oc.lineTo(panelW-r, 0); oc.stroke();
 
-    // Live score — big number
-    const scoreColor = od.liveScore >= 75 ? '#2dd4a0' : od.liveScore >= 50 ? '#fbbf24' : '#f87171';
-    ctx.font = 'bold 38px "Space Grotesk", sans-serif';
-    ctx.fillStyle = scoreColor;
-    ctx.fillText(od.liveScore || '—', tx, ty + 28);
-    ctx.font = '10px "DM Mono", monospace';
-    ctx.fillStyle = 'rgba(255,255,255,0.35)';
-    ctx.fillText('/ 100 PRESENCE SCORE', tx + 56, ty + 22);
-    ty += 44;
+      const tx = 14;
+      let ty = 20;
 
-    // Separator
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(panelX+10, ty); ctx.lineTo(panelX+panelW-10, ty); ctx.stroke();
-    ty += 12;
-
-    // Metrics rows
-    const metrics = [
-      { label: 'EYE CONTACT', value: od.eyePct + '%', color: od.eyePct >= 70 ? '#2dd4a0' : od.eyePct >= 40 ? '#fbbf24' : '#f87171' },
-      { label: 'HEAD STABILITY', value: od.headPct + '%', color: od.headPct >= 70 ? '#38bdf8' : od.headPct >= 40 ? '#fbbf24' : '#f87171' },
-      { label: 'EXPRESSION', value: od.exprLabel || '—', color: '#c084fc' },
-      { label: 'ELAPSED', value: this._formatTime(od.elapsed), color: 'rgba(255,255,255,0.5)' },
-    ];
-    metrics.forEach(m => {
-      ctx.font = '9px "DM Mono", monospace';
-      ctx.fillStyle = 'rgba(255,255,255,0.4)';
-      ctx.fillText(m.label, tx, ty);
-      ctx.font = 'bold 11px "Space Grotesk", sans-serif';
-      ctx.fillStyle = m.color;
-      ctx.fillText(m.value, panelX + panelW - 14 - ctx.measureText(m.value).width, ty);
+      // "CONVER AI" label
+      oc.font = 'bold 9px "DM Mono", monospace';
+      oc.fillStyle = 'rgba(124,111,255,0.7)';
+      oc.fillText('CONVER AI · LIVE ANALYSIS', tx, ty);
       ty += 18;
-    });
-    ty += 6;
 
-    // Separator
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(panelX+10, ty); ctx.lineTo(panelX+panelW-10, ty); ctx.stroke();
-    ty += 10;
+      // Live score — big number
+      const scoreColor = od.liveScore >= 75 ? '#2dd4a0' : od.liveScore >= 50 ? '#fbbf24' : '#f87171';
+      oc.font = 'bold 38px "Space Grotesk", sans-serif';
+      oc.fillStyle = scoreColor;
+      oc.fillText(od.liveScore || '—', tx, ty + 28);
+      oc.font = '10px "DM Mono", monospace';
+      oc.fillStyle = 'rgba(255,255,255,0.35)';
+      oc.fillText('/ 100 PRESENCE SCORE', tx + 56, ty + 22);
+      ty += 44;
 
-    // Live tip
-    if (od.currentTip) {
-      ctx.font = '10px "Plus Jakarta Sans", sans-serif';
-      ctx.fillStyle = 'rgba(255,255,255,0.6)';
-      const tipWords = od.currentTip.split(' ');
-      let line = '', lineY = ty;
-      tipWords.forEach(word => {
-        const test = line + word + ' ';
-        if (ctx.measureText(test).width > panelW - 28) {
-          ctx.fillText(line.trim(), tx, lineY);
-          line = word + ' '; lineY += 13;
-        } else { line = test; }
+      // Separator
+      oc.strokeStyle = 'rgba(255,255,255,0.06)';
+      oc.lineWidth = 1;
+      oc.beginPath(); oc.moveTo(10, ty); oc.lineTo(panelW-10, ty); oc.stroke();
+      ty += 12;
+
+      // Metrics rows
+      const metrics = [
+        { label: 'EYE CONTACT', value: od.eyePct + '%', color: od.eyePct >= 70 ? '#2dd4a0' : od.eyePct >= 40 ? '#fbbf24' : '#f87171' },
+        { label: 'HEAD STABILITY', value: od.headPct + '%', color: od.headPct >= 70 ? '#38bdf8' : od.headPct >= 40 ? '#fbbf24' : '#f87171' },
+        { label: 'EXPRESSION', value: od.exprLabel || '—', color: '#c084fc' },
+        { label: 'ELAPSED', value: this._formatTime(od.elapsed), color: 'rgba(255,255,255,0.5)' },
+      ];
+      metrics.forEach(m => {
+        oc.font = '9px "DM Mono", monospace';
+        oc.fillStyle = 'rgba(255,255,255,0.4)';
+        oc.fillText(m.label, tx, ty);
+        oc.font = 'bold 11px "Space Grotesk", sans-serif';
+        oc.fillStyle = m.color;
+        oc.fillText(m.value, panelW - 14 - oc.measureText(m.value).width, ty);
+        ty += 18;
       });
-      if (line.trim()) ctx.fillText(line.trim(), tx, lineY);
+      ty += 6;
+
+      // Separator
+      oc.strokeStyle = 'rgba(255,255,255,0.06)';
+      oc.lineWidth = 1;
+      oc.beginPath(); oc.moveTo(10, ty); oc.lineTo(panelW-10, ty); oc.stroke();
+      ty += 10;
+
+      // Live tip
+      if (od.currentTip) {
+        oc.font = '10px "Plus Jakarta Sans", sans-serif';
+        oc.fillStyle = 'rgba(255,255,255,0.6)';
+        const tipWords = od.currentTip.split(' ');
+        let line = '', lineY = ty;
+        tipWords.forEach(word => {
+          const test = line + word + ' ';
+          if (oc.measureText(test).width > panelW - 28) {
+            oc.fillText(line.trim(), tx, lineY);
+            line = word + ' '; lineY += 13;
+          } else { line = test; }
+        });
+        if (line.trim()) oc.fillText(line.trim(), tx, lineY);
+      }
+
+      oc.restore();
     }
 
-    ctx.restore();
+    // Blit the cached overlay onto the main recording canvas — one drawImage
+    // call, regardless of whether it was just redrawn or not.
+    ctx.drawImage(overlayCanvas, panelX, panelY);
   },
 
   _roundRect(ctx, x, y, w, h, r) {
