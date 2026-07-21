@@ -4323,7 +4323,7 @@ function updateHeroStats() {
   animateStatTo('anim-streak', S.streak || 0);
   animateStatTo('anim-xp', S.xp || 0);
   const lvEl = document.getElementById('anim-level');
-  if (lvEl) lvEl.textContent = S.sessions ? `Lv.${calcLevelFromXP(S.xp || 0)}` : '—';
+  if (lvEl) lvEl.textContent = S.sessions ? `Lv.${getLevelFromXP(S.xp || 0)}` : '—';
 }
 
 // ── Streak ────────────────────────────────────────────────────────────────────
@@ -4356,80 +4356,183 @@ function updateStreak() {
 }
 
 // ── Conver Score ──────────────────────────────────────────────────────────────
-function calcConverScore(){
-  if(!S.sessions)return null;
-  const avg=arr=>arr.length?(arr.reduce((a,b)=>a+b,0)/arr.length):0;
-  const c=avg(S.scores.clarity),co=avg(S.scores.confidence),p=avg(S.scores.persuasion);
-  const raw=((c+co+p)/3)*10;
-  // Bonus for sessions
-  const sessionBonus=Math.min(10,S.sessions*2);
-  return Math.min(100,Math.round(raw+sessionBonus));
+// ── XP & LEVEL SYSTEM ────────────────────────────────────────
+// Weighted composite score from a session analysis object
+function calcSessionScore(analysis) {
+  if (!analysis) return 0;
+  const { clarity=0, confidence=0, persuasion=0, storytelling=0, conciseness=0 } = analysis;
+  // Weighted: persuasion and clarity matter most
+  return (
+    clarity * 0.25 +
+    confidence * 0.20 +
+    persuasion * 0.25 +
+    storytelling * 0.15 +
+    conciseness * 0.15
+  );
 }
-function scoreGrade(n){
-  if(!n)return{grade:'—',sub:'Start practicing',color:'var(--muted)'};
-  if(n>=90)return{grade:'Elite',sub:'Exceptional communicator',color:'var(--green)'};
-  if(n>=80)return{grade:'Advanced',sub:'Above average across all skills',color:'var(--accent2)'};
-  if(n>=70)return{grade:'Proficient',sub:'Solid foundation, room to grow',color:'var(--accent3)'};
-  if(n>=60)return{grade:'Developing',sub:'Good progress, keep going',color:'var(--amber)'};
-  return{grade:'Beginner',sub:'Building your foundation',color:'var(--red)'};
+
+// XP earned per session — intricate formula
+function calcSessionXP(analysis, wordCount, fillerCount, sessionNumber) {
+  if (!analysis) return 0;
+  const composite = calcSessionScore(analysis);
+
+  // Base XP — 0-10 scale mapped to 10-80 XP
+  // Score of 5 = 30 XP, score of 7 = 52 XP, score of 9 = 72 XP
+  let baseXP = Math.round(composite * 8 + 10);
+
+  // Quality multiplier — rewards consistency across all skills
+  const scores = [analysis.clarity, analysis.confidence, analysis.persuasion, analysis.storytelling, analysis.conciseness];
+  const minScore = Math.min(...scores);
+  const maxScore = Math.max(...scores);
+  const range = maxScore - minScore;
+  // Consistent across all skills = bonus. Huge gaps = penalty
+  const consistencyMult = range <= 2 ? 1.15 : range <= 4 ? 1.0 : 0.88;
+
+  // Word count efficiency bonus (spoken response ideal: 75-150 words)
+  const wcMult = (wordCount >= 60 && wordCount <= 200) ? 1.08 : 0.95;
+
+  // Filler word penalty
+  const fillerPenalty = Math.max(0.75, 1 - (fillerCount * 0.04));
+
+  // Early session bonus — first 5 sessions give more XP (getting started reward)
+  const earlyBonus = sessionNumber <= 5 ? 1.2 : sessionNumber <= 10 ? 1.1 : 1.0;
+
+  // Excellence bonus — every skill at 8+ is rare, reward it
+  const allStrong = scores.every(s => s >= 8);
+  const excellenceBonus = allStrong ? 1.25 : 1.0;
+
+  const finalXP = Math.round(baseXP * consistencyMult * wcMult * fillerPenalty * earlyBonus * excellenceBonus);
+
+  // Cap per session: 15 minimum, 120 maximum
+  return Math.max(15, Math.min(120, finalXP));
 }
-// ── XP / Level System ──────────────────────────────────────────────────────
-// XP is derived from accumulated session scores (clarity+confidence+persuasion), not a
-// separately-persisted counter — this keeps it always in sync with existing saved data.
-function calcLevelFromXP(xp){
-  return Math.min(50, Math.floor(xp/100)+1);
-}
-function getLevelTier(level){
-  if(level>=45)return{name:'Elite',color:'var(--green)'};
-  if(level>=35)return{name:'Advanced',color:'var(--accent2)'};
-  if(level>=25)return{name:'Proficient',color:'var(--accent3)'};
-  if(level>=15)return{name:'Developing',color:'var(--amber)'};
-  return{name:'Beginner',color:'var(--red)'};
-}
-function calcXPProgressToNextLevel(xp){
-  const level=calcLevelFromXP(xp);
-  if(level>=50)return{current:0,needed:0,pct:1};
-  const xpForCurrentLevel=(level-1)*100;
-  const current=xp-xpForCurrentLevel;
-  const needed=100;
-  return{current,needed,pct:current/needed};
-}
-function updateConverScore(){
-  S.xp=S.scores.clarity.reduce((a,b)=>a+b,0)+S.scores.confidence.reduce((a,b)=>a+b,0)+S.scores.persuasion.reduce((a,b)=>a+b,0);
-  const xp=S.xp;
-  const level=calcLevelFromXP(xp);
-  const tier=getLevelTier(level);
-  const progress=calcXPProgressToNextLevel(xp);
-  // Home page ring — shows level progress out of 50
-  const pct=level/50;
-  const circ=327;
-  const ringEl=document.getElementById('score-ring');
-  if(ringEl)ringEl.style.strokeDashoffset=circ-(circ*pct);
-  // Home page level display
-  const scoreEl=document.getElementById('home-conver-score');
-  if(scoreEl)scoreEl.textContent=S.sessions?`Lv.${level}`:'—';
-  const gradeEl=document.getElementById('home-grade');
-  if(gradeEl){
-    gradeEl.textContent=S.sessions?tier.name:'Not yet rated';
-    gradeEl.style.color=S.sessions?tier.color:'var(--muted)';
+
+// Level thresholds — harder as you go. Level 50 requires elite sustained performance.
+// Total XP to reach each level:
+const LEVEL_THRESHOLDS = [
+  0,       // Lv 1
+  100,     // Lv 2
+  250,     // Lv 3
+  450,     // Lv 4
+  700,     // Lv 5
+  1000,    // Lv 6
+  1350,    // Lv 7
+  1750,    // Lv 8
+  2200,    // Lv 9
+  2700,    // Lv 10 — Beginner cap
+  3300,    // Lv 11
+  3950,    // Lv 12
+  4650,    // Lv 13
+  5400,    // Lv 14
+  6200,    // Lv 15
+  7050,    // Lv 16
+  7950,    // Lv 17
+  8900,    // Lv 18
+  9900,    // Lv 19
+  10950,   // Lv 20 — Developing cap
+  12100,   // Lv 21
+  13350,   // Lv 22
+  14700,   // Lv 23
+  16150,   // Lv 24
+  17700,   // Lv 25
+  19350,   // Lv 26
+  21100,   // Lv 27
+  22950,   // Lv 28
+  24900,   // Lv 29
+  26950,   // Lv 30 — Capable cap
+  29200,   // Lv 31
+  31600,   // Lv 32
+  34150,   // Lv 33
+  36850,   // Lv 34
+  39700,   // Lv 35
+  42700,   // Lv 36
+  45850,   // Lv 37
+  49150,   // Lv 38
+  52600,   // Lv 39
+  56200,   // Lv 40 — Proficient cap
+  60100,   // Lv 41
+  64250,   // Lv 42
+  68700,   // Lv 43
+  73500,   // Lv 44
+  78700,   // Lv 45
+  84350,   // Lv 46
+  90500,   // Lv 47
+  97200,   // Lv 48
+  104500,  // Lv 49
+  112500,  // Lv 50 — Elite max
+];
+
+// Get level from total XP
+function getLevelFromXP(xp) {
+  for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
+    if (xp >= LEVEL_THRESHOLDS[i]) return i + 1;
   }
-  const subEl=document.getElementById('home-grade-sub');
-  if(subEl)subEl.textContent=S.sessions
-    ?(level>=50?'Max level — Elite communicator':`${progress.current} / ${progress.needed} XP to Level ${level+1}`)
-    :'Complete a session to begin';
-  // Sidebar score card
-  const sbScore=document.getElementById('sb-score');
-  if(sbScore){
-    sbScore.textContent=S.sessions?`Lv.${level}`:'—';
-    sbScore.style.color=tier.color;
-  }
-  const sbGrade=document.getElementById('sb-grade');
-  if(sbGrade)sbGrade.textContent=S.sessions?`${tier.name} · ${xp} XP`:'Start practicing to unlock';
-  const sbBar=document.getElementById('sb-bar');
-  if(sbBar)sbBar.style.width=(progress.pct*100)+'%';
-  // Keep S.converScore in sync for backward compat (report modal, share modal use calcConverScore() directly)
-  S.converScore=S.sessions?Math.round(pct*100):null;
+  return 1;
 }
+
+// Get tier info for a level
+function getLevelTier(level) {
+  if (level >= 49) return { name: 'Elite', color: '#ffd700', bg: 'rgba(255,215,0,0.1)', border: 'rgba(255,215,0,0.3)' };
+  if (level >= 41) return { name: 'Advanced', color: '#2dd4a0', bg: 'rgba(45,212,160,0.1)', border: 'rgba(45,212,160,0.3)' };
+  if (level >= 31) return { name: 'Proficient', color: '#c084fc', bg: 'rgba(192,132,252,0.1)', border: 'rgba(192,132,252,0.3)' };
+  if (level >= 21) return { name: 'Capable', color: '#38bdf8', bg: 'rgba(56,189,248,0.1)', border: 'rgba(56,189,248,0.3)' };
+  if (level >= 11) return { name: 'Developing', color: '#fbbf24', bg: 'rgba(251,191,36,0.1)', border: 'rgba(251,191,36,0.3)' };
+  return { name: 'Beginner', color: '#f87171', bg: 'rgba(248,113,113,0.1)', border: 'rgba(248,113,113,0.3)' };
+}
+
+// XP progress within current level
+function getXPProgress(xp) {
+  const level = getLevelFromXP(xp);
+  if (level >= 50) return { current: xp - LEVEL_THRESHOLDS[48], needed: 0, pct: 1, level };
+  const levelStart = LEVEL_THRESHOLDS[level - 1];
+  const levelEnd   = LEVEL_THRESHOLDS[level];
+  const needed     = levelEnd - levelStart;
+  const current    = xp - levelStart;
+  return { current, needed, pct: current / needed, level };
+}
+
+// Updated score display — replaces updateConverScore()
+function updateConverScore() {
+  const xp = S.xp || 0;
+  const level = getLevelFromXP(xp);
+  const tier = getLevelTier(level);
+  const prog = getXPProgress(xp);
+  S.level = level;
+
+  // Home ring — shows level progress through current tier
+  const tierStart = [1,11,21,31,41,49][['Beginner','Developing','Capable','Proficient','Advanced','Elite'].indexOf(tier.name)] || 1;
+  const tierEnd   = [10,20,30,40,48,50][['Beginner','Developing','Capable','Proficient','Advanced','Elite'].indexOf(tier.name)] || 10;
+  const tierPct = (level - tierStart) / Math.max(1, tierEnd - tierStart);
+  const circ = 327;
+  const ringEl = document.getElementById('score-ring');
+  if (ringEl) ringEl.style.strokeDashoffset = circ - (circ * tierPct);
+
+  // Score number = level
+  const scoreEl = document.getElementById('home-conver-score');
+  if (scoreEl) scoreEl.textContent = S.sessions ? `Lv.${level}` : '—';
+
+  // Grade = tier name in tier color
+  const gradeEl = document.getElementById('home-grade');
+  if (gradeEl) { gradeEl.textContent = S.sessions ? tier.name : 'Not yet rated'; gradeEl.style.color = tier.color; }
+
+  // Sub = XP progress
+  const subEl = document.getElementById('home-grade-sub');
+  if (subEl) subEl.textContent = S.sessions
+    ? (level >= 50 ? 'Max level — Elite communicator' : `${prog.current.toLocaleString()} / ${prog.needed.toLocaleString()} XP · Level ${level + 1}`)
+    : 'Complete a session to begin';
+
+  // Sidebar
+  const sbScore = document.getElementById('sb-score');
+  if (sbScore) { sbScore.textContent = S.sessions ? `Lv.${level}` : '—'; sbScore.style.color = tier.color; }
+  const sbGrade = document.getElementById('sb-grade');
+  if (sbGrade) sbGrade.textContent = S.sessions ? `${tier.name} · ${xp.toLocaleString()} XP` : 'Start practicing';
+  const sbBar = document.getElementById('sb-bar');
+  if (sbBar) sbBar.style.width = (prog.pct * 100) + '%';
+}
+
+// Legacy compat
+function calcConverScore() { return S.level || 1; }
+function scoreGrade(n) { return getLevelTier(getLevelFromXP(S.xp || 0)); }
 
 // ── Profile select ────────────────────────────────────────────────────────────
 function selectProfile(name,silent=false){
@@ -4476,7 +4579,50 @@ async function analyzeResponse(){
   const c=COACHES[S.coach];
   const briefCtx=S.briefing?`User briefing: preparing for "${S.briefing.preparing}", role "${S.briefing.role}", improve "${S.briefing.improve}".`:'No briefing.';
   const settingsCtx=buildSystemPromptExtras();
-  const prompt=`You are ${S.coach} on Conver. Style: ${c.style} ${settingsCtx}\nAnalyze this ${S.scenario} response${question?` to: "${question}"`:''}.\n${briefCtx}\nResponse:\n"${text}"\n\nReturn ONLY valid JSON:\n{"clarity":<1-10>,"confidence":<1-10>,"persuasion":<1-10>,"storytelling":<1-10>,"conciseness":<1-10>,"strengths":["...","..."],"improvements":["...","..."],"filler_feedback":"...","rewrite":"...","overall":"<2 sentence overall assessment>"}\nNo markdown.\nCRITICAL: Never use asterisks for actions or stage directions. Never write things like *laughs*, *shifts*, *coughs*, *leans forward*, *smiles*, or any physical action in asterisks or brackets. Speak only in plain spoken words as if you are actually talking. No stage directions of any kind.`;
+  const fillerData=analyzeTextFillers(text);
+  const wordCount = text.trim().split(/\s+/).length;
+  const sentenceCount = (text.match(/[.!?]+/g)||[]).length || 1;
+  const fillerCount = (text.match(/\b(um|uh|like|you know|sort of|kind of|basically|literally|honestly|actually|right\?|so yeah)\b/gi)||[]).length;
+  const avgWordsPerSentence = (wordCount / sentenceCount).toFixed(1);
+  const prompt = `You are ${S.coach} on Conver, giving expert communication coaching. ${c.style}
+${briefCtx}
+${settingsCtx}
+SCENARIO: ${S.scenario} response${question ? ` to the question: "${question}"` : ''}.
+
+RESPONSE TO ANALYZE (${wordCount} words, ${sentenceCount} sentences, ${fillerCount} filler words detected):
+"${text}"
+
+OBJECTIVE METRICS:
+- Word count: ${wordCount} (ideal for spoken response: 50-150 words)
+- Avg words per sentence: ${avgWordsPerSentence} (ideal: 15-25)
+- Filler words: ${fillerCount} (ideal: 0-2)
+
+SCORING RUBRIC — apply STRICTLY. Most responses score 4-7. Reserve 8-9 for excellent work. 10 is near-perfect only.
+CLARITY: 1-2=incomprehensible, 3-4=main point buried, 5-6=clear but imprecise, 7-8=immediately clear, 9-10=crystal clear and perfectly structured
+CONFIDENCE: 1-2=scared/defeated, 3-4=constant hedging/weak, 5-6=adequate but uncertain phrases, 7-8=grounded and assured, 9-10=commanding authority
+PERSUASION: 1-2=no persuasion, 3-4=weak argument, 5-6=makes point but doesn't land, 7-8=genuinely compelling, 9-10=airtight and emotionally resonant
+STORYTELLING: 1-2=no story, 3-4=vague irrelevant example, 5-6=generic underdeveloped, 7-8=specific vivid relevant, 9-10=masterful narrative
+CONCISENESS: 1-2=rambling, 3-4=significant filler/repetition, 5-6=acceptable but paddy, 7-8=tight every sentence earns it, 9-10=not a word wasted
+
+COACH PERSONA: You are ${S.coach}. ${c.style} Your feedback tone must match this persona entirely.
+
+Return ONLY valid JSON, no markdown, no explanation outside the JSON:
+{
+"clarity": ,
+"confidence": ,
+"persuasion": ,
+"storytelling": ,
+"conciseness": ,
+"composite": ,
+"strengths": ["", ""],
+"improvements": ["", "", ""],
+"filler_feedback": "",
+"weak_skill": "",
+"weak_skill_tip": "",
+"rewrite": "",
+"overall": "<2 sentences: first sentence names what they did well, second sentence names the single most important thing to work on. Be specific to their actual words.>"
+}
+CRITICAL: Never use asterisks for actions or stage directions. Never write things like *laughs*, *shifts*, *coughs*, *leans forward*, *smiles*, or any physical action in asterisks or brackets. Speak only in plain spoken words as if you are actually talking. No stage directions of any kind.`;
   try{
     let raw=await callAI([{role:'user',content:prompt}]);
     raw=raw.replace(/```json|```/g,'').trim();
@@ -4492,15 +4638,35 @@ async function analyzeResponse(){
     S.skills.storytelling=lerp(S.skills.storytelling,(a.storytelling||5)*10,t);
     S.skills.conciseness=lerp(S.skills.conciseness,(a.conciseness||5)*10,t);
     updateStreak();
-    const fillerData=analyzeTextFillers(text);
+
+    // Calculate and award XP
+    const xpEarned = calcSessionXP(a, wordCount, fillerData.count, S.sessions);
+    const xpBefore = S.xp || 0;
+    S.xp = xpBefore + xpEarned;
+    const levelBefore = getLevelFromXP(xpBefore);
+    const levelAfter = getLevelFromXP(S.xp);
+    S.level = levelAfter;
+
     const newSession={scenario:S.scenario,coach:S.coach,question,text,analysis:a,time:new Date()};
     S.history.unshift(newSession);
     if(S.autosave !== false) saveSessionToCloud(newSession);
     saveUserData();
-    updateChips();renderResults(a,text);
+    updateChips();updateConverScore();renderResults(a,text);
     if(fillerData.count>0){showToast('🚨',`${fillerData.count} filler word${fillerData.count>1?'s':''} detected: ${fillerData.found.slice(0,3).join(', ')}`);}
     if(S.autoReport)setTimeout(()=>openReport(S.history[0]),600);
-    showToast('✓','Analysis complete');
+
+    // Show XP toast
+    showToast('⚡', `+${xpEarned} XP · Composite: ${a.composite}/10`);
+
+    // Level up celebration
+    if (levelAfter > levelBefore) {
+      const tier = getLevelTier(levelAfter);
+      setTimeout(() => {
+        showToast('🎉', `Level Up! Lv.${levelAfter} — ${tier.name}`);
+        const ring = document.getElementById('score-ring');
+        if (ring) { ring.style.stroke = tier.color; }
+      }, 1200);
+    }
   }catch(e){document.getElementById('results-area').innerHTML=`<div class="empty-state"><p style="color:var(--red)">Failed: ${e.message}</p></div>`;}
   btn.disabled=false;btn.textContent='Analyze Response';
 }
@@ -4532,20 +4698,85 @@ function animateScoreReveal(container, selector) {
     requestAnimationFrame(tick);
   });
 }
-function renderResults(a,originalText){
-  document.getElementById('results-area').innerHTML=`
-    <div class="score-row">
-      <div class="score-box"><div class="score-num ${scoreClass(a.clarity)}">${a.clarity}</div><div class="score-lbl">Clarity</div></div>
-      <div class="score-box"><div class="score-num ${scoreClass(a.confidence)}">${a.confidence}</div><div class="score-lbl">Confidence</div></div>
-      <div class="score-box"><div class="score-num ${scoreClass(a.persuasion)}">${a.persuasion}</div><div class="score-lbl">Persuasion</div></div>
+function renderResults(a, text) {
+  const xpEarned = calcSessionXP(a, text.trim().split(/\s+/).length, 0, S.sessions);
+  document.getElementById('results-area').innerHTML = `
+    <!-- Composite + XP header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:14px 18px;background:var(--s2);border:1px solid var(--border2);border-radius:12px">
+      <div>
+        <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">Session Score</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:800;letter-spacing:-1px;color:${a.composite>=8?'var(--green)':a.composite>=6?'var(--accent3)':'var(--amber)'}">${a.composite}/10</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">XP Earned</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:var(--accent2)">+${xpEarned} XP</div>
+      </div>
     </div>
-    ${a.overall?`<div class="result-block"><h4>Overall Read</h4><p class="comm-read" style="color:var(--text)">${a.overall}</p></div>`:''}
-    <div class="result-block"><h4>What worked</h4>${a.strengths.map(s=>`<div class="bullet"><span>${s}</span></div>`).join('')}</div>
-    <div class="result-block"><h4>To improve</h4>${a.improvements.map(s=>`<div class="bullet"><span>${s}</span></div>`).join('')}</div>
-    ${S.filler?`<div class="result-block"><h4>Delivery read</h4><p class="comm-read">${a.filler_feedback}</p></div>`:''}
-    ${S.rewrite?`<div class="result-block"><h4>Stronger version · ${S.coach}</h4><div class="rewrite-box">${a.rewrite}</div></div>${S.showDiff?`<div style="margin-top:8px">${renderDiff(originalText,a.rewrite)}</div>`:''}`:''}
-    <button onclick="openReport(S.history[0])" style="width:100%;padding:10px;background:transparent;border:1px solid var(--border2);border-radius:9px;color:var(--muted2);cursor:pointer;font-size:13px;margin-top:4px;transition:all 0.15s" onmouseover="this.style.borderColor='rgba(108,99,255,0.4)';this.style.color='var(--accent3)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted2)'">📄 View Full Report</button>`;
-  animateScoreReveal(document.getElementById('results-area'));
+
+    <!-- 5 skill scores -->
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px">
+      ${[
+        {label:'Clarity', score:a.clarity, weight:'25%'},
+        {label:'Confidence', score:a.confidence, weight:'20%'},
+        {label:'Persuasion', score:a.persuasion, weight:'25%'},
+        {label:'Storytelling',score:a.storytelling||0,weight:'15%'},
+        {label:'Conciseness', score:a.conciseness||0,weight:'15%'}
+      ].map(s => `
+        <div style="background:var(--s2);border:1px solid ${s.score>=8?'rgba(45,212,160,0.3)':s.score>=6?'var(--border)':'rgba(248,113,113,0.2)'};border-radius:10px;padding:12px 8px;text-align:center">
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:800;color:${s.score>=8?'var(--green)':s.score>=6?'var(--text)':'var(--red)'};letter-spacing:-0.5px">${s.score}</div>
+          <div style="font-size:9.5px;color:var(--muted2);font-family:'DM Mono',monospace;margin-top:2px">${s.label}</div>
+          <div style="font-size:8.5px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:1px;opacity:0.6">×${s.weight}</div>
+        </div>
+      `).join('')}
+    </div>
+
+    <!-- Overall assessment -->
+    ${a.overall ? `
+    <div style="background:var(--s1);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:10px;padding:14px 16px;margin-bottom:12px">
+      <div style="font-size:10px;color:var(--accent);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">${S.coach}'s Read</div>
+      <p style="font-size:13.5px;color:var(--text);line-height:1.7;margin:0">${a.overall}</p>
+    </div>
+    ` : ''}
+
+    <!-- Strengths -->
+    <div style="margin-bottom:12px">
+      <div style="font-size:10px;color:var(--green);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">What Worked</div>
+      ${a.strengths.map(s=>`<div style="display:flex;gap:8px;margin-bottom:6px;font-size:13px;color:var(--text);line-height:1.6"><span style="color:var(--green);flex-shrink:0;margin-top:1px">✓</span><span>${s}</span></div>`).join('')}
+    </div>
+
+    <!-- Improvements -->
+    <div style="margin-bottom:12px">
+      <div style="font-size:10px;color:var(--red);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">To Improve</div>
+      ${a.improvements.map((s,i)=>`<div style="display:flex;gap:8px;margin-bottom:6px;font-size:13px;color:var(--text);line-height:1.6"><span style="color:var(--red);flex-shrink:0;margin-top:1px;font-weight:700">${i+1}.</span><span>${s}</span></div>`).join('')}
+    </div>
+
+    <!-- Weak skill focus -->
+    ${a.weak_skill ? `
+    <div style="background:rgba(248,113,113,0.06);border:1px solid rgba(248,113,113,0.2);border-radius:10px;padding:12px 16px;margin-bottom:12px">
+      <div style="font-size:10px;color:var(--red);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">Focus Area: ${a.weak_skill}</div>
+      <p style="font-size:13px;color:var(--text);margin:0;line-height:1.65">${a.weak_skill_tip}</p>
+    </div>
+    ` : ''}
+
+    <!-- Delivery -->
+    ${S.filler && a.filler_feedback ? `
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:12px">
+      <div style="font-size:10px;color:var(--muted2);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">Delivery</div>
+      <p style="font-size:13px;color:var(--muted2);margin:0;line-height:1.65">${a.filler_feedback}</p>
+    </div>
+    ` : ''}
+
+    <!-- Rewrite -->
+    ${S.rewrite && a.rewrite ? `
+    <div style="margin-bottom:12px">
+      <div style="font-size:10px;color:var(--accent3);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">${S.coach}'s Version — How It Could Sound</div>
+      <div style="background:linear-gradient(135deg,rgba(124,111,255,0.08),rgba(56,189,248,0.04));border:1px solid var(--border3);border-radius:12px;padding:16px;font-size:13.5px;color:var(--text);line-height:1.75;font-style:italic">${a.rewrite}</div>
+    </div>
+    ${S.showDiff ? `<div style="margin-top:8px">${renderDiff(text,a.rewrite)}</div>` : ''}
+    ` : ''}
+
+    <button onclick="openReport(S.history[0])" style="width:100%;padding:11px;background:transparent;border:1px solid var(--border2);border-radius:10px;color:var(--muted2);cursor:pointer;font-size:13px;margin-top:4px;transition:all 0.2s" onmouseover="this.style.borderColor='var(--border3)';this.style.color='var(--accent3)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted2)'">📄 Full Session Report</button>
+  `;
 }
 
 // ── Report Modal ──────────────────────────────────────────────────────────────
@@ -4611,14 +4842,15 @@ function renderSkills(){
     </div>`).join('');
   renderStreakDays();
   // Score breakdown
-  const sc=calcConverScore();
-  if(sc){
-    const g=scoreGrade(sc);
+  if(S.sessions){
+    const level=getLevelFromXP(S.xp||0);
+    const tier=getLevelTier(level);
+    const prog=getXPProgress(S.xp||0);
     document.getElementById('score-breakdown').innerHTML=`
       <div style="text-align:center;padding:16px 0">
-        <div style="font-family:'Space Grotesk',sans-serif;font-size:48px;font-weight:800;color:${g.color};letter-spacing:-2px;line-height:1">${sc}</div>
-        <div style="font-size:13px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:4px">/100 · ${g.grade}</div>
-        <div style="font-size:13px;color:var(--muted2);margin-top:8px">${g.sub}</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:48px;font-weight:800;color:${tier.color};letter-spacing:-2px;line-height:1">Lv.${level}</div>
+        <div style="font-size:13px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:4px">${tier.name}</div>
+        <div style="font-size:13px;color:var(--muted2);margin-top:8px">${level>=50?'Max level — Elite communicator':`${prog.current.toLocaleString()} / ${prog.needed.toLocaleString()} XP to Level ${level+1}`}</div>
       </div>
       <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:12.5px;color:var(--muted2);line-height:1.8">
         <div>Sessions analyzed: <strong style="color:var(--text)">${S.sessions}</strong></div>
@@ -5061,6 +5293,15 @@ async function scoreVoiceSession() {
     if (S.autosave !== false) saveSessionToCloud(newSession);
     updateChips(); saveUserData();
     showToast('📊', 'Session added to your Conver Score!');
+
+    // Voice Session XP — based on conversation length
+    const voiceTurns = S.voiceChatHistory.filter(m => m.role === 'user').length;
+    const voiceXP = Math.round(15 + (voiceTurns * 10));
+    S.xp = (S.xp || 0) + voiceXP;
+    S.level = getLevelFromXP(S.xp);
+    showToast('⚡', `+${voiceXP} XP for voice session`);
+    updateConverScore();
+    saveUserData();
   } catch(e) {
     container.innerHTML = `<div style="color:var(--red);font-size:13px;padding:8px 0">Couldn't score this session: ${e.message}</div>`;
   }
@@ -5140,7 +5381,7 @@ function renderInsights() {
         <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-top:4px">Day Streak 🔥</div>
       </div>
       <div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:18px;text-align:center">
-        <div style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:800;color:var(--accent2);letter-spacing:-1px">Lv.${calcLevelFromXP(S.xp||0)}</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:800;color:var(--accent2);letter-spacing:-1px">Lv.${getLevelFromXP(S.xp||0)}</div>
         <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-top:4px">Current Level</div>
       </div>
     </div>
@@ -5442,13 +5683,13 @@ CRITICAL: Never use asterisks for actions or stage directions. Never write thing
 
 // ── SHARE SCORE CARD ──────────────────────────────────────────────────────────
 function openShareModal() {
-  const score = calcConverScore();
-  const g = scoreGrade(score);
+  const level = getLevelFromXP(S.xp || 0);
+  const g = getLevelTier(level);
   const avg = arr => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : 0;
-  
-  document.getElementById('sc-score').textContent = score || '—';
+
+  document.getElementById('sc-score').textContent = S.sessions ? `Lv.${level}` : '—';
   document.getElementById('sc-score').style.color = g.color;
-  document.getElementById('sc-grade').textContent = g.grade;
+  document.getElementById('sc-grade').textContent = g.name;
   document.getElementById('sc-grade').style.color = g.color;
   
   const ac = avg(S.scores.clarity), aco = avg(S.scores.confidence), ap = avg(S.scores.persuasion);
@@ -5469,10 +5710,10 @@ function closeShareModal() {
 }
 
 function copyShareText() {
-  const score = calcConverScore();
-  const g = scoreGrade(score);
+  const level = getLevelFromXP(S.xp || 0);
+  const g = getLevelTier(level);
   const avg = arr => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : 0;
-  const text = `My Conver Score: ${score}/100 (${g.grade})\n\nClarity: ${avg(S.scores.clarity)}/10\nConfidence: ${avg(S.scores.confidence)}/10\nPersuasion: ${avg(S.scores.persuasion)}/10\n\nPracticed ${S.sessions} sessions with AI coach ${S.coach}.\n\nconver.ai`;
+  const text = `My Conver Level: Lv.${level} (${g.name})\n\nClarity: ${avg(S.scores.clarity)}/10\nConfidence: ${avg(S.scores.confidence)}/10\nPersuasion: ${avg(S.scores.persuasion)}/10\n\nPracticed ${S.sessions} sessions with AI coach ${S.coach}.\n\nconver.ai`;
   navigator.clipboard.writeText(text).then(() => showToast('📋', 'Copied to clipboard'));
 }
 
@@ -5481,8 +5722,8 @@ function downloadScoreCard() {
   const canvas = document.createElement('canvas');
   canvas.width = 600; canvas.height = 400;
   const ctx = canvas.getContext('2d');
-  const score = calcConverScore();
-  const g = scoreGrade(score);
+  const level = getLevelFromXP(S.xp || 0);
+  const g = getLevelTier(level);
   const avg = arr => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : 0;
   
   // Background
@@ -5505,11 +5746,11 @@ function downloadScoreCard() {
   
   // Score
   ctx.font = 'bold 96px Arial'; ctx.fillStyle = g.color;
-  ctx.fillText(score || '—', 40, 160);
-  
+  ctx.fillText(S.sessions ? `Lv.${level}` : '—', 40, 160);
+
   // Grade
   ctx.font = 'bold 20px Arial'; ctx.fillStyle = g.color;
-  ctx.fillText(g.grade, 40, 195);
+  ctx.fillText(g.name, 40, 195);
   
   // Bars
   const bars = [
@@ -6036,6 +6277,15 @@ async function scoreDebate(){
     S.history.unshift(debSession);
     saveSessionToCloud(debSession);
     updateChips();saveUserData();
+
+    // Award XP for debate session
+    const debateXP = calcSessionXP(r, 150, 0, S.sessions); // estimate 150 words for debate
+    S.xp = (S.xp || 0) + debateXP;
+    S.level = getLevelFromXP(S.xp);
+    updateConverScore();
+    showToast('⚡', `+${debateXP} XP for debate session`);
+    saveUserData();
+
     await speakDebate(r.verdict,'a');
     document.getElementById('debate-global-status').textContent='';
     showToast('📊','Debate score added to your Conver Score!');
@@ -6226,7 +6476,7 @@ function exportUserData() {
     exportDate: new Date().toISOString(),
     sessions: S.sessions,
     streak: S.streak,
-    level: calcLevelFromXP(S.xp || 0),
+    level: getLevelFromXP(S.xp || 0),
     xp: S.xp,
     skills: S.skills,
     history: S.history,
@@ -6824,6 +7074,14 @@ async function endColdOpen(){
     S.history.unshift(coSession);
     saveSessionToCloud(coSession);
     updateChips();saveUserData();showToast('📊','Cold Open score added to Conver Score!');
+
+    // Cold Open XP — based on number of turns and quality
+    const coXP = Math.round(20 + (coState.turns * 8));
+    S.xp = (S.xp || 0) + coXP;
+    S.level = getLevelFromXP(S.xp);
+    updateConverScore();
+    showToast('⚡', `+${coXP} XP for Cold Open session`);
+    saveUserData();
     // No scrollIntoView here — the score panel now sits right at the top of the
     // page (the chat section above it is hidden), so it's already in view. An
     // auto-scroll was previously pushing the page's scroll position too far,
