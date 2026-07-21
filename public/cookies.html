@@ -36,12 +36,11 @@ a { color: #7c6fff; }
   <h2>What We Use</h2>
   <p>Conver uses browser <strong style="color:#f0f1f8">localStorage</strong> (not traditional cookies) to store:</p>
   <ul>
-    <li><code>conver_token</code> — your authentication session token</li>
-    <li><code>conver_email</code> — your email address for display purposes</li>
-    <li><code>conver_settings</code> — your app preferences and coach settings</li>
+    <li><code>conver_token</code> — a short-lived authentication token used during sign-in</li>
+    <li><code>conver_settings</code> — your app preferences, accent color, and coach settings</li>
     <li><code>conver_coach_notes</code> — notes from your AI coach sessions</li>
-    <li><code>conver_last_session_date</code> — for streak tracking</li>
-    <li><code>conver_sb_session</code> — Supabase auth session data</li>
+    <li><code>conver_last_session_date</code> and <code>conver_daily_*</code> — for streak and daily challenge tracking</li>
+    <li><code>conver_accent</code> — your chosen accent color theme</li>
   </ul>
 
   <h2>No Advertising or Tracking Cookies</h2>

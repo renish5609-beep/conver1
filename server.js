@@ -263,6 +263,63 @@ app.post('/api/stt-token', requireAuth, async (req, res) => {
   }
 });
 
+// ── Contact Form ──────────────────────────────────────────────────────────────
+const nodemailer = require('nodemailer');
+app.post('/api/contact', async (req, res) => {
+  const { name, email, topic, message } = req.body;
+
+  // Validate
+  if (!name?.trim() || !email?.trim() || !message?.trim()) {
+    return res.status(400).json({ error: 'Name, email, and message are required.' });
+  }
+  if (message.length > 2000) {
+    return res.status(400).json({ error: 'Message too long — max 2000 characters.' });
+  }
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+    console.error('Contact form: GMAIL_USER / GMAIL_APP_PASSWORD not configured in .env');
+    return res.status(500).json({ error: 'Contact form is not configured yet. Please email renishdjoshi@gmail.com directly.' });
+  }
+
+  // Gmail SMTP with an App Password (not the real account password) —
+  // see Google Account → Security → App passwords.
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD
+    }
+  });
+
+  const mailOptions = {
+    from: `"Conver Contact Form" <${process.env.GMAIL_USER}>`,
+    to: 'renishdjoshi@gmail.com',
+    replyTo: email,
+    subject: `[Conver] ${topic || 'General'} — from ${name}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:560px">
+        <h2 style="color:#7c6fff">New Conver Contact Form Submission</h2>
+        <table style="width:100%;border-collapse:collapse">
+          <tr><td style="padding:8px;color:#666;width:100px">Name</td><td style="padding:8px;font-weight:bold">${name}</td></tr>
+          <tr><td style="padding:8px;color:#666">Email</td><td style="padding:8px"><a href="mailto:${email}">${email}</a></td></tr>
+          <tr><td style="padding:8px;color:#666">Topic</td><td style="padding:8px">${topic || 'General'}</td></tr>
+        </table>
+        <hr style="margin:16px 0;border:none;border-top:1px solid #eee"/>
+        <h3 style="color:#333">Message:</h3>
+        <div style="background:#f5f5f5;padding:16px;border-radius:8px;white-space:pre-wrap">${message}</div>
+        <p style="color:#999;font-size:12px;margin-top:16px">Sent from Conver app · Reply-to: ${email}</p>
+      </div>
+    `
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Contact form email error:', err);
+    res.status(500).json({ error: 'Failed to send message. Please email renishdjoshi@gmail.com directly.' });
+  }
+});
+
 // ── Routing ───────────────────────────────────────────────────────────────────
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'landing.html'));
