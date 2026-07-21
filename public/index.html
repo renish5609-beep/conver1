@@ -2893,7 +2893,10 @@ body.reducemotion .coach-orb-wave { animation: none !important; }
               <!-- Question / prompt area -->
               <div id="rt-prompt-area" style="padding:16px 20px;background:var(--s1);border:1px solid var(--border2);border-radius:12px;margin-bottom:14px">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-                  <div style="font-size:10px;color:var(--accent);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px">Current Prompt</div>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <div style="font-size:10px;color:var(--accent);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px">Current Prompt</div>
+                    <div id="rt-voice-coach" style="font-size:10px;color:var(--accent3);font-family:'DM Mono',monospace"></div>
+                  </div>
                   <div id="rt-mic-status" onclick="_rtStartListening()" style="font-size:10.5px;font-family:'DM Mono',monospace;color:var(--muted);cursor:pointer" title="Click to retry mic">🔇 Mic idle</div>
                 </div>
                 <div id="rt-prompt-text" style="font-size:15px;color:var(--text);line-height:1.65">Starting...</div>
@@ -4496,6 +4499,7 @@ const RealTimeAnalyzer = {
 
 // ── REAL-TIME SESSION CONTROL ─────────────────────────────────
 let rtMode = null;
+let rtVoiceCoach = null; // randomized once per session — see startRealTimeSession()
 
 function selectRTMode(mode) {
   rtMode = mode;
@@ -4527,6 +4531,14 @@ function selectRTMode(mode) {
 
 async function startRealTimeSession() {
   if (!rtMode) { showToast('⚠','Select a mode first'); return; }
+
+  // Random coach voice for this session's spoken prompts — picked once here
+  // so it stays consistent for the whole session rather than changing voice
+  // between prompts.
+  const coachNames = Object.keys(COACHES);
+  rtVoiceCoach = coachNames[Math.floor(Math.random() * coachNames.length)];
+  const voiceLabelEl = document.getElementById('rt-voice-coach');
+  if (voiceLabelEl) voiceLabelEl.textContent = `🎙️ ${rtVoiceCoach}`;
 
   const btn = document.getElementById('rt-start-btn');
   btn.disabled = true; btn.textContent = 'Starting camera...';
@@ -4625,9 +4637,49 @@ async function _rtSpeakThenListen(promptText) {
 
   if (promptText && S.autoplay !== false) {
     _rtSetMicStatus('🔊 Speaking prompt...', 'var(--accent2)');
-    await VoiceEngine._playTTS(promptText, null, S.coach);
+    await _rtSpeak(promptText);
   }
   _rtStartListening();
+}
+
+// Real-Time's own TTS call, separate from VoiceEngine._playTTS — that shared
+// method silently swallows a failed /api/speak call (resolves with no error
+// surfaced at all), which is exactly the kind of failure that looks like
+// "the app just isn't talking" with zero indication why. This version falls
+// back to the browser's built-in speech synthesis if the ElevenLabs call
+// fails, and warns once so a real failure doesn't go unnoticed.
+let _rtTTSFailedOnce = false;
+function _rtSpeak(text) {
+  return new Promise(async (resolve) => {
+    try {
+      const res = await fetch('/api/speak', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, coach: rtVoiceCoach || S.coach })
+      });
+      if (!res.ok) throw new Error('TTS request failed: ' + res.status);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
+      audio.onerror = () => { URL.revokeObjectURL(url); resolve(); };
+      await audio.play();
+    } catch (e) {
+      console.warn('Real-Time TTS failed, falling back to browser speech:', e.message);
+      if (!_rtTTSFailedOnce) {
+        _rtTTSFailedOnce = true;
+        showToast('⚠️', 'Voice service unavailable — using your browser\'s built-in voice instead');
+      }
+      if (window.speechSynthesis) {
+        const utt = new SpeechSynthesisUtterance(text);
+        utt.onend = () => resolve();
+        utt.onerror = () => resolve();
+        window.speechSynthesis.speak(utt);
+      } else {
+        resolve();
+      }
+    }
+  });
 }
 
 function _rtStartListening() {
