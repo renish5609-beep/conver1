@@ -7,6 +7,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@11labs/client@latest/dist/index.umd.js"></script>
+<!-- MediaPipe Face Mesh — runs in browser via WebAssembly -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Italiana&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Space+Grotesk:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -39,6 +43,7 @@
 
   /* Brand */
   --accent: #7c6fff;
+  --accent-rgb: 124,111,255;
   --accent-glow: rgba(124,111,255,0.2);
   --accent2: #38bdf8;
   --accent3: #b48cff;
@@ -70,7 +75,7 @@ body::before {
   content: '';
   position: fixed; inset: 0;
   background:
-    radial-gradient(ellipse 60% 40% at 0% 0%, rgba(124,111,255,0.06) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 0% 0%, rgba(var(--accent-rgb),0.06) 0%, transparent 50%),
     radial-gradient(ellipse 40% 30% at 100% 100%, rgba(56,189,248,0.04) 0%, transparent 50%);
   pointer-events: none;
   z-index: 0;
@@ -102,7 +107,7 @@ body::before {
   position: absolute;
   bottom: 0; left: 0; right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(124,111,255,0.2), transparent);
+  background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb),0.2), transparent);
   pointer-events: none;
 }
 .app-header-left { display: flex; align-items: center; gap: 8px; flex-shrink: 0; margin-right: 16px; }
@@ -116,13 +121,13 @@ body::before {
   border-radius: 7px;
   display: flex; align-items: center; justify-content: center;
   font-size: 13px;
-  box-shadow: 0 0 12px rgba(124,111,255,0.35);
+  box-shadow: 0 0 12px rgba(var(--accent-rgb),0.35);
   animation: logoGlow 3s ease-in-out infinite alternate;
   flex-shrink: 0;
 }
 @keyframes logoGlow {
-  from { box-shadow: 0 0 10px rgba(124,111,255,0.3); }
-  to   { box-shadow: 0 0 20px rgba(124,111,255,0.6), 0 0 40px rgba(124,111,255,0.15); }
+  from { box-shadow: 0 0 10px rgba(var(--accent-rgb),0.3); }
+  to   { box-shadow: 0 0 20px rgba(var(--accent-rgb),0.6), 0 0 40px rgba(var(--accent-rgb),0.15); }
 }
 .app-logo-text {
   font-family: 'Space Grotesk', sans-serif;
@@ -234,7 +239,7 @@ body::before {
 
 /* SIDEBAR (legacy, unused after top-tab restructure) */
 .sidebar{width:220px;min-width:220px;background:rgba(8,9,16,0.96);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:20px 12px;gap:2px;backdrop-filter:blur(24px);position:relative;z-index:10;overflow:hidden}
-.sidebar::after{content:'';position:absolute;top:0;right:0;bottom:0;width:1px;background:linear-gradient(to bottom,transparent,rgba(124,111,255,0.35),transparent);pointer-events:none}
+.sidebar::after{content:'';position:absolute;top:0;right:0;bottom:0;width:1px;background:linear-gradient(to bottom,transparent,rgba(var(--accent-rgb),0.35),transparent);pointer-events:none}
 .sidebar-logo{padding:22px 20px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
 .logo-icon{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent3));display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
 .logo-text{font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:800;letter-spacing:-0.5px;color:#fff}
@@ -242,12 +247,12 @@ body::before {
 .nav{flex:1;padding:12px 10px;display:flex;flex-direction:column;gap:2px;overflow-y:auto}
 .nav-section{font-size:9px;color:var(--muted);letter-spacing:1.8px;text-transform:uppercase;padding:12px 12px 4px;font-family:'DM Mono',monospace}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;cursor:pointer;color:var(--muted2);font-size:13px;transition:all 0.18s cubic-bezier(0.4,0,0.2,1);border:1px solid transparent;background:transparent;width:100%;text-align:left;font-family:'Plus Jakarta Sans',sans-serif;font-weight:500;position:relative}
-.nav-item:hover{color:var(--text);background:rgba(124,111,255,0.08);border-color:rgba(124,111,255,0.15)}
-.nav-item.active{color:var(--text);background:linear-gradient(135deg,rgba(124,111,255,0.16),rgba(180,140,255,0.08));border-color:rgba(124,111,255,0.28);box-shadow:0 0 20px rgba(124,111,255,0.1)}
-.nav-item.active::before{content:'';position:absolute;left:0;top:22%;bottom:22%;width:2.5px;background:var(--grad-purple);border-radius:2px;box-shadow:0 0 8px rgba(124,111,255,0.5)}
+.nav-item:hover{color:var(--text);background:rgba(var(--accent-rgb),0.08);border-color:rgba(var(--accent-rgb),0.15)}
+.nav-item.active{color:var(--text);background:linear-gradient(135deg,rgba(var(--accent-rgb),0.16),rgba(180,140,255,0.08));border-color:rgba(var(--accent-rgb),0.28);box-shadow:0 0 20px rgba(var(--accent-rgb),0.1)}
+.nav-item.active::before{content:'';position:absolute;left:0;top:22%;bottom:22%;width:2.5px;background:var(--grad-purple);border-radius:2px;box-shadow:0 0 8px rgba(var(--accent-rgb),0.5)}
 .nav-item .icon{width:15px;height:15px;flex-shrink:0;opacity:0.6}
 .nav-item.active .icon{opacity:1;color:var(--accent3)}
-.sidebar-score{margin:0 10px 10px;padding:14px 16px;background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.18);border-radius:12px}
+.sidebar-score{margin:0 10px 10px;padding:14px 16px;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.18);border-radius:12px}
 .ss-label{font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;font-family:'DM Mono',monospace;margin-bottom:6px}
 .ss-score{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:800;color:var(--accent3);letter-spacing:-1px;line-height:1}
 .ss-sub{font-size:11px;color:var(--muted2);margin-top:4px}
@@ -259,11 +264,11 @@ body::before {
 /* MAIN */
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
 .topbar{height:52px;min-height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;border-bottom:1px solid var(--border);background:rgba(8,9,16,0.93);flex-shrink:0;gap:12px;backdrop-filter:blur(24px);position:relative;z-index:10}
-.topbar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(124,111,255,0.3),rgba(56,189,248,0.15),transparent);pointer-events:none}
+.topbar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(var(--accent-rgb),0.3),rgba(56,189,248,0.15),transparent);pointer-events:none}
 .page-title{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;white-space:nowrap}
 .chip-row{display:flex;gap:6px;flex-wrap:nowrap;align-items:center}
 .chip{font-size:10.5px;padding:3px 10px;border-radius:20px;background:var(--bg2);border:1px solid var(--border2);color:var(--muted2);font-family:'DM Mono',monospace;white-space:nowrap}
-.chip.hi{background:rgba(108,99,255,0.12);border-color:rgba(108,99,255,0.3);color:var(--accent3)}
+.chip.hi{background:rgba(var(--accent-rgb),0.12);border-color:rgba(var(--accent-rgb),0.3);color:var(--accent3)}
 .streak-chip{display:flex;align-items:center;gap:5px;font-size:10.5px;padding:3px 10px;border-radius:20px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);color:var(--amber);font-family:'DM Mono',monospace;white-space:nowrap}
 .content{flex:1;overflow-y:auto;padding:26px;scroll-behavior:smooth}
 .page{
@@ -272,7 +277,7 @@ body::before {
   overflow-y:auto;
   padding:28px 32px;
   scrollbar-width:thin;
-  scrollbar-color:rgba(124,111,255,0.3) transparent;
+  scrollbar-color:rgba(var(--accent-rgb),0.3) transparent;
 }
 .page.active{display:block;animation:pageIn 0.22s ease forwards}
 @keyframes pageIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
@@ -311,8 +316,8 @@ select, textarea {
 }
 input::placeholder, textarea::placeholder { color: var(--muted); }
 input:focus, select:focus, textarea:focus {
-  border-color: rgba(124,111,255,0.5);
-  box-shadow: 0 0 0 3px rgba(124,111,255,0.1);
+  border-color: rgba(var(--accent-rgb),0.5);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb),0.1);
   outline: none;
 }
 .btn-primary {
@@ -324,7 +329,7 @@ input:focus, select:focus, textarea:focus {
   font-size: 14px; font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 2px 12px rgba(124,111,255,0.3);
+  box-shadow: 0 2px 12px rgba(var(--accent-rgb),0.3);
   position: relative; overflow: hidden;
   letter-spacing: -0.2px;
 }
@@ -334,7 +339,7 @@ input:focus, select:focus, textarea:focus {
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.14), transparent);
   transition: left 0.4s;
 }
-.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(124,111,255,0.45); }
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(var(--accent-rgb),0.45); }
 .btn-primary:hover::after { left: 100%; }
 .btn-primary:active:not(:disabled) { transform: translateY(0); }
 .btn-primary:disabled{opacity:0.45;cursor:not-allowed}
@@ -384,7 +389,7 @@ input:focus, select:focus, textarea:focus {
   content: '';
   position: absolute; top: -40%; right: -5%;
   width: 350px; height: 350px;
-  background: radial-gradient(circle, rgba(124,111,255,0.08) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(var(--accent-rgb),0.08) 0%, transparent 70%);
   pointer-events: none;
 }
 .hero-main{position:relative;overflow:hidden}
@@ -481,7 +486,7 @@ input:focus, select:focus, textarea:focus {
   content: '';
   position: absolute; top: 0; left: 0; right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(124,111,255,0.5), transparent);
+  background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb),0.5), transparent);
 }
 .csc-label{font-size:9.5px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:10px}
 .csc-ring{position:relative;width:120px;height:120px;margin:0 auto 16px}
@@ -493,8 +498,8 @@ input:focus, select:focus, textarea:focus {
 .csc-grade { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 3px; }
 .csc-sub { font-size: 10.5px; color: var(--muted); font-family: 'DM Mono', monospace; line-height: 1.5; margin-bottom: 12px; }
 .csc-share-btn {
-  background: rgba(124,111,255,0.1);
-  border: 1px solid rgba(124,111,255,0.25);
+  background: rgba(var(--accent-rgb),0.1);
+  border: 1px solid rgba(var(--accent-rgb),0.25);
   border-radius: 20px;
   color: var(--accent3);
   font-size: 11px;
@@ -504,7 +509,7 @@ input:focus, select:focus, textarea:focus {
   transition: all 0.2s;
   width: 100%;
 }
-.csc-share-btn:hover { background: rgba(124,111,255,0.2); }
+.csc-share-btn:hover { background: rgba(var(--accent-rgb),0.2); }
 
 .home-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
 .hg-card {
@@ -520,7 +525,7 @@ input:focus, select:focus, textarea:focus {
 .hg-card::after {
   content: '';
   position: absolute; inset: 0;
-  background: radial-gradient(circle at var(--mx,50%) var(--my,50%), rgba(124,111,255,0.06) 0%, transparent 55%);
+  background: radial-gradient(circle at var(--mx,50%) var(--my,50%), rgba(var(--accent-rgb),0.06) 0%, transparent 55%);
   opacity: 0;
   transition: opacity 0.25s;
 }
@@ -535,11 +540,11 @@ input:focus, select:focus, textarea:focus {
   font-size: 20px;
   margin-bottom: 10px;
   display: block;
-  filter: drop-shadow(0 0 8px rgba(124,111,255,0.4));
+  filter: drop-shadow(0 0 8px rgba(var(--accent-rgb),0.4));
   transition: filter 0.2s, transform 0.2s;
 }
 .hg-card:hover .hg-icon {
-  filter: drop-shadow(0 0 14px rgba(124,111,255,0.65));
+  filter: drop-shadow(0 0 14px rgba(var(--accent-rgb),0.65));
   transform: scale(1.1);
 }
 .hg-title { font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: -0.3px; color: var(--text); margin-bottom: 5px; }
@@ -561,12 +566,12 @@ input:focus, select:focus, textarea:focus {
 /* WARMUP */
 .warmup-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
 .warmup-q{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:10px;cursor:pointer;transition:all 0.2s;position:relative}
-.warmup-q:hover{border-color:rgba(108,99,255,0.3);background:rgba(108,99,255,0.05)}
-.warmup-q.selected{border-color:rgba(108,99,255,0.5);background:rgba(108,99,255,0.08)}
+.warmup-q:hover{border-color:rgba(var(--accent-rgb),0.3);background:rgba(var(--accent-rgb),0.05)}
+.warmup-q.selected{border-color:rgba(var(--accent-rgb),0.5);background:rgba(var(--accent-rgb),0.08)}
 .warmup-q-num{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:6px}
 .warmup-q-text{font-size:14px;color:var(--text);line-height:1.6}
 .warmup-q-tag{position:absolute;top:14px;right:14px}
-.warmup-tip{background:rgba(108,99,255,0.06);border:1px solid rgba(108,99,255,0.15);border-radius:10px;padding:14px 16px;margin-bottom:10px}
+.warmup-tip{background:rgba(var(--accent-rgb),0.06);border:1px solid rgba(var(--accent-rgb),0.15);border-radius:10px;padding:14px 16px;margin-bottom:10px}
 .warmup-tip-label{font-size:10px;color:var(--accent3);font-family:'DM Mono',monospace;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
 .warmup-tip-text{font-size:13px;color:var(--muted2);line-height:1.65}
 
@@ -585,7 +590,7 @@ input:focus, select:focus, textarea:focus {
 .bullet{font-size:13px;color:var(--muted2);padding:5px 0;border-bottom:1px solid var(--border);line-height:1.55;display:flex;gap:8px}
 .bullet:last-child{border-bottom:none;padding-bottom:0}
 .bullet::before{content:'→';color:var(--accent3);font-weight:700;flex-shrink:0;margin-top:1px}
-.rewrite-box{font-size:13.5px;color:var(--text);line-height:1.75;font-style:italic;background:rgba(108,99,255,0.06);border-left:3px solid var(--accent3);padding:14px 16px;border-radius:0 9px 9px 0}
+.rewrite-box{font-size:13.5px;color:var(--text);line-height:1.75;font-style:italic;background:rgba(var(--accent-rgb),0.06);border-left:3px solid var(--accent3);padding:14px 16px;border-radius:0 9px 9px 0}
 .comm-read{font-size:13px;color:var(--muted2);line-height:1.7}
 
 /* SCENARIO PICKER */
@@ -593,7 +598,7 @@ input:focus, select:focus, textarea:focus {
 .sc-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:all 0.2s cubic-bezier(0.4,0,0.2,1)}
 .sc-card:hover{border-color:var(--border2);background:var(--bg3);transform:translateY(-3px);box-shadow:0 10px 24px rgba(0,0,0,0.3)}
 .sc-card:active{transform:translateY(-1px) scale(0.98)}
-.sc-card.active{border-color:rgba(108,99,255,0.5);background:rgba(108,99,255,0.08)}
+.sc-card.active{border-color:rgba(var(--accent-rgb),0.5);background:rgba(var(--accent-rgb),0.08)}
 .sc-icon{font-size:20px;margin-bottom:8px;transition:transform 0.2s}
 .sc-card:hover .sc-icon{transform:scale(1.15)}
 .sc-name{font-size:12.5px;font-weight:600;font-family:'Space Grotesk',sans-serif;margin-bottom:3px}
@@ -615,8 +620,8 @@ input:focus, select:focus, textarea:focus {
 .rm-section{margin-bottom:20px}
 .rm-section-label{font-size:10.5px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:10px}
 .rm-text{font-size:13.5px;color:var(--muted2);line-height:1.7}
-.rm-rewrite{font-size:14px;color:var(--text);line-height:1.75;font-style:italic;background:rgba(108,99,255,0.06);border-left:3px solid var(--accent3);padding:14px 16px;border-radius:0 8px 8px 0}
-.rm-overall{background:rgba(108,99,255,0.07);border:1px solid rgba(108,99,255,0.15);border-radius:12px;padding:18px;margin-bottom:24px}
+.rm-rewrite{font-size:14px;color:var(--text);line-height:1.75;font-style:italic;background:rgba(var(--accent-rgb),0.06);border-left:3px solid var(--accent3);padding:14px 16px;border-radius:0 8px 8px 0}
+.rm-overall{background:rgba(var(--accent-rgb),0.07);border:1px solid rgba(var(--accent-rgb),0.15);border-radius:12px;padding:18px;margin-bottom:24px}
 .rm-overall-label{font-size:10px;color:var(--accent3);font-family:'DM Mono',monospace;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:8px}
 .rm-overall-text{font-size:14px;color:var(--text);line-height:1.7}
 .rm-actions{display:flex;gap:10px}
@@ -644,15 +649,15 @@ input:focus, select:focus, textarea:focus {
 .streak-days{display:flex;gap:6px;margin-top:16px;justify-content:center}
 .streak-day{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-family:'DM Mono',monospace}
 .sd-done{background:rgba(251,191,36,0.2);color:var(--amber);border:1px solid rgba(251,191,36,0.3)}
-.sd-today{background:rgba(108,99,255,0.2);color:var(--accent3);border:1px solid rgba(108,99,255,0.4)}
+.sd-today{background:rgba(var(--accent-rgb),0.2);color:var(--accent3);border:1px solid rgba(var(--accent-rgb),0.4)}
 .sd-empty{background:var(--bg3);color:var(--muted);border:1px solid var(--border)}
 
 /* PROFILES */
 .profiles-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 .profile-card{background:var(--bg1);border:1px solid var(--border);border-radius:14px;padding:22px;cursor:pointer;transition:all 0.2s;text-align:center;position:relative}
 .profile-card:hover{border-color:var(--border2);transform:translateY(-2px)}
-.profile-card.selected{border-color:rgba(108,99,255,0.5);background:rgba(108,99,255,0.06);box-shadow:0 0 0 1px rgba(108,99,255,0.12)}
-.profile-card.selected::after{content:'✓ Active';position:absolute;top:12px;right:12px;font-size:10px;color:var(--accent3);background:rgba(108,99,255,0.15);padding:2px 8px;border-radius:20px;font-family:'DM Mono',monospace}
+.profile-card.selected{border-color:rgba(var(--accent-rgb),0.5);background:rgba(var(--accent-rgb),0.06);box-shadow:0 0 0 1px rgba(var(--accent-rgb),0.12)}
+.profile-card.selected::after{content:'✓ Active';position:absolute;top:12px;right:12px;font-size:10px;color:var(--accent3);background:rgba(var(--accent-rgb),0.15);padding:2px 8px;border-radius:20px;font-family:'DM Mono',monospace}
 .p-avatar{width:58px;height:58px;border-radius:50%;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:800}
 .p-name{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;margin-bottom:6px}
 .p-desc{font-size:12.5px;color:var(--muted2);line-height:1.6}
@@ -663,7 +668,7 @@ input:focus, select:focus, textarea:focus {
 .chat-wrap{display:flex;flex-direction:column;height:500px}
 .chat-messages{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--bg2);border-radius:12px;margin-bottom:10px;border:1px solid var(--border);scroll-behavior:smooth}
 .msg{max-width:82%;padding:11px 15px;border-radius:14px;font-size:13.5px;line-height:1.65}
-.msg-ai{background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.14);color:var(--text);align-self:flex-start;border-radius:4px 14px 14px 14px}
+.msg-ai{background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.14);color:var(--text);align-self:flex-start;border-radius:4px 14px 14px 14px}
 .msg-user{background:var(--bg3);border:1px solid var(--border2);color:var(--text);align-self:flex-end;border-radius:14px 4px 14px 14px}
 .msg-name{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:4px}
 .chat-input-row{display:flex;gap:8px}
@@ -687,8 +692,8 @@ input:focus, select:focus, textarea:focus {
 .voice-status{font-size:12.5px;color:var(--muted2);font-family:'DM Mono',monospace;min-height:18px;text-align:center}
 .voice-status.listening{color:var(--accent2)}.voice-status.speaking{color:var(--accent3)}
 .hold-btn{width:76px;height:76px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:26px;transition:all 0.2s;outline:none}
-.hold-btn.idle{background:rgba(108,99,255,0.14);border:2px solid rgba(108,99,255,0.3)}
-.hold-btn.idle:hover{background:rgba(108,99,255,0.24);transform:scale(1.05)}
+.hold-btn.idle{background:rgba(var(--accent-rgb),0.14);border:2px solid rgba(var(--accent-rgb),0.3)}
+.hold-btn.idle:hover{background:rgba(var(--accent-rgb),0.24);transform:scale(1.05)}
 .hold-btn.recording{background:rgba(248,113,113,0.18);border:2px solid var(--red);animation:recPulse 1s ease-in-out infinite}
 .hold-btn.processing{background:rgba(167,139,250,0.12);border:2px solid var(--accent3);cursor:not-allowed}
 @keyframes recPulse{0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,0.4)}50%{box-shadow:0 0 0 14px rgba(248,113,113,0)}}
@@ -702,7 +707,7 @@ input:focus, select:focus, textarea:focus {
 .coach-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
 .cp-btn{background:var(--bg2);border:1px solid var(--border2);border-radius:8px;padding:7px 4px;cursor:pointer;text-align:center;transition:all 0.15s;color:var(--muted2);font-size:11.5px;font-family:'Plus Jakarta Sans',sans-serif}
 .cp-btn:hover{background:var(--bg3);color:var(--text)}
-.cp-btn.active{border-color:rgba(108,99,255,0.5);background:rgba(108,99,255,0.1);color:var(--accent3)}
+.cp-btn.active{border-color:rgba(var(--accent-rgb),0.5);background:rgba(var(--accent-rgb),0.1);color:var(--accent3)}
 .cp-btn .cp-init{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:800;display:block;margin-bottom:1px}
 .voice-log{display:flex;flex-direction:column;gap:8px;max-height:360px;overflow-y:auto}
 .vlog-item{background:var(--bg2);border-radius:9px;padding:12px 14px;border:1px solid var(--border)}
@@ -762,7 +767,7 @@ input:focus, select:focus, textarea:focus {
   content: '';
   position: absolute; inset: 0;
   background:
-    radial-gradient(ellipse 60% 50% at 30% 20%, rgba(124,111,255,0.1) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 50% at 30% 20%, rgba(var(--accent-rgb),0.1) 0%, transparent 55%),
     radial-gradient(ellipse 50% 40% at 75% 80%, rgba(56,189,248,0.06) 0%, transparent 55%);
   pointer-events: none;
   animation: authBg 10s ease-in-out infinite alternate;
@@ -782,7 +787,7 @@ input:focus, select:focus, textarea:focus {
 .auth-box::before {
   content: '';
   position: absolute; top: 0; left: 0; right: 0; height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(124,111,255,0.6), transparent);
+  background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb),0.6), transparent);
 }
 .auth-logo{display:flex;align-items:center;gap:12px;margin-bottom:32px}
 .auth-logo-icon{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent3));display:flex;align-items:center;justify-content:center;font-size:19px}
@@ -790,7 +795,7 @@ input:focus, select:focus, textarea:focus {
 .auth-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:800;margin-bottom:6px;letter-spacing:-0.5px}
 .auth-sub{font-size:14px;color:var(--muted2);margin-bottom:24px;line-height:1.65;font-family:'Plus Jakarta Sans',sans-serif}
 .auth-input{background:var(--bg2);border:1px solid var(--border2);border-radius:9px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;padding:11px 14px;width:100%;outline:none;transition:border-color 0.2s,box-shadow 0.2s;margin-bottom:12px}
-.auth-input:focus{border-color:rgba(108,99,255,0.5);box-shadow:0 0 0 3px rgba(108,99,255,0.1)}
+.auth-input:focus{border-color:rgba(var(--accent-rgb),0.5);box-shadow:0 0 0 3px rgba(var(--accent-rgb),0.1)}
 .auth-box input[type="email"],
 .auth-box input[type="password"],
 .auth-box input[type="text"] {
@@ -804,8 +809,8 @@ input:focus, select:focus, textarea:focus {
   font-family: 'Plus Jakarta Sans', sans-serif !important;
 }
 .auth-box input:focus {
-  border-color: rgba(124,111,255,0.5) !important;
-  box-shadow: 0 0 0 3px rgba(124,111,255,0.1) !important;
+  border-color: rgba(var(--accent-rgb),0.5) !important;
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb),0.1) !important;
   outline: none !important;
 }
 .auth-box input::placeholder { color: var(--muted) !important; }
@@ -826,10 +831,10 @@ input:focus, select:focus, textarea:focus {
   font-size: 15px; font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 4px 16px rgba(124,111,255,0.35);
+  box-shadow: 0 4px 16px rgba(var(--accent-rgb),0.35);
   margin-bottom: 12px;
 }
-.auth-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 28px rgba(124,111,255,0.5); }
+.auth-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 28px rgba(var(--accent-rgb),0.5); }
 .auth-btn:disabled{opacity:0.5;cursor:not-allowed}
 .auth-divider{display:flex;align-items:center;gap:12px;margin:16px 0;color:var(--muted);font-size:12px;font-family:'DM Mono',monospace}
 .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border)}
@@ -878,7 +883,7 @@ input:focus, select:focus, textarea:focus {
 
 /* DAILY CHALLENGE */
 .daily-layout{display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:start}
-.daily-card{background:linear-gradient(135deg,rgba(108,99,255,0.12),rgba(167,139,250,0.06));border:1px solid rgba(108,99,255,0.2);border-radius:16px;padding:32px}
+.daily-card{background:linear-gradient(135deg,rgba(var(--accent-rgb),0.12),rgba(167,139,250,0.06));border:1px solid rgba(var(--accent-rgb),0.2);border-radius:16px;padding:32px}
 .daily-eyebrow{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);font-family:'DM Mono',monospace;margin-bottom:12px}
 .daily-question{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;line-height:1.35;letter-spacing:-0.3px;margin-bottom:16px;color:var(--text)}
 .daily-meta{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px}
@@ -895,8 +900,8 @@ input:focus, select:focus, textarea:focus {
 .share-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:2000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
 .share-modal-overlay.hidden{display:none}
 .share-modal{background:var(--bg1);border:1px solid var(--border2);border-radius:18px;padding:32px;width:480px;max-width:95vw}
-.share-card-preview{background:linear-gradient(135deg,#0f1118,#1e2130);border:1px solid rgba(108,99,255,0.2);border-radius:16px;padding:32px;margin-bottom:24px;position:relative;overflow:hidden}
-.share-card-preview::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;background:radial-gradient(circle,rgba(108,99,255,0.2),transparent 70%)}
+.share-card-preview{background:linear-gradient(135deg,#0f1118,#1e2130);border:1px solid rgba(var(--accent-rgb),0.2);border-radius:16px;padding:32px;margin-bottom:24px;position:relative;overflow:hidden}
+.share-card-preview::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;background:radial-gradient(circle,rgba(var(--accent-rgb),0.2),transparent 70%)}
 .share-card-logo{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:800;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:20px;font-family:'DM Mono',monospace}
 .share-card-score{font-family:'Space Grotesk',sans-serif;font-size:72px;font-weight:800;letter-spacing:-4px;line-height:1;margin-bottom:4px}
 .share-card-grade{font-size:16px;font-weight:600;margin-bottom:20px}
@@ -933,7 +938,7 @@ input:focus, select:focus, textarea:focus {
 .debate-messages{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-bottom:12px}
 .debate-msg{padding:12px 14px;border-radius:12px;font-size:13.5px;line-height:1.65}
 .debate-msg-coach{border:1px solid var(--border);background:var(--bg2);color:var(--text)}
-.debate-msg-user{border:1px solid rgba(108,99,255,0.2);background:rgba(108,99,255,0.08);color:var(--text);align-self:flex-end;max-width:85%}
+.debate-msg-user{border:1px solid rgba(var(--accent-rgb),0.2);background:rgba(var(--accent-rgb),0.08);color:var(--text);align-self:flex-end;max-width:85%}
 .debate-msg-name{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:4px}
 .debate-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:10;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
 .debate-vs{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:800;color:var(--muted);background:var(--bg1);border:1px solid var(--border);border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center}
@@ -946,11 +951,11 @@ input:focus, select:focus, textarea:focus {
 .debate-setup h3{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:800;letter-spacing:-0.5px}
 .debate-setup p{font-size:14px;color:var(--muted2);max-width:400px;line-height:1.7}
 .debate-topic-input{background:var(--bg2);border:1px solid var(--border2);border-radius:10px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;padding:14px 18px;width:100%;max-width:500px;outline:none;text-align:center}
-.debate-topic-input:focus{border-color:rgba(108,99,255,0.5);box-shadow:0 0 0 3px rgba(108,99,255,0.1)}
+.debate-topic-input:focus{border-color:rgba(var(--accent-rgb),0.5);box-shadow:0 0 0 3px rgba(var(--accent-rgb),0.1)}
 .debate-coach-picks{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;width:100%;max-width:500px}
 .debate-coach-pick{background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:10px;cursor:pointer;transition:all 0.15s;text-align:center;font-size:13px}
 .debate-coach-pick:hover{border-color:var(--border2);background:var(--bg3)}
-.debate-coach-pick.active{border-color:rgba(108,99,255,0.5);background:rgba(108,99,255,0.08)}
+.debate-coach-pick.active{border-color:rgba(var(--accent-rgb),0.5);background:rgba(var(--accent-rgb),0.08)}
 .debate-coach-pick select{background:transparent;border:none;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;outline:none;width:100%;cursor:pointer}
 .debate-status{font-size:12px;font-family:'DM Mono',monospace;color:var(--muted);text-align:center;min-height:16px}
 .debate-typing{display:flex;gap:4px;align-items:center;padding:8px 12px}
@@ -983,13 +988,13 @@ input:focus, select:focus, textarea:focus {
 /* COLD OPEN */
 .co-msg{padding:11px 15px;border-radius:14px;font-size:13.5px;line-height:1.65;max-width:82%}
 .co-msg-them{background:var(--bg2);border:1px solid var(--border);color:var(--text);align-self:flex-start;border-radius:4px 14px 14px 14px}
-.co-msg-you{background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.14);color:var(--text);align-self:flex-end;border-radius:14px 4px 14px 14px}
+.co-msg-you{background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.14);color:var(--text);align-self:flex-end;border-radius:14px 4px 14px 14px}
 .co-msg-name{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:4px}
 
 /* QUESTION BANK */
 .qb-cat{padding:8px 12px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--muted2);transition:all 0.15s;border:none;background:none;width:100%;text-align:left;font-family:'Plus Jakarta Sans',sans-serif}
 .qb-cat:hover{background:var(--bg2);color:var(--text)}
-.qb-cat.active{background:rgba(108,99,255,0.12);color:var(--accent3);font-weight:500}
+.qb-cat.active{background:rgba(var(--accent-rgb),0.12);color:var(--accent3);font-weight:500}
 .qb-item{background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:16px 20px;cursor:pointer;transition:all 0.2s cubic-bezier(0.4,0,0.2,1);display:flex;justify-content:space-between;align-items:flex-start;gap:12px;animation:qbItemIn 0.35s cubic-bezier(0.4,0,0.2,1) backwards}
 .qb-item:hover{border-color:var(--border2);background:var(--bg2);transform:translateY(-2px);box-shadow:0 10px 28px rgba(0,0,0,0.3)}
 @keyframes qbItemIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
@@ -1000,10 +1005,12 @@ input:focus, select:focus, textarea:focus {
 .qb-diff-medium{background:rgba(251,191,36,0.08);color:var(--amber)}
 .qb-diff-hard{background:rgba(248,113,113,0.08);color:var(--red)}
 .qb-practice-btn{font-size:11px;background:var(--accent);border:none;border-radius:7px;color:#fff;padding:5px 12px;cursor:pointer;font-family:'Space Grotesk',sans-serif;font-weight:700;white-space:nowrap;transition:all 0.15s}
-.qb-practice-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(124,111,255,0.4)}
+.qb-practice-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(var(--accent-rgb),0.4)}
 .qb-practice-btn:active{transform:translateY(0) scale(0.95)}
 .qb-practice-btn:hover{background:#7c74ff}
 
+.accent-swatch{border:2px solid rgba(255,255,255,0.12)}
+.accent-swatch.selected{border-color:#fff;box-shadow:0 0 0 2px var(--s0,#03030a),0 0 0 4px var(--accent)}
 /* SETTINGS ENHANCED */
 .settings-section{margin-bottom:24px}
 .settings-section-title{font-size:10px;text-transform:uppercase;letter-spacing:1.8px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border)}
@@ -1024,11 +1031,11 @@ input:focus, select:focus, textarea:focus {
 /* Custom scrollbar */
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:rgba(124,111,255,0.25);border-radius:3px}
-::-webkit-scrollbar-thumb:hover{background:rgba(124,111,255,0.45)}
+::-webkit-scrollbar-thumb{background:rgba(var(--accent-rgb),0.25);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:rgba(var(--accent-rgb),0.45)}
 
 /* Focus ring */
-*:focus-visible{outline:2px solid rgba(124,111,255,0.5);outline-offset:2px;border-radius:4px}
+*:focus-visible{outline:2px solid rgba(var(--accent-rgb),0.5);outline-offset:2px;border-radius:4px}
 
 /* Smooth transitions globally */
 *{transition-timing-function:cubic-bezier(0.4,0,0.2,1)}
@@ -1044,20 +1051,20 @@ input:focus, select:focus, textarea:focus {
 .page.active{animation:fadeInUp 0.28s ease forwards}
 
 /* Logo glow */
-@keyframes logoGlow{from{box-shadow:0 4px 16px rgba(124,111,255,0.4)}to{box-shadow:0 4px 24px rgba(124,111,255,0.7),0 0 40px rgba(124,111,255,0.2)}}
+@keyframes logoGlow{from{box-shadow:0 4px 16px rgba(var(--accent-rgb),0.4)}to{box-shadow:0 4px 24px rgba(var(--accent-rgb),0.7),0 0 40px rgba(var(--accent-rgb),0.2)}}
 
 /* Chip/tag upgrades */
-.chip{font-size:10.5px;padding:3px 10px;border-radius:20px;background:rgba(124,111,255,0.08);border:1px solid rgba(124,111,255,0.18);color:var(--muted2);font-family:'DM Mono',monospace;white-space:nowrap}
+.chip{font-size:10.5px;padding:3px 10px;border-radius:20px;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.18);color:var(--muted2);font-family:'DM Mono',monospace;white-space:nowrap}
 
 /* Input focus glow */
-select:focus,textarea:focus,input[type=text]:focus{border-color:rgba(124,111,255,0.45);box-shadow:0 0 0 3px rgba(124,111,255,0.12)}
+select:focus,textarea:focus,input[type=text]:focus{border-color:rgba(var(--accent-rgb),0.45);box-shadow:0 0 0 3px rgba(var(--accent-rgb),0.12)}
 
 /* Page entrance animation */
 @keyframes pageIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .page.active{animation:pageIn 0.28s cubic-bezier(0.4,0,0.2,1) forwards}
 
 /* Logo glow pulse */
-@keyframes logoGlow{from{box-shadow:0 0 16px rgba(124,111,255,0.4)}to{box-shadow:0 0 28px rgba(124,111,255,0.7),0 0 50px rgba(124,111,255,0.15)}}
+@keyframes logoGlow{from{box-shadow:0 0 16px rgba(var(--accent-rgb),0.4)}to{box-shadow:0 0 28px rgba(var(--accent-rgb),0.7),0 0 50px rgba(var(--accent-rgb),0.15)}}
 
 /* Chip hover lift */
 .chip:hover,.streak-chip:hover{transform:translateY(-1px);transition:transform 0.2s}
@@ -1065,20 +1072,20 @@ select:focus,textarea:focus,input[type=text]:focus{border-color:rgba(124,111,255
 /* Scrollbar */
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:rgba(124,111,255,0.3);border-radius:3px}
-::-webkit-scrollbar-thumb:hover{background:rgba(124,111,255,0.5)}
+::-webkit-scrollbar-thumb{background:rgba(var(--accent-rgb),0.3);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:rgba(var(--accent-rgb),0.5)}
 
 /* Input glow on focus */
-select:focus,textarea:focus,input[type=text]:focus{border-color:rgba(124,111,255,0.5);box-shadow:0 0 0 3px rgba(124,111,255,0.1)}
+select:focus,textarea:focus,input[type=text]:focus{border-color:rgba(var(--accent-rgb),0.5);box-shadow:0 0 0 3px rgba(var(--accent-rgb),0.1)}
 
 /* Shimmer on primary button */
 @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 
 /* Nav item active glow line (legacy, unused after top-tab restructure) */
-.nav-item.active::before{content:'';position:absolute;left:0;top:20%;bottom:20%;width:2px;background:linear-gradient(to bottom,#7c6fff,#b48cff);border-radius:2px;box-shadow:0 0 8px rgba(124,111,255,0.6)}
+.nav-item.active::before{content:'';position:absolute;left:0;top:20%;bottom:20%;width:2px;background:linear-gradient(to bottom,#7c6fff,#b48cff);border-radius:2px;box-shadow:0 0 8px rgba(var(--accent-rgb),0.6)}
 
 /* Topbar gradient line (legacy, unused after top-tab restructure) */
-.topbar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(124,111,255,0.25),rgba(56,189,248,0.15),transparent);pointer-events:none}
+.topbar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(var(--accent-rgb),0.25),rgba(56,189,248,0.15),transparent);pointer-events:none}
 
 /* Ripple keyframe */
 @keyframes ripple{to{width:120px;height:120px;opacity:0}}
@@ -1123,6 +1130,7 @@ select:focus,textarea:focus,input[type=text]:focus{border-color:rgba(124,111,255
 
   /* ── BRAND PALETTE ───────────────────────────────────────── */
   --accent:#7c6fff;
+  --accent-rgb:124,111,255;
   --accent2:#38bdf8;
   --accent3:#c084fc;
   --accent4:#f472b6;
@@ -1135,13 +1143,13 @@ select:focus,textarea:focus,input[type=text]:focus{border-color:rgba(124,111,255
   --g-brand:linear-gradient(135deg,#7c6fff 0%,#c084fc 100%);
   --g-blue:linear-gradient(135deg,#38bdf8 0%,#7c6fff 100%);
   --g-warm:linear-gradient(135deg,#f472b6 0%,#7c6fff 100%);
-  --g-glow:radial-gradient(circle,rgba(124,111,255,0.18) 0%,transparent 70%);
-  --g-card:linear-gradient(145deg,rgba(124,111,255,0.06) 0%,rgba(56,189,248,0.02) 100%);
+  --g-glow:radial-gradient(circle,rgba(var(--accent-rgb),0.18) 0%,transparent 70%);
+  --g-card:linear-gradient(145deg,rgba(var(--accent-rgb),0.06) 0%,rgba(56,189,248,0.02) 100%);
 
   /* ── GLOW SHADOWS ────────────────────────────────────────── */
-  --glow-sm:0 0 12px rgba(124,111,255,0.3);
-  --glow-md:0 0 24px rgba(124,111,255,0.4);
-  --glow-lg:0 0 48px rgba(124,111,255,0.25),0 0 96px rgba(56,189,248,0.1);
+  --glow-sm:0 0 12px rgba(var(--accent-rgb),0.3);
+  --glow-md:0 0 24px rgba(var(--accent-rgb),0.4);
+  --glow-lg:0 0 48px rgba(var(--accent-rgb),0.25),0 0 96px rgba(56,189,248,0.1);
 }
 /* ── BASE ───────────────────────────────────────────────────── */
 html,body{
@@ -1159,7 +1167,7 @@ body::before{
   content:'';
   position:fixed;inset:0;
   background:
-    radial-gradient(ellipse 70% 60% at -5% -10%,rgba(124,111,255,0.14) 0%,transparent 55%),
+    radial-gradient(ellipse 70% 60% at -5% -10%,rgba(var(--accent-rgb),0.14) 0%,transparent 55%),
     radial-gradient(ellipse 50% 40% at 105% 105%,rgba(56,189,248,0.1) 0%,transparent 55%),
     radial-gradient(ellipse 40% 30% at 50% 50%,rgba(192,132,252,0.04) 0%,transparent 60%);
   pointer-events:none;z-index:0;
@@ -1182,7 +1190,7 @@ body::before{
 }
 .app-header::after{
   content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
-  background:linear-gradient(90deg,transparent,rgba(124,111,255,0.4),rgba(56,189,248,0.2),transparent);
+  background:linear-gradient(90deg,transparent,rgba(var(--accent-rgb),0.4),rgba(56,189,248,0.2),transparent);
   pointer-events:none;
 }
 .app-header-left{display:flex;align-items:center;gap:8px;flex-shrink:0;margin-right:20px}
@@ -1200,8 +1208,8 @@ body::before{
   animation:logoGlow 3s ease-in-out infinite alternate;
 }
 @keyframes logoGlow{
-  from{box-shadow:0 0 10px rgba(124,111,255,0.35),0 0 20px rgba(124,111,255,0.1)}
-  to{box-shadow:0 0 20px rgba(124,111,255,0.65),0 0 40px rgba(124,111,255,0.2),0 0 60px rgba(192,132,252,0.1)}
+  from{box-shadow:0 0 10px rgba(var(--accent-rgb),0.35),0 0 20px rgba(var(--accent-rgb),0.1)}
+  to{box-shadow:0 0 20px rgba(var(--accent-rgb),0.65),0 0 40px rgba(var(--accent-rgb),0.2),0 0 60px rgba(192,132,252,0.1)}
 }
 .app-logo-text{
   font-family:'Italiana',serif;
@@ -1232,13 +1240,13 @@ body::before{
   background:rgba(8,9,26,0.88);
   border-bottom:1px solid var(--border);
   display:flex;align-items:center;padding:0 12px;gap:2px;
-  overflow-x:auto;scrollbar-width:thin;scrollbar-color:rgba(124,111,255,0.35) transparent;
+  overflow-x:auto;scrollbar-width:thin;scrollbar-color:rgba(var(--accent-rgb),0.35) transparent;
   position:relative;
   backdrop-filter:blur(24px);
   scroll-behavior:smooth;
 }
 .app-tabs::-webkit-scrollbar{height:4px}
-.app-tabs::-webkit-scrollbar-thumb{background:rgba(124,111,255,0.35);border-radius:3px}
+.app-tabs::-webkit-scrollbar-thumb{background:rgba(var(--accent-rgb),0.35);border-radius:3px}
 .app-tabs::-webkit-scrollbar-track{background:transparent}
 .tabs-group{display:flex;align-items:center;gap:2px}
 .tabs-group-right{margin-left:auto}
@@ -1268,14 +1276,14 @@ body::before{
 .tab-item.active{
   color:#ffffff;
   font-weight:700;
-  background:linear-gradient(135deg,rgba(124,111,255,0.18),rgba(56,189,248,0.06));
+  background:linear-gradient(135deg,rgba(var(--accent-rgb),0.18),rgba(56,189,248,0.06));
   border-color:var(--border2);
-  box-shadow:0 0 16px rgba(124,111,255,0.12);
+  box-shadow:0 0 16px rgba(var(--accent-rgb),0.12);
 }
 .tab-item.active::after{
   content:'';position:absolute;bottom:-1px;left:10px;right:10px;
   height:2.5px;background:var(--g-brand);border-radius:2px 2px 0 0;
-  box-shadow:0 0 8px rgba(124,111,255,0.6);
+  box-shadow:0 0 8px rgba(var(--accent-rgb),0.6);
 }
 .tab-icon{font-size:14px;line-height:1}
 
@@ -1284,14 +1292,14 @@ body::before{
 .page{
   display:none;height:100%;overflow-y:auto;
   padding:32px 36px;
-  scrollbar-width:thin;scrollbar-color:rgba(124,111,255,0.3) transparent;
+  scrollbar-width:thin;scrollbar-color:rgba(var(--accent-rgb),0.3) transparent;
 }
 .page.active{display:block;animation:pageIn 0.25s ease forwards}
 @keyframes pageIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:rgba(124,111,255,0.3);border-radius:3px}
-::-webkit-scrollbar-thumb:hover{background:rgba(124,111,255,0.5)}
+::-webkit-scrollbar-thumb{background:rgba(var(--accent-rgb),0.3);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:rgba(var(--accent-rgb),0.5)}
 
 /* ── TOPBAR (legacy support — hide if unused) ───────────────── */
 .topbar{display:none}
@@ -1303,14 +1311,14 @@ body::before{
   display:grid;grid-template-columns:1fr auto;gap:28px;
   align-items:start;margin-bottom:24px;
   padding:32px 36px;
-  background:linear-gradient(135deg,rgba(124,111,255,0.08) 0%,rgba(56,189,248,0.04) 50%,rgba(192,132,252,0.06) 100%);
+  background:linear-gradient(135deg,rgba(var(--accent-rgb),0.08) 0%,rgba(56,189,248,0.04) 50%,rgba(192,132,252,0.06) 100%);
   border:1px solid var(--border2);border-radius:20px;
   position:relative;overflow:hidden;
 }
 .home-hero::before{
   content:'';position:absolute;top:-30%;right:-5%;
   width:400px;height:400px;
-  background:radial-gradient(circle,rgba(124,111,255,0.1) 0%,transparent 70%);
+  background:radial-gradient(circle,rgba(var(--accent-rgb),0.1) 0%,transparent 70%);
   pointer-events:none;animation:orbFloat 8s ease-in-out infinite alternate;
 }
 .home-hero::after{
@@ -1377,11 +1385,11 @@ body::before{
 
 /* ── LEVEL RING CARD ────────────────────────────────────────── */
 .conver-score-card{
-  background:linear-gradient(145deg,rgba(124,111,255,0.12),rgba(56,189,248,0.04));
+  background:linear-gradient(145deg,rgba(var(--accent-rgb),0.12),rgba(56,189,248,0.04));
   border:1px solid var(--border3);border-radius:20px;
   padding:24px 20px;min-width:190px;text-align:center;
   position:relative;overflow:hidden;
-  box-shadow:0 0 40px rgba(124,111,255,0.1);
+  box-shadow:0 0 40px rgba(var(--accent-rgb),0.1);
   z-index:1;
 }
 .conver-score-card::before{
@@ -1391,7 +1399,7 @@ body::before{
 .conver-score-card::after{
   content:'';position:absolute;top:-50%;left:10%;
   width:200px;height:200px;
-  background:radial-gradient(circle,rgba(124,111,255,0.12) 0%,transparent 70%);
+  background:radial-gradient(circle,rgba(var(--accent-rgb),0.12) 0%,transparent 70%);
   pointer-events:none;
 }
 .csc-label{
@@ -1419,12 +1427,12 @@ body::before{
   line-height:1.5;margin-bottom:14px;position:relative;z-index:1;
 }
 .csc-share-btn{
-  background:rgba(124,111,255,0.1);border:1px solid rgba(124,111,255,0.3);
+  background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.3);
   border-radius:20px;color:var(--accent3);font-size:11px;
   padding:6px 14px;cursor:pointer;font-family:'DM Mono',monospace;
   transition:all 0.2s;width:100%;position:relative;z-index:1;
 }
-.csc-share-btn:hover{background:rgba(124,111,255,0.22);box-shadow:var(--glow-sm)}
+.csc-share-btn:hover{background:rgba(var(--accent-rgb),0.22);box-shadow:var(--glow-sm)}
 
 /* ── HOME GRID CARDS ────────────────────────────────────────── */
 .hg-card{
@@ -1450,11 +1458,11 @@ body::before{
 }
 .hg-card::after{
   content:'';position:absolute;inset:0;
-  background:radial-gradient(circle at var(--mx,50%) var(--my,50%),rgba(124,111,255,0.09) 0%,transparent 55%);
+  background:radial-gradient(circle at var(--mx,50%) var(--my,50%),rgba(var(--accent-rgb),0.09) 0%,transparent 55%);
   opacity:0;transition:opacity 0.3s;
 }
 .hg-card:hover{
-  background:linear-gradient(145deg,rgba(124,111,255,0.12),rgba(56,189,248,0.04));
+  background:linear-gradient(145deg,rgba(var(--accent-rgb),0.12),rgba(56,189,248,0.04));
   border-color:var(--border3);
   transform:translateY(-4px);
   box-shadow:0 16px 48px rgba(0,0,0,0.4),var(--glow-sm);
@@ -1462,10 +1470,10 @@ body::before{
 .hg-card:hover::after{opacity:1}
 .hg-icon{
   font-size:26px;margin-bottom:12px;display:block;
-  filter:drop-shadow(0 0 10px rgba(124,111,255,0.5));
+  filter:drop-shadow(0 0 10px rgba(var(--accent-rgb),0.5));
   transition:all 0.3s;
 }
-.hg-card:hover .hg-icon{filter:drop-shadow(0 0 18px rgba(124,111,255,0.8));transform:scale(1.12)}
+.hg-card:hover .hg-icon{filter:drop-shadow(0 0 18px rgba(var(--accent-rgb),0.8));transform:scale(1.12)}
 .hg-title{
   font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;
   letter-spacing:-0.4px;color:#ffffff;margin-bottom:7px;
@@ -1485,7 +1493,7 @@ body::before{
 }
 .panel::before{
   content:'';position:absolute;top:0;left:0;right:0;height:1px;
-  background:linear-gradient(90deg,transparent,rgba(124,111,255,0.2),transparent);
+  background:linear-gradient(90deg,transparent,rgba(var(--accent-rgb),0.2),transparent);
   pointer-events:none;
 }
 .panel:hover{border-color:var(--border2);box-shadow:0 4px 24px rgba(0,0,0,0.25)}
@@ -1501,7 +1509,7 @@ body::before{
   border:none;border-radius:10px;color:#fff;
   font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;
   cursor:pointer;transition:all 0.22s;letter-spacing:-0.2px;
-  box-shadow:0 4px 16px rgba(124,111,255,0.35);
+  box-shadow:0 4px 16px rgba(var(--accent-rgb),0.35);
   position:relative;overflow:hidden;
 }
 .btn-primary::after{
@@ -1509,7 +1517,7 @@ body::before{
   background:linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent);
   transition:left 0.45s;
 }
-.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(124,111,255,0.55)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(var(--accent-rgb),0.55)}
 .btn-primary:hover::after{left:100%}
 .btn-primary:active{transform:translateY(0)}
 .btn-ghost{
@@ -1529,8 +1537,8 @@ input[type="text"],input[type="email"],input[type="password"],select,textarea{
 }
 input::placeholder,textarea::placeholder{color:var(--muted)}
 input:focus,select:focus,textarea:focus{
-  border-color:rgba(124,111,255,0.55);
-  box-shadow:0 0 0 3px rgba(124,111,255,0.12);
+  border-color:rgba(var(--accent-rgb),0.55);
+  box-shadow:0 0 0 3px rgba(var(--accent-rgb),0.12);
 }
 
 /* ── AUTH SCREEN ─────────────────────────────────────────────── */
@@ -1542,7 +1550,7 @@ input:focus,select:focus,textarea:focus{
 .auth-screen::before{
   content:'';position:absolute;inset:0;
   background:
-    radial-gradient(ellipse 65% 55% at 25% 20%,rgba(124,111,255,0.14) 0%,transparent 55%),
+    radial-gradient(ellipse 65% 55% at 25% 20%,rgba(var(--accent-rgb),0.14) 0%,transparent 55%),
     radial-gradient(ellipse 50% 40% at 78% 82%,rgba(56,189,248,0.09) 0%,transparent 55%);
   pointer-events:none;animation:ambientPulse 10s ease-in-out infinite alternate;
 }
@@ -1561,7 +1569,7 @@ input:focus,select:focus,textarea:focus{
 .auth-box::after{
   content:'';position:absolute;top:-50%;left:15%;
   width:320px;height:320px;
-  background:radial-gradient(circle,rgba(124,111,255,0.08) 0%,transparent 70%);
+  background:radial-gradient(circle,rgba(var(--accent-rgb),0.08) 0%,transparent 70%);
   pointer-events:none;
 }
 .auth-logo{display:flex;align-items:center;gap:10px;margin-bottom:24px}
@@ -1581,18 +1589,18 @@ input:focus,select:focus,textarea:focus{
   font-size:14px !important;padding:12px 15px !important;width:100% !important;
   margin-bottom:14px;transition:all 0.2s !important;
 }
-.auth-input:focus{border-color:rgba(124,111,255,0.55) !important;box-shadow:0 0 0 3px rgba(124,111,255,0.12) !important;outline:none !important}
+.auth-input:focus{border-color:rgba(var(--accent-rgb),0.55) !important;box-shadow:0 0 0 3px rgba(var(--accent-rgb),0.12) !important;outline:none !important}
 .auth-input::placeholder{color:var(--muted) !important}
 .auth-btn{
   width:100%;padding:13px;
   background:var(--g-brand);border:none;border-radius:10px;
   color:#fff;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;
   cursor:pointer;transition:all 0.22s;
-  box-shadow:0 4px 20px rgba(124,111,255,0.4);
+  box-shadow:0 4px 20px rgba(var(--accent-rgb),0.4);
   position:relative;overflow:hidden;
 }
 .auth-btn::after{content:'';position:absolute;top:0;left:-100%;right:0;bottom:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent);transition:left 0.45s}
-.auth-btn:hover{transform:translateY(-1px);box-shadow:0 8px 32px rgba(124,111,255,0.55)}
+.auth-btn:hover{transform:translateY(-1px);box-shadow:0 8px 32px rgba(var(--accent-rgb),0.55)}
 .auth-btn:hover::after{left:100%}
 .auth-error{background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.25);color:var(--red);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px}
 .auth-success{background:rgba(45,212,160,0.1);border:1px solid rgba(45,212,160,0.25);color:var(--green);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px}
@@ -1603,11 +1611,11 @@ input:focus,select:focus,textarea:focus{
 /* ── CHIPS (topbar context pills) ───────────────────────────── */
 .chip{
   font-size:11.5px;padding:4px 12px;border-radius:20px;
-  background:rgba(124,111,255,0.08);border:1px solid var(--border2);
+  background:rgba(var(--accent-rgb),0.08);border:1px solid var(--border2);
   color:var(--muted2);font-family:'DM Mono',monospace;white-space:nowrap;
   cursor:pointer;transition:all 0.2s;
 }
-.chip:hover{background:rgba(124,111,255,0.16);color:var(--text);border-color:var(--border3)}
+.chip:hover{background:rgba(var(--accent-rgb),0.16);color:var(--text);border-color:var(--border3)}
 .streak-chip{
   display:flex;align-items:center;gap:5px;font-size:11.5px;padding:4px 12px;
   border-radius:20px;background:rgba(251,191,36,0.08);
@@ -1623,7 +1631,7 @@ input:focus,select:focus,textarea:focus{
 /* ── TAGS ────────────────────────────────────────────────────── */
 .tag-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
 .tag{font-size:11.5px;padding:4px 12px;border-radius:20px;font-family:'DM Mono',monospace;border:1px solid;white-space:nowrap}
-.t-purple{color:var(--accent3);border-color:rgba(192,132,252,0.3);background:rgba(124,111,255,0.08)}
+.t-purple{color:var(--accent3);border-color:rgba(192,132,252,0.3);background:rgba(var(--accent-rgb),0.08)}
 .t-blue{color:var(--accent2);border-color:rgba(56,189,248,0.3);background:rgba(56,189,248,0.06)}
 .t-green{color:var(--green);border-color:rgba(45,212,160,0.3);background:rgba(45,212,160,0.06)}
 .t-amber{color:var(--amber);border-color:rgba(251,191,36,0.3);background:rgba(251,191,36,0.06)}
@@ -1650,8 +1658,8 @@ input:focus,select:focus,textarea:focus{
 
 /* ── NAV ITEMS (legacy sidebar — hidden but keep for JS compat) */
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;cursor:pointer;color:var(--muted2);font-size:13.5px;transition:all 0.18s;border:1px solid transparent;background:transparent;width:100%;text-align:left;font-family:'Plus Jakarta Sans',sans-serif;font-weight:500;position:relative}
-.nav-item:hover{color:var(--text);background:rgba(124,111,255,0.1);border-color:var(--border)}
-.nav-item.active{color:var(--text);background:linear-gradient(135deg,rgba(124,111,255,0.18),rgba(56,189,248,0.05));border-color:var(--border2)}
+.nav-item:hover{color:var(--text);background:rgba(var(--accent-rgb),0.1);border-color:var(--border)}
+.nav-item.active{color:var(--text);background:linear-gradient(135deg,rgba(var(--accent-rgb),0.18),rgba(56,189,248,0.05));border-color:var(--border2)}
 .nav-section{font-size:9px;color:var(--muted);letter-spacing:1.8px;text-transform:uppercase;padding:12px 12px 4px;font-family:'DM Mono',monospace}
 
 /* ── MISC ────────────────────────────────────────────────────── */
@@ -1664,12 +1672,12 @@ input:focus,select:focus,textarea:focus{
 .toggle-slider{position:absolute;cursor:pointer;inset:0;background:var(--s3);border-radius:22px;transition:0.3s;border:1px solid var(--border)}
 .toggle-slider::before{content:'';position:absolute;height:16px;width:16px;left:2px;bottom:2px;background:var(--muted2);border-radius:50%;transition:0.3s}
 .toggle input:checked+.toggle-slider{background:var(--g-brand);border-color:var(--accent)}
-.toggle input:checked+.toggle-slider::before{transform:translateX(18px);background:#fff;box-shadow:0 0 8px rgba(124,111,255,0.5)}
+.toggle input:checked+.toggle-slider::before{transform:translateX(18px);background:#fff;box-shadow:0 0 8px rgba(var(--accent-rgb),0.5)}
 /* Selection scenarios */
 .scenario-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
 .scenario-card{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:16px;cursor:pointer;transition:all 0.2s;text-align:left}
 .scenario-card:hover{border-color:var(--border2);background:var(--s2);transform:translateY(-2px)}
-.scenario-card.selected{border-color:var(--accent);background:rgba(124,111,255,0.1);box-shadow:var(--glow-sm)}
+.scenario-card.selected{border-color:var(--accent);background:rgba(var(--accent-rgb),0.1);box-shadow:var(--glow-sm)}
 .scenario-card h4{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;margin-bottom:4px}
 .scenario-card p{font-size:12px;color:var(--muted2);line-height:1.55}
 /* Report / analysis panels */
@@ -1959,7 +1967,7 @@ body.compact-mode .page { padding: 20px 24px; }
 .coach-profile-card:hover::before { opacity: 0.07; }
 .coach-profile-card.selected {
   border-color: var(--coach-color, #7c6fff);
-  background: linear-gradient(145deg, rgba(124,111,255,0.08), var(--s1));
+  background: linear-gradient(145deg, rgba(var(--accent-rgb),0.08), var(--s1));
   box-shadow: 0 0 24px color-mix(in srgb, var(--coach-color, #7c6fff) 30%, transparent);
 }
 .coach-profile-desc {
@@ -2074,7 +2082,7 @@ body.compact-mode .page { padding: 20px 24px; }
   content: '';
   position: absolute; inset: 0;
   border-radius: 14px;
-  background: var(--mode-color, rgba(124,111,255,0.15));
+  background: var(--mode-color, rgba(var(--accent-rgb),0.15));
   animation: modeIconPulse 3s ease-in-out infinite alternate;
 }
 @keyframes modeIconPulse {
@@ -2101,14 +2109,14 @@ body.compact-mode .page { padding: 20px 24px; }
   cursor: pointer; transition: all 0.2s; font-family: 'Plus Jakarta Sans', sans-serif;
 }
 .ob-goal-btn:hover { border-color: var(--border3); color: var(--text); background: var(--s3); }
-.ob-goal-btn.selected { border-color: var(--accent); background: rgba(124,111,255,0.12); color: var(--text); box-shadow: 0 0 16px rgba(124,111,255,0.15); }
+.ob-goal-btn.selected { border-color: var(--accent); background: rgba(var(--accent-rgb),0.12); color: var(--text); box-shadow: 0 0 16px rgba(var(--accent-rgb),0.15); }
 .ob-coach-btn {
   padding: 16px 12px; border-radius: 12px;
   border: 1px solid var(--border); background: var(--s2);
   text-align: center; cursor: pointer; transition: all 0.2s;
 }
 .ob-coach-btn:hover { border-color: var(--border2); transform: translateY(-2px); }
-.ob-coach-btn.selected { border-color: var(--accent); background: rgba(124,111,255,0.1); box-shadow: 0 0 16px rgba(124,111,255,0.15); }
+.ob-coach-btn.selected { border-color: var(--accent); background: rgba(var(--accent-rgb),0.1); box-shadow: 0 0 16px rgba(var(--accent-rgb),0.15); }
 
 /* ── VOICE IMMERSIVE OVERLAY ─────────────────────────────────── */
 #voice-immersive-overlay { display: none; }
@@ -2123,7 +2131,7 @@ body.compact-mode .page { padding: 20px 24px; }
   transition: all 0.4s;
 }
 .ve-ring-idle {
-  border: 2px solid rgba(124,111,255,0.15);
+  border: 2px solid rgba(var(--accent-rgb),0.15);
   animation: veRingIdle 4s ease-in-out infinite;
 }
 .ve-ring-listening {
@@ -2132,8 +2140,8 @@ body.compact-mode .page { padding: 20px 24px; }
   animation: veRingListen 1.2s ease-in-out infinite;
 }
 .ve-ring-speaking {
-  border: 2.5px solid rgba(124,111,255,0.7);
-  box-shadow: 0 0 0 8px rgba(124,111,255,0.08), 0 0 40px rgba(124,111,255,0.25);
+  border: 2.5px solid rgba(var(--accent-rgb),0.7);
+  box-shadow: 0 0 0 8px rgba(var(--accent-rgb),0.08), 0 0 40px rgba(var(--accent-rgb),0.25);
   animation: veRingSpeak 0.8s ease-in-out infinite;
 }
 .ve-ring-processing {
@@ -2168,8 +2176,8 @@ body.compact-mode .page { padding: 20px 24px; }
   animation: veHistoryIn 0.3s ease;
 }
 .ve-history-you {
-  background: rgba(124,111,255,0.1);
-  border: 1px solid rgba(124,111,255,0.2);
+  background: rgba(var(--accent-rgb),0.1);
+  border: 1px solid rgba(var(--accent-rgb),0.2);
   color: #c4c8e8;
   align-self: flex-end;
   text-align: right;
@@ -2179,6 +2187,15 @@ body.compact-mode .page { padding: 20px 24px; }
   border: 1px solid rgba(255,255,255,0.07);
   color: #9099b8;
   align-self: flex-start;
+}
+.ve-history-tip {
+  background: rgba(251,191,36,0.08);
+  border: 1px solid rgba(251,191,36,0.2);
+  color: #fbbf24;
+  align-self: center;
+  text-align: center;
+  max-width: 85%;
+  font-style: italic;
 }
 @keyframes veHistoryIn {
   from { opacity: 0; transform: translateY(6px); }
@@ -2565,6 +2582,7 @@ body.reducemotion .coach-orb-wave { animation: none !important; }
       <button class="tab-item" data-page="coldopen" onclick="navTo('coldopen')"><span class="tab-icon">❄️</span>Cold Open</button>
       <button class="tab-item" data-page="qbank" onclick="navTo('qbank')"><span class="tab-icon">❓</span>Questions</button>
       <button class="tab-item" data-page="companion" onclick="navTo('companion')"><span class="tab-icon">💬</span>AI Companion</button>
+      <button class="tab-item" data-page="realtime" onclick="navTo('realtime')"><span class="tab-icon">📹</span>Real-Time</button>
     </div>
     <div class="tabs-divider"></div>
     <div class="tabs-group tabs-group-right">
@@ -2585,13 +2603,13 @@ body.reducemotion .coach-orb-wave { animation: none !important; }
       <!-- HOME -->
       <div class="page active" id="page-home">
         <div id="welcome-back-banner" class="hidden" style="
-          background:linear-gradient(135deg,rgba(124,111,255,0.08),rgba(56,189,248,0.04));
+          background:linear-gradient(135deg,rgba(var(--accent-rgb),0.08),rgba(56,189,248,0.04));
           border:1px solid var(--border2);border-radius:14px;
           padding:16px 22px;margin-bottom:20px;
           display:flex;align-items:center;justify-content:space-between;gap:16px;
           position:relative;overflow:hidden;
         ">
-          <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(124,111,255,0.4),transparent)"></div>
+          <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(var(--accent-rgb),0.4),transparent)"></div>
           <div style="display:flex;align-items:center;gap:14px">
             <div style="font-size:28px" id="wb-coach-emoji"></div>
             <div>
@@ -2658,7 +2676,7 @@ body.reducemotion .coach-orb-wave { animation: none !important; }
         </div>
         <div class="home-grid">
           <div class="hg-card" onclick="navTo('warmup')"><div class="mode-icon-wrap" style="--mode-color:rgba(251,191,36,0.15)">⚡</div><div class="hg-title">Warmup</div><div class="hg-desc">AI generates targeted questions from your briefing.</div><span class="hg-link">Get warmed up →</span></div>
-          <div class="hg-card" onclick="navTo('practice')"><div class="mode-icon-wrap" style="--mode-color:rgba(124,111,255,0.15)">✍️</div><div class="hg-title">Practice Lab</div><div class="hg-desc">Submit a draft, get scored + a rewrite.</div><span class="hg-link">Open Lab →</span></div>
+          <div class="hg-card" onclick="navTo('practice')"><div class="mode-icon-wrap" style="--mode-color:rgba(var(--accent-rgb),0.15)">✍️</div><div class="hg-title">Practice Lab</div><div class="hg-desc">Submit a draft, get scored + a rewrite.</div><span class="hg-link">Open Lab →</span></div>
           <div class="hg-card" onclick="navTo('voice')"><div class="mode-icon-wrap" style="--mode-color:rgba(45,212,160,0.15)">🎙️</div><div class="hg-title">Voice Session</div><div class="hg-desc">Speak with your coach. They listen and talk back.</div><span class="hg-link">Go live →</span></div>
           <div class="hg-card" onclick="navTo('skills')"><div class="mode-icon-wrap" style="--mode-color:rgba(56,189,248,0.15)">📊</div><div class="hg-title">Skills & Progress</div><div class="hg-desc">Radar chart of your communication skills.</div><span class="hg-link">View progress →</span></div>
         </div>
@@ -2686,7 +2704,7 @@ body.reducemotion .coach-orb-wave { animation: none !important; }
 
           <!-- Question card - hidden until generated -->
           <div id="wu-question-card" style="display:none">
-            <div style="background:linear-gradient(135deg,rgba(108,99,255,0.1),rgba(167,139,250,0.05));border:1px solid rgba(108,99,255,0.2);border-radius:14px;padding:24px;margin-bottom:16px">
+            <div style="background:linear-gradient(135deg,rgba(var(--accent-rgb),0.1),rgba(167,139,250,0.05));border:1px solid rgba(var(--accent-rgb),0.2);border-radius:14px;padding:24px;margin-bottom:16px">
               <div style="font-size:10px;color:var(--accent);font-family:'DM Mono',monospace;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px">Your Warmup Question</div>
               <div id="wu-question-text" style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;line-height:1.4;color:var(--text);margin-bottom:10px"></div>
               <div id="wu-question-tip" style="font-size:12.5px;color:var(--muted2);line-height:1.6"></div>
@@ -2718,7 +2736,7 @@ body.reducemotion .coach-orb-wave { animation: none !important; }
                   </div>
                 </div>
                 <!-- One coaching line -->
-                <div style="background:rgba(108,99,255,0.07);border:1px solid rgba(108,99,255,0.15);border-radius:10px;padding:14px 16px;margin-bottom:16px">
+                <div style="background:rgba(var(--accent-rgb),0.07);border:1px solid rgba(var(--accent-rgb),0.15);border-radius:10px;padding:14px 16px;margin-bottom:16px">
                   <div style="font-size:10px;color:var(--accent3);font-family:'DM Mono',monospace;margin-bottom:6px">FOCUS FOR TODAY</div>
                   <div id="wu-coaching-line" style="font-size:14px;color:var(--text);line-height:1.65"></div>
                 </div>
@@ -2795,6 +2813,159 @@ body.reducemotion .coach-orb-wave { animation: none !important; }
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- REAL-TIME VIDEO ANALYSIS -->
+      <div class="page" id="page-realtime">
+        <div class="section-head">
+          <h2>Real-Time Analysis</h2>
+          <p>Camera on. Live nonverbal analysis. Full debrief on your verbal AND physical presence.</p>
+        </div>
+
+        <!-- Mode selector -->
+        <div id="rt-setup">
+          <div style="margin-bottom:20px">
+            <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px">Choose Mode</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;max-width:700px">
+              <div class="hg-card" onclick="selectRTMode('interview')" id="rt-mode-interview">
+                <div class="hg-icon">💼</div>
+                <div class="hg-title">Interview</div>
+                <div class="hg-desc">Answer interview questions on camera like a real video interview.</div>
+              </div>
+              <div class="hg-card" onclick="selectRTMode('pitch')" id="rt-mode-pitch">
+                <div class="hg-icon">🚀</div>
+                <div class="hg-title">Pitch</div>
+                <div class="hg-desc">Deliver your pitch to camera. Investor pushback included.</div>
+              </div>
+              <div class="hg-card" onclick="selectRTMode('speech')" id="rt-mode-speech">
+                <div class="hg-icon">🎤</div>
+                <div class="hg-title">Speech</div>
+                <div class="hg-desc">Deliver a prepared or impromptu speech. Full presence analysis.</div>
+              </div>
+              <div class="hg-card" onclick="selectRTMode('freeform')" id="rt-mode-freeform">
+                <div class="hg-icon">🗣️</div>
+                <div class="hg-title">Free Practice</div>
+                <div class="hg-desc">Just talk. Get nonverbal analysis on anything you say.</div>
+              </div>
+            </div>
+          </div>
+
+          <div id="rt-config" class="hidden" style="max-width:480px;margin-bottom:20px">
+            <div class="panel">
+              <div id="rt-config-content"></div>
+              <button class="btn-primary" onclick="startRealTimeSession()" style="margin-top:16px" id="rt-start-btn">📹 Start Camera & Begin</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active session layout -->
+        <div id="rt-session" class="hidden">
+          <div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start">
+            <!-- Left: camera + live transcript -->
+            <div>
+              <!-- Camera feed -->
+              <div style="position:relative;border-radius:16px;overflow:hidden;background:#000;aspect-ratio:16/9;margin-bottom:16px">
+                <video id="rt-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1)"></video>
+                <canvas id="rt-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;transform:scaleX(-1)"></canvas>
+
+                <!-- Live metric overlays on camera -->
+                <div style="position:absolute;top:12px;left:12px;display:flex;gap:8px;flex-wrap:wrap">
+                  <div id="rt-eye-badge" style="background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:4px 12px;font-size:11px;font-family:'DM Mono',monospace;color:#2dd4a0">👁️ Eye Contact: —</div>
+                  <div id="rt-pose-badge" style="background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:4px 12px;font-size:11px;font-family:'DM Mono',monospace;color:#38bdf8">🧍 Pose: —</div>
+                </div>
+
+                <!-- Recording indicator -->
+                <div style="position:absolute;top:12px;right:12px;display:flex;align-items:center;gap:6px;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);border-radius:20px;padding:4px 12px">
+                  <div style="width:7px;height:7px;background:#f87171;border-radius:50%;animation:livePulse 1.5s ease-in-out infinite"></div>
+                  <span style="font-size:11px;font-family:'DM Mono',monospace;color:#fff">LIVE</span>
+                </div>
+
+                <!-- Timer -->
+                <div id="rt-timer" style="position:absolute;bottom:12px;left:12px;font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,0.8)">0:00</div>
+
+                <!-- End button -->
+                <button onclick="endRealTimeSession()" style="position:absolute;bottom:12px;right:12px;background:rgba(248,113,113,0.85);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;padding:7px 14px;cursor:pointer;font-family:'Space Grotesk',sans-serif">End & Score</button>
+              </div>
+
+              <!-- Question / prompt area -->
+              <div id="rt-prompt-area" style="padding:16px 20px;background:var(--s1);border:1px solid var(--border2);border-radius:12px;margin-bottom:14px">
+                <div style="font-size:10px;color:var(--accent);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Current Prompt</div>
+                <div id="rt-prompt-text" style="font-size:15px;color:var(--text);line-height:1.65">Starting...</div>
+              </div>
+
+              <!-- Live transcript -->
+              <div id="rt-transcript" style="min-height:60px;padding:12px 16px;background:var(--s2);border:1px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--muted2);font-style:italic;line-height:1.7">Your speech will appear here...</div>
+            </div>
+
+            <!-- Right: live metrics panel -->
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px">Live Metrics</div>
+
+              <!-- Eye contact meter -->
+              <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:16px">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                  <span style="font-size:12px;color:var(--muted2);font-family:'DM Mono',monospace">Eye Contact</span>
+                  <span id="rt-eye-pct" style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:var(--green)">—%</span>
+                </div>
+                <div style="background:var(--s3);border-radius:4px;height:8px;overflow:hidden">
+                  <div id="rt-eye-bar" style="height:100%;border-radius:4px;background:linear-gradient(90deg,#2dd4a0,#38bdf8);width:0%;transition:width 0.5s ease"></div>
+                </div>
+                <div id="rt-eye-note" style="font-size:10.5px;color:var(--muted);margin-top:6px;font-family:'DM Mono',monospace">Looking at camera: good</div>
+              </div>
+
+              <!-- Head stability -->
+              <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:16px">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                  <span style="font-size:12px;color:var(--muted2);font-family:'DM Mono',monospace">Head Stability</span>
+                  <span id="rt-head-pct" style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:var(--accent3)">—%</span>
+                </div>
+                <div style="background:var(--s3);border-radius:4px;height:8px;overflow:hidden">
+                  <div id="rt-head-bar" style="height:100%;border-radius:4px;background:linear-gradient(90deg,#c084fc,#7c6fff);width:0%;transition:width 0.5s ease"></div>
+                </div>
+                <div id="rt-head-note" style="font-size:10.5px;color:var(--muted);margin-top:6px;font-family:'DM Mono',monospace">Steady: strong presence signal</div>
+              </div>
+
+              <!-- Expression confidence -->
+              <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:16px">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                  <span style="font-size:12px;color:var(--muted2);font-family:'DM Mono',monospace">Expression</span>
+                  <span id="rt-expr-label" style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--amber)">—</span>
+                </div>
+                <div id="rt-expr-note" style="font-size:10.5px;color:var(--muted);font-family:'DM Mono',monospace">Analyzing...</div>
+              </div>
+
+              <!-- Blink rate -->
+              <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:16px">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                  <span style="font-size:12px;color:var(--muted2);font-family:'DM Mono',monospace">Blink Rate</span>
+                  <span id="rt-blink-label" style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--accent2)">—</span>
+                </div>
+                <div id="rt-blink-note" style="font-size:10.5px;color:var(--muted);font-family:'DM Mono',monospace">Normal: 12-20 blinks/min</div>
+              </div>
+
+              <!-- Live nonverbal score -->
+              <div style="background:linear-gradient(135deg,rgba(124,111,255,0.1),rgba(56,189,248,0.05));border:1px solid var(--border3);border-radius:12px;padding:16px;text-align:center">
+                <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Live Presence Score</div>
+                <div id="rt-live-score" style="font-family:'Space Grotesk',sans-serif;font-size:36px;font-weight:800;color:var(--text);letter-spacing:-1px">—</div>
+                <div style="font-size:10px;color:var(--muted);margin-top:2px">Updates every 3 seconds</div>
+              </div>
+
+              <!-- Feedback log -->
+              <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:14px">
+                <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Live Coaching</div>
+                <div id="rt-feedback-log" style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;scrollbar-width:none">
+                  <div style="font-size:12px;color:var(--muted2)">Feedback appears here during your session...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Debrief -->
+        <div id="rt-debrief" class="hidden">
+          <div id="rt-debrief-content"></div>
+          <button class="btn-primary" onclick="resetRealTime()" style="margin-top:16px;max-width:220px">New Session</button>
         </div>
       </div>
 
@@ -2958,42 +3129,44 @@ body.reducemotion .coach-orb-wave { animation: none !important; }
               </div>
             </div>
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
-              <!-- Your coach -->
-              <div style="background:var(--bg1);border:1px solid rgba(108,99,255,0.2);border-radius:14px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:10px">
-                <div style="font-size:10px;color:var(--accent3);font-family:'DM Mono',monospace;letter-spacing:1.5px;text-transform:uppercase">Your Coach 🤝</div>
-                <canvas id="debate-face-a" width="100" height="100" style="width:100px;height:100px;border-radius:50%"></canvas>
-                <div id="debate-name-a" style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700"></div>
-                <div id="debate-status-a" style="font-size:10.5px;color:var(--muted2);font-family:'DM Mono',monospace;min-height:14px;text-align:center"></div>
-                <div id="debate-log-a" style="width:100%;max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
-              </div>
-              <!-- Opposition -->
-              <div style="background:var(--bg1);border:1px solid rgba(248,113,113,0.2);border-radius:14px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:10px">
-                <div style="font-size:10px;color:var(--red);font-family:'DM Mono',monospace;letter-spacing:1.5px;text-transform:uppercase">Opposition ⚔️</div>
-                <canvas id="debate-face-b" width="100" height="100" style="width:100px;height:100px;border-radius:50%"></canvas>
-                <div id="debate-name-b" style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700"></div>
-                <div id="debate-status-b" style="font-size:10.5px;color:var(--muted2);font-family:'DM Mono',monospace;min-height:14px;text-align:center"></div>
-                <div id="debate-log-b" style="width:100%;max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
-              </div>
-            </div>
-
-            <!-- Voice input -->
-            <div style="background:var(--bg1);border:1px solid var(--border);border-radius:14px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:12px">
-              <div id="debate-transcript" style="font-size:14px;color:var(--muted2);font-style:italic;min-height:36px;text-align:center;line-height:1.65;max-width:500px">Hold the button and make your argument...</div>
-              <div style="display:flex;align-items:center;gap:14px">
-                <div id="debate-waveform" style="display:flex;gap:3px;align-items:center;height:22px">
-                  <div class="wave-bar" id="dwb0" style="height:4px"></div><div class="wave-bar" id="dwb1" style="height:6px"></div>
-                  <div class="wave-bar" id="dwb2" style="height:10px"></div><div class="wave-bar" id="dwb3" style="height:6px"></div>
-                  <div class="wave-bar" id="dwb4" style="height:14px"></div><div class="wave-bar" id="dwb5" style="height:6px"></div>
-                  <div class="wave-bar" id="dwb6" style="height:10px"></div><div class="wave-bar" id="dwb7" style="height:6px"></div>
-                  <div class="wave-bar" id="dwb8" style="height:4px"></div>
+            <div id="debate-conversation">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+                <!-- Your coach -->
+                <div style="background:var(--bg1);border:1px solid rgba(var(--accent-rgb),0.2);border-radius:14px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:10px">
+                  <div style="font-size:10px;color:var(--accent3);font-family:'DM Mono',monospace;letter-spacing:1.5px;text-transform:uppercase">Your Coach 🤝</div>
+                  <canvas id="debate-face-a" width="100" height="100" style="width:100px;height:100px;border-radius:50%"></canvas>
+                  <div id="debate-name-a" style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700"></div>
+                  <div id="debate-status-a" style="font-size:10.5px;color:var(--muted2);font-family:'DM Mono',monospace;min-height:14px;text-align:center"></div>
+                  <div id="debate-log-a" style="width:100%;max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
                 </div>
-                <button class="hold-btn idle" id="debate-mic-btn" style="width:64px;height:64px;font-size:22px"
-                  onclick="toggleDebateListening()">🎙️</button>
-                <div style="width:65px"></div>
+                <!-- Opposition -->
+                <div style="background:var(--bg1);border:1px solid rgba(248,113,113,0.2);border-radius:14px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:10px">
+                  <div style="font-size:10px;color:var(--red);font-family:'DM Mono',monospace;letter-spacing:1.5px;text-transform:uppercase">Opposition ⚔️</div>
+                  <canvas id="debate-face-b" width="100" height="100" style="width:100px;height:100px;border-radius:50%"></canvas>
+                  <div id="debate-name-b" style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700"></div>
+                  <div id="debate-status-b" style="font-size:10.5px;color:var(--muted2);font-family:'DM Mono',monospace;min-height:14px;text-align:center"></div>
+                  <div id="debate-log-b" style="width:100%;max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
+                </div>
               </div>
-              <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace">Hold to speak · Release to send</div>
-              <div class="debate-status" id="debate-global-status" style="font-size:12.5px;color:var(--muted2)"></div>
+
+              <!-- Voice input -->
+              <div style="background:var(--bg1);border:1px solid var(--border);border-radius:14px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:12px">
+                <div id="debate-transcript" style="font-size:14px;color:var(--muted2);font-style:italic;min-height:36px;text-align:center;line-height:1.65;max-width:500px">Hold the button and make your argument...</div>
+                <div style="display:flex;align-items:center;gap:14px">
+                  <div id="debate-waveform" style="display:flex;gap:3px;align-items:center;height:22px">
+                    <div class="wave-bar" id="dwb0" style="height:4px"></div><div class="wave-bar" id="dwb1" style="height:6px"></div>
+                    <div class="wave-bar" id="dwb2" style="height:10px"></div><div class="wave-bar" id="dwb3" style="height:6px"></div>
+                    <div class="wave-bar" id="dwb4" style="height:14px"></div><div class="wave-bar" id="dwb5" style="height:6px"></div>
+                    <div class="wave-bar" id="dwb6" style="height:10px"></div><div class="wave-bar" id="dwb7" style="height:6px"></div>
+                    <div class="wave-bar" id="dwb8" style="height:4px"></div>
+                  </div>
+                  <button class="hold-btn idle" id="debate-mic-btn" style="width:64px;height:64px;font-size:22px"
+                    onclick="toggleDebateListening()">🎙️</button>
+                  <div style="width:65px"></div>
+                </div>
+                <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace">Hold to speak · Release to send</div>
+                <div class="debate-status" id="debate-global-status" style="font-size:12.5px;color:var(--muted2)"></div>
+              </div>
             </div>
 
             <!-- Score panel (shown after debate ends) -->
@@ -3398,12 +3571,12 @@ body.reducemotion .coach-orb-wave { animation: none !important; }
               <div class="settings-section-title">Appearance</div>
               <div class="setting-row">
                 <div class="setting-info"><h4>Accent Color</h4><p>Primary brand color throughout the app</p></div>
-                <div class="setting-control" style="display:flex;gap:8px">
-                  <div onclick="setAccentColor('#7c6fff')" style="width:22px;height:22px;border-radius:50%;background:#7c6fff;cursor:pointer;border:2px solid rgba(255,255,255,0.3);transition:transform 0.2s" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform=''"></div>
-                  <div onclick="setAccentColor('#38bdf8')" style="width:22px;height:22px;border-radius:50%;background:#38bdf8;cursor:pointer;border:2px solid rgba(255,255,255,0.1);transition:transform 0.2s" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform=''"></div>
-                  <div onclick="setAccentColor('#2dd4a0')" style="width:22px;height:22px;border-radius:50%;background:#2dd4a0;cursor:pointer;border:2px solid rgba(255,255,255,0.1);transition:transform 0.2s" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform=''"></div>
-                  <div onclick="setAccentColor('#f472b6')" style="width:22px;height:22px;border-radius:50%;background:#f472b6;cursor:pointer;border:2px solid rgba(255,255,255,0.1);transition:transform 0.2s" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform=''"></div>
-                  <div onclick="setAccentColor('#fbbf24')" style="width:22px;height:22px;border-radius:50%;background:#fbbf24;cursor:pointer;border:2px solid rgba(255,255,255,0.1);transition:transform 0.2s" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform=''"></div>
+                <div class="setting-control accent-swatch-row" style="display:flex;gap:8px">
+                  <div class="accent-swatch" data-color="#7c6fff" onclick="setAccentColor('#7c6fff')" style="width:22px;height:22px;border-radius:50%;background:#7c6fff;cursor:pointer;transition:transform 0.2s" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform=''"></div>
+                  <div class="accent-swatch" data-color="#38bdf8" onclick="setAccentColor('#38bdf8')" style="width:22px;height:22px;border-radius:50%;background:#38bdf8;cursor:pointer;transition:transform 0.2s" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform=''"></div>
+                  <div class="accent-swatch" data-color="#2dd4a0" onclick="setAccentColor('#2dd4a0')" style="width:22px;height:22px;border-radius:50%;background:#2dd4a0;cursor:pointer;transition:transform 0.2s" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform=''"></div>
+                  <div class="accent-swatch" data-color="#f472b6" onclick="setAccentColor('#f472b6')" style="width:22px;height:22px;border-radius:50%;background:#f472b6;cursor:pointer;transition:transform 0.2s" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform=''"></div>
+                  <div class="accent-swatch" data-color="#fbbf24" onclick="setAccentColor('#fbbf24')" style="width:22px;height:22px;border-radius:50%;background:#fbbf24;cursor:pointer;transition:transform 0.2s" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform=''"></div>
                 </div>
               </div>
               <div class="setting-row">
@@ -3439,10 +3612,6 @@ body.reducemotion .coach-orb-wave { animation: none !important; }
               <div class="setting-row">
                 <div class="setting-info"><h4>Auto-save Sessions</h4><p>Save every session to your account</p></div>
                 <label class="toggle"><input type="checkbox" id="tog-autosave" checked onchange="S.autosave=this.checked;saveSettings()"><span class="toggle-slider"></span></label>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Analytics</h4><p>Help improve Conver with anonymous usage data</p></div>
-                <label class="toggle"><input type="checkbox" id="tog-analytics" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
               </div>
               <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
                 <button class="btn-ghost" onclick="exportUserData()" style="font-size:12.5px">⬇ Export My Data (JSON)</button>
@@ -3772,6 +3941,514 @@ function detectTone(text) {
   return null; // neutral — no special tone instruction needed
 }
 
+// ── REAL-TIME VIDEO ANALYSIS ENGINE ──────────────────────────
+// MediaPipe Face Mesh runs entirely in the browser via WebAssembly — no
+// server calls, no API costs, no latency. It processes the camera feed
+// frame by frame, returning 468 facial landmarks in real time, which we use
+// to calculate eye contact, head stability, expression confidence, and
+// blink rate alongside the existing verbal scoring.
+const RealTimeAnalyzer = {
+  faceMesh: null,
+  camera: null,
+  active: false,
+  mode: null,
+
+  // Rolling metric accumulators
+  frames: 0,
+  eyeContactFrames: 0,
+  headStableFrames: 0,
+  blinkCount: 0,
+  wasEyeOpen: true,
+  expressionSamples: [],
+
+  // Session data
+  sessionStart: null,
+  timerInterval: null,
+  promptQueue: [],
+  currentPromptIdx: 0,
+  userResponses: [],
+  currentTranscript: '',
+
+  // Live score
+  liveNonverbalScore: 0,
+
+  async init() {
+    if (this.faceMesh) return; // already initialized
+    this.faceMesh = new FaceMesh({
+      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
+    });
+    this.faceMesh.setOptions({
+      maxNumFaces: 1,
+      refineLandmarks: true,
+      minDetectionConfidence: 0.5,
+      minTrackingConfidence: 0.5
+    });
+    this.faceMesh.onResults((results) => this.onFrame(results));
+    console.log('✓ MediaPipe FaceMesh initialized');
+  },
+
+  onFrame(results) {
+    if (!this.active) return;
+    this.frames++;
+    const canvas = document.getElementById('rt-canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
+      this.updateBadge('rt-eye-badge', '🚫 No face detected', '#f87171');
+      this.updateBadge('rt-pose-badge', '➡️ Move into frame', '#f87171');
+      return;
+    }
+
+    const landmarks = results.multiFaceLandmarks[0];
+
+    // ── EYE CONTACT DETECTION ───────────────────────────────
+    // Iris landmarks: 468-472 (left), 473-477 (right) when refineLandmarks=true
+    // Check if iris is centered relative to eye corners
+    const leftIris = landmarks[468];
+    const rightIris = landmarks[473];
+    const leftEyeLeft = landmarks[33];
+    const leftEyeRight = landmarks[133];
+    const rightEyeLeft = landmarks[362];
+    const rightEyeRight = landmarks[263];
+
+    const leftEyeCenterX = (leftEyeLeft.x + leftEyeRight.x) / 2;
+    const rightEyeCenterX = (rightEyeLeft.x + rightEyeRight.x) / 2;
+    const leftOffsetX = Math.abs(leftIris.x - leftEyeCenterX);
+    const rightOffsetX = Math.abs(rightIris.x - rightEyeCenterX);
+    const avgOffset = (leftOffsetX + rightOffsetX) / 2;
+
+    // Eye width for normalization
+    const eyeWidth = Math.abs(leftEyeRight.x - leftEyeLeft.x);
+    const normalizedOffset = eyeWidth > 0 ? avgOffset / eyeWidth : 1;
+    const isLookingAtCamera = normalizedOffset < 0.15; // threshold for "looking at camera"
+    if (isLookingAtCamera) this.eyeContactFrames++;
+
+    // ── BLINK DETECTION ─────────────────────────────────────
+    const upperLid = landmarks[159]; // upper eyelid
+    const lowerLid = landmarks[145]; // lower eyelid
+    const eyeOpenness = Math.abs(upperLid.y - lowerLid.y);
+    const isEyeOpen = eyeOpenness > 0.01;
+    if (this.wasEyeOpen && !isEyeOpen) this.blinkCount++;
+    this.wasEyeOpen = isEyeOpen;
+
+    // ── HEAD POSE STABILITY ──────────────────────────────────
+    // Nose tip vs face center — if stable, head is steady
+    const noseTip = landmarks[1];
+    const forehead = landmarks[10];
+    const chin = landmarks[152];
+    const faceCenterX = (forehead.x + chin.x) / 2;
+    const headTilt = Math.abs(noseTip.x - faceCenterX);
+    const isHeadStable = headTilt < 0.04;
+    if (isHeadStable) this.headStableFrames++;
+
+    // ── EXPRESSION ANALYSIS ──────────────────────────────────
+    // Mouth corner position relative to mouth center — higher = smile
+    const leftMouthCorner = landmarks[61];
+    const rightMouthCorner = landmarks[291];
+    const mouthCenter = landmarks[13];
+    const mouthCornerHeight = mouthCenter.y - ((leftMouthCorner.y + rightMouthCorner.y) / 2);
+    this.expressionSamples.push(mouthCornerHeight);
+    if (this.expressionSamples.length > 30) this.expressionSamples.shift();
+
+    // ── UPDATE UI EVERY 15 FRAMES ────────────────────────────
+    if (this.frames % 15 === 0) {
+      const eyePct = Math.round((this.eyeContactFrames / this.frames) * 100);
+      const headPct = Math.round((this.headStableFrames / this.frames) * 100);
+      const avgExpr = this.expressionSamples.reduce((a,b)=>a+b,0) / this.expressionSamples.length;
+      const blinkPerMin = Math.round(this.blinkCount / ((Date.now()-this.sessionStart)/60000));
+
+      // Eye contact
+      document.getElementById('rt-eye-pct').textContent = eyePct + '%';
+      document.getElementById('rt-eye-bar').style.width = eyePct + '%';
+      document.getElementById('rt-eye-note').textContent = eyePct >= 70 ? 'Strong eye contact' : eyePct >= 40 ? 'Moderate — look at camera more' : 'Low — you appear distracted';
+      this.updateBadge('rt-eye-badge', `👁️ ${eyePct}% eye contact`, eyePct>=70?'#2dd4a0':eyePct>=40?'#fbbf24':'#f87171');
+
+      // Head stability
+      document.getElementById('rt-head-pct').textContent = headPct + '%';
+      document.getElementById('rt-head-bar').style.width = headPct + '%';
+      document.getElementById('rt-head-note').textContent = headPct >= 80 ? 'Very steady — strong presence' : headPct >= 60 ? 'Some movement — try to settle' : 'Unstable — plant your feet and breathe';
+      this.updateBadge('rt-pose-badge', `🧍 ${headPct>=80?'Steady':headPct>=60?'Moving':'Unstable'}`, headPct>=80?'#38bdf8':headPct>=60?'#fbbf24':'#f87171');
+
+      // Expression
+      const exprLabel = avgExpr > 0.008 ? 'Engaged 😊' : avgExpr > 0 ? 'Neutral 😐' : 'Tense 😬';
+      document.getElementById('rt-expr-label').textContent = exprLabel;
+      document.getElementById('rt-expr-note').textContent = avgExpr > 0.008 ? 'Good — warmth comes through' : avgExpr > 0 ? 'Neutral — consider more expression' : 'Tension showing — relax your jaw';
+
+      // Blink rate
+      const blinkLabel = blinkPerMin < 8 ? 'Low (stress?)' : blinkPerMin > 25 ? 'High (nervous?)' : 'Normal';
+      document.getElementById('rt-blink-label').textContent = `${blinkPerMin}/min`;
+      document.getElementById('rt-blink-note').textContent = blinkLabel === 'Normal' ? 'Normal rate — relaxed' : blinkLabel;
+
+      // Live nonverbal score
+      this.liveNonverbalScore = Math.round(
+        (eyePct * 0.4) +
+        (headPct * 0.3) +
+        (avgExpr > 0.008 ? 30 : avgExpr > 0 ? 20 : 10) +
+        (blinkPerMin >= 8 && blinkPerMin <= 25 ? 10 : 0)
+      );
+      const liveScore = Math.min(100, this.liveNonverbalScore);
+      document.getElementById('rt-live-score').textContent = liveScore;
+      document.getElementById('rt-live-score').style.color = liveScore>=75?'var(--green)':liveScore>=50?'var(--amber)':'var(--red)';
+
+      // Live coaching tip (every 30 frames)
+      if (this.frames % 30 === 0) {
+        this.addLiveFeedback(eyePct, headPct, avgExpr, blinkPerMin);
+      }
+    }
+  },
+
+  addLiveFeedback(eyePct, headPct, avgExpr, blinkPerMin) {
+    const tips = [];
+    if (eyePct < 50) tips.push('👁️ Look directly at the camera');
+    if (headPct < 60) tips.push('🧍 Keep your head still and centered');
+    if (avgExpr < 0) tips.push('😊 Relax your face — you look tense');
+    if (blinkPerMin > 25) tips.push('😮‍💨 Slow down — breathe and blink less');
+    if (eyePct >= 75 && headPct >= 75) tips.push('✓ Great presence — keep it up');
+    if (tips.length === 0) return;
+
+    const tip = tips[Math.floor(Math.random() * tips.length)];
+    const log = document.getElementById('rt-feedback-log');
+    if (!log) return;
+    const div = document.createElement('div');
+    div.style.cssText = 'font-size:11.5px;color:var(--text);padding:5px 8px;border-radius:6px;background:var(--s2);animation:pageIn 0.2s ease';
+    div.textContent = tip;
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+    while (log.children.length > 8) log.removeChild(log.firstChild);
+  },
+
+  updateBadge(id, text, color) {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = text; el.style.color = color; }
+  },
+
+  getFinalMetrics() {
+    const eyePct = this.frames ? Math.round((this.eyeContactFrames / this.frames) * 100) : 0;
+    const headPct = this.frames ? Math.round((this.headStableFrames / this.frames) * 100) : 0;
+    const avgExpr = this.expressionSamples.length ? this.expressionSamples.reduce((a,b)=>a+b,0)/this.expressionSamples.length : 0;
+    const sessionMinutes = (Date.now() - this.sessionStart) / 60000;
+    const blinkPerMin = sessionMinutes > 0 ? Math.round(this.blinkCount / sessionMinutes) : 0;
+
+    // Nonverbal score out of 10
+    const eyeScore = Math.min(10, eyePct / 10);
+    const headScore = Math.min(10, headPct / 10);
+    const exprScore = avgExpr > 0.008 ? 8 : avgExpr > 0 ? 6 : 4;
+    const blinkScore = (blinkPerMin >= 8 && blinkPerMin <= 25) ? 9 : blinkPerMin < 8 ? 6 : 5;
+
+    const nonverbalComposite = (eyeScore*0.4 + headScore*0.3 + exprScore*0.2 + blinkScore*0.1);
+
+    return {
+      eyeContactPct: eyePct,
+      headStabilityPct: headPct,
+      expressionScore: exprScore,
+      blinkRate: blinkPerMin,
+      nonverbalComposite: parseFloat(nonverbalComposite.toFixed(1)),
+      eyeScore: parseFloat(eyeScore.toFixed(1)),
+      headScore: parseFloat(headScore.toFixed(1)),
+    };
+  },
+
+  async startCamera() {
+    const videoEl = document.getElementById('rt-video');
+    const canvas = document.getElementById('rt-canvas');
+
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: 1280, height: 720, facingMode: 'user' },
+      audio: false
+    });
+    videoEl.srcObject = stream;
+    await new Promise(resolve => videoEl.onloadedmetadata = resolve);
+    canvas.width = videoEl.videoWidth;
+    canvas.height = videoEl.videoHeight;
+
+    this.camera = new Camera(videoEl, {
+      onFrame: async () => {
+        if (this.active && this.faceMesh) {
+          await this.faceMesh.send({ image: videoEl });
+        }
+      },
+      width: 1280, height: 720
+    });
+    this.camera.start();
+
+    this.active = true;
+    this.sessionStart = Date.now();
+    this.frames = 0;
+    this.eyeContactFrames = 0;
+    this.headStableFrames = 0;
+    this.blinkCount = 0;
+    this.expressionSamples = [];
+  },
+
+  stop() {
+    this.active = false;
+    if (this.camera) { this.camera.stop(); this.camera = null; }
+    const video = document.getElementById('rt-video');
+    if (video && video.srcObject) {
+      video.srcObject.getTracks().forEach(t => t.stop());
+      video.srcObject = null;
+    }
+    if (this.timerInterval) { clearInterval(this.timerInterval); this.timerInterval = null; }
+  }
+};
+
+// ── REAL-TIME SESSION CONTROL ─────────────────────────────────
+let rtMode = null;
+
+function selectRTMode(mode) {
+  rtMode = mode;
+  document.querySelectorAll('[id^=rt-mode-]').forEach(c => {
+    c.style.borderColor = c.id === 'rt-mode-'+mode ? 'var(--accent)' : 'var(--border)';
+    c.style.background = c.id === 'rt-mode-'+mode ? 'rgba(124,111,255,0.1)' : '';
+  });
+
+  const config = document.getElementById('rt-config');
+  const configContent = document.getElementById('rt-config-content');
+  config.classList.remove('hidden');
+
+  const configs = {
+    interview: `
+      <div class="settings-section-title">Interview Setup</div>
+      <div class="setting-row"><div class="setting-info"><h4>Role</h4></div><input type="text" id="rt-role" placeholder="e.g. Product Manager at Meta" style="max-width:220px"/></div>
+      <div class="setting-row"><div class="setting-info"><h4>Difficulty</h4></div><select id="rt-diff"><option value="medium">Standard</option><option value="hard">Tough</option><option value="brutal">Brutal</option></select></div>`,
+    pitch: `
+      <div class="settings-section-title">Pitch Setup</div>
+      <div class="setting-row"><div class="setting-info"><h4>Your Idea</h4></div><input type="text" id="rt-idea" placeholder="What are you pitching?" style="max-width:220px"/></div>`,
+    speech: `
+      <div class="settings-section-title">Speech Setup</div>
+      <div class="setting-row"><div class="setting-info"><h4>Topic</h4></div><input type="text" id="rt-topic" placeholder="e.g. Why I deserve this promotion" style="max-width:220px"/></div>
+      <div class="setting-row"><div class="setting-info"><h4>Duration</h4></div><select id="rt-duration"><option value="60">1 minute</option><option value="120" selected>2 minutes</option><option value="300">5 minutes</option></select></div>`,
+    freeform: `<div class="settings-section-title">Free Practice</div><p style="font-size:13px;color:var(--muted2)">Just talk. We will analyze your nonverbal presence in real time and give you a debrief when you are done.</p>`
+  };
+  configContent.innerHTML = configs[mode] || '';
+}
+
+async function startRealTimeSession() {
+  if (!rtMode) { showToast('⚠','Select a mode first'); return; }
+
+  const btn = document.getElementById('rt-start-btn');
+  btn.disabled = true; btn.textContent = 'Starting camera...';
+
+  try {
+    await RealTimeAnalyzer.init();
+    await RealTimeAnalyzer.startCamera();
+  } catch(e) {
+    btn.disabled = false; btn.textContent = '📹 Start Camera & Begin';
+    showToast('❌', 'Camera error: ' + e.message + '. Make sure Chrome has camera permission.');
+    return;
+  }
+
+  document.getElementById('rt-setup').classList.add('hidden');
+  document.getElementById('rt-session').classList.remove('hidden');
+
+  // Start timer
+  RealTimeAnalyzer.timerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - RealTimeAnalyzer.sessionStart) / 1000);
+    const m = Math.floor(elapsed/60), s = elapsed%60;
+    const timerEl = document.getElementById('rt-timer');
+    if (timerEl) timerEl.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+  }, 1000);
+
+  // Load prompts based on mode
+  await loadRTPrompts();
+  btn.disabled = false;
+}
+
+async function loadRTPrompts() {
+  const promptEl = document.getElementById('rt-prompt-text');
+  RealTimeAnalyzer.promptQueue = [];
+  RealTimeAnalyzer.currentPromptIdx = 0;
+
+  if (rtMode === 'interview') {
+    const role = document.getElementById('rt-role')?.value || 'a professional role';
+    const diff = document.getElementById('rt-diff')?.value || 'medium';
+    const diffText = diff==='hard'?'Be skeptical and push back.':diff==='brutal'?'Be aggressive and stress-test.':'Be professional and neutral.';
+    try {
+      const raw = await callAI(
+        [{role:'user',content:`Generate 5 interview questions for: ${role}. ${diffText} Return JSON array of strings only, no other text.`}]
+      );
+      const m = raw.match(/\[[\s\S]*\]/);
+      if (m) RealTimeAnalyzer.promptQueue = JSON.parse(m[0]);
+    } catch(e) {
+      RealTimeAnalyzer.promptQueue = [
+        'Tell me about yourself and why you want this role.',
+        'Describe a time you faced a significant challenge at work.',
+        'What is your biggest professional weakness?',
+        'Why should we hire you over other candidates?',
+        'Where do you see yourself in 5 years?'
+      ];
+    }
+  } else if (rtMode === 'pitch') {
+    const idea = document.getElementById('rt-idea')?.value || 'your startup idea';
+    RealTimeAnalyzer.promptQueue = [
+      `Deliver your 60-second opening pitch for: ${idea}`,
+      'What is your target market and why are they underserved?',
+      'How do you make money?',
+      'Who is your competition and what is your unfair advantage?',
+      'What do you need from investors and what will you do with it?'
+    ];
+  } else if (rtMode === 'speech') {
+    const topic = document.getElementById('rt-topic')?.value || 'your topic';
+    RealTimeAnalyzer.promptQueue = [`Deliver your speech on: "${topic}"`];
+  } else {
+    RealTimeAnalyzer.promptQueue = ['Speak freely. Talk about anything — we are analyzing your delivery.'];
+  }
+
+  if (promptEl && RealTimeAnalyzer.promptQueue.length > 0) {
+    promptEl.textContent = RealTimeAnalyzer.promptQueue[0];
+  }
+
+  // Start Scribe STT for transcript
+  if (typeof ScribeSTT !== 'undefined') {
+    ScribeSTT.autoSubmitDelay = 5000;
+    ScribeSTT.start({
+      onTranscript: (text) => {
+        const el = document.getElementById('rt-transcript');
+        if (el) el.textContent = text;
+        RealTimeAnalyzer.currentTranscript = text;
+      },
+      onAutoSubmit: (fullText) => _rtHandleResponse(fullText)
+    });
+  }
+}
+
+// Advances to the next prompt after a response comes in, or ends the session
+// once the queue is exhausted. Pulled out of the ScribeSTT callback (rather
+// than nesting a second inline callback the way the original draft did) so
+// each response — first or Nth — goes through the exact same path.
+function _rtHandleResponse(fullText) {
+  RealTimeAnalyzer.userResponses.push({
+    prompt: RealTimeAnalyzer.promptQueue[RealTimeAnalyzer.currentPromptIdx] || '',
+    response: fullText
+  });
+  RealTimeAnalyzer.currentPromptIdx++;
+
+  if (RealTimeAnalyzer.currentPromptIdx < RealTimeAnalyzer.promptQueue.length) {
+    const promptEl = document.getElementById('rt-prompt-text');
+    if (promptEl) promptEl.textContent = RealTimeAnalyzer.promptQueue[RealTimeAnalyzer.currentPromptIdx];
+    const el = document.getElementById('rt-transcript');
+    if (el) el.textContent = 'Listening for next response...';
+    ScribeSTT.resetAccumulator();
+    ScribeSTT.start({
+      onTranscript: (t) => { const el2 = document.getElementById('rt-transcript'); if (el2) el2.textContent = t; },
+      onAutoSubmit: (ft) => _rtHandleResponse(ft)
+    });
+  } else {
+    endRealTimeSession();
+  }
+}
+
+async function endRealTimeSession() {
+  ScribeSTT?.stop();
+  const metrics = RealTimeAnalyzer.getFinalMetrics();
+  const duration = Math.floor((Date.now() - RealTimeAnalyzer.sessionStart) / 1000);
+  RealTimeAnalyzer.stop();
+
+  document.getElementById('rt-session').classList.add('hidden');
+  document.getElementById('rt-debrief').classList.remove('hidden');
+
+  // Score verbal responses
+  let verbalScores = null;
+  if (RealTimeAnalyzer.userResponses.length > 0) {
+    try {
+      const allResponses = RealTimeAnalyzer.userResponses.map((r,i)=>`Q${i+1}: "${r.prompt}"\nA: "${r.response}"`).join('\n\n');
+      const raw = await callAI([{role:'user',content:allResponses}],
+        `You are a communication coach scoring a ${rtMode} session.
+Score verbal performance across: clarity (1-10), confidence (1-10), persuasion (1-10), storytelling (1-10), conciseness (1-10).
+Also give 2 strengths and 2 improvements specific to what was said.
+Return ONLY JSON: {"clarity":,"confidence":,"persuasion":,"storytelling":,"conciseness":,"strengths":["...","..."],"improvements":["...","..."],"verbal_overall":"<2 sentences>"}`
+      );
+      const m = raw.replace(/```json|```/g,'').match(/\{[\s\S]*\}/);
+      if (m) verbalScores = JSON.parse(m[0]);
+    } catch(e) { /* non-fatal */ }
+  }
+
+  // Combined score
+  const verbalComposite = verbalScores
+    ? (verbalScores.clarity*0.25 + verbalScores.confidence*0.20 + verbalScores.persuasion*0.25 + verbalScores.storytelling*0.15 + verbalScores.conciseness*0.15)
+    : 5;
+  const combinedScore = ((verbalComposite * 0.6) + (metrics.nonverbalComposite * 0.4)).toFixed(1);
+
+  // XP — routed through the shared awardXP() helper so this mode respects the
+  // same "XP Notifications" / "Level Up Celebration" Settings toggles, and
+  // updates S.xpLevel (not S.level — that's the separate Settings "Experience
+  // Level" string, and conflating the two silently breaks that setting).
+  const xpEarned = Math.round(parseFloat(combinedScore) * 12 + 15);
+  awardXP(xpEarned, 'for Real-Time session');
+  S.sessions++;
+  checkSessionMilestone();
+  updateStreak(); updateChips(); updateConverScore(); saveUserData();
+
+  document.getElementById('rt-debrief-content').innerHTML = `
+    <div style="font-family:'Italiana',serif;font-size:32px;color:var(--text);margin-bottom:4px">Session Complete</div>
+    <div style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:24px">${Math.floor(duration/60)}m ${duration%60}s · ${rtMode}</div>
+
+    <!-- Combined score -->
+    <div style="text-align:center;padding:24px;background:linear-gradient(135deg,rgba(124,111,255,0.1),rgba(56,189,248,0.05));border:1px solid var(--border3);border-radius:16px;margin-bottom:20px">
+      <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Combined Score (Verbal 60% + Nonverbal 40%)</div>
+      <div style="font-family:'Space Grotesk',sans-serif;font-size:56px;font-weight:900;letter-spacing:-2px;color:${+combinedScore>=8?'var(--green)':+combinedScore>=6?'var(--accent3)':'var(--amber)'}">${combinedScore}</div>
+      <div style="font-size:12px;color:var(--muted2);margin-top:4px">out of 10</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px">
+      <!-- Verbal breakdown -->
+      <div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:18px">
+        <div style="font-size:10px;color:var(--accent3);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Verbal (60%)</div>
+        ${verbalScores ? [
+          ['Clarity', verbalScores.clarity], ['Confidence', verbalScores.confidence], ['Persuasion', verbalScores.persuasion],
+          ['Storytelling', verbalScores.storytelling], ['Conciseness', verbalScores.conciseness]
+        ].map(([l,v]) => `
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
+          <span style="color:var(--muted2)">${l}</span>
+          <span style="font-family:'DM Mono',monospace;color:${v>=8?'var(--green)':v>=6?'var(--text)':'var(--red)'};font-weight:600">${v}/10</span>
+        </div>
+        `).join('') : '<div style="font-size:12px;color:var(--muted2)">No verbal responses recorded</div>'}
+      </div>
+
+      <!-- Nonverbal breakdown -->
+      <div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:18px">
+        <div style="font-size:10px;color:var(--accent2);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Nonverbal (40%)</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:800;color:var(--accent2);margin-bottom:10px">${metrics.nonverbalComposite}/10</div>
+        ${[
+          ['Eye Contact', metrics.eyeScore, metrics.eyeContactPct+'%'],
+          ['Head Stability', metrics.headScore, metrics.headStabilityPct+'%'],
+          ['Expression', metrics.expressionScore, ''],
+          ['Blink Rate', metrics.blinkRate<=25&&metrics.blinkRate>=8?9:5, metrics.blinkRate+'/min']
+        ].map(([l,v,sub]) => `
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
+          <span style="color:var(--muted2)">${l} ${sub?'('+sub+')':''}</span>
+          <span style="font-family:'DM Mono',monospace;color:${+v>=8?'var(--green)':+v>=6?'var(--text)':'var(--red)'};font-weight:600">${typeof v==='number'&&v<=10?v+'/10':v}</span>
+        </div>
+        `).join('')}
+      </div>
+    </div>
+
+    ${verbalScores ? `
+    <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px">
+      <div style="font-size:10px;color:var(--muted2);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Verbal Strengths</div>
+      ${verbalScores.strengths.map(s=>`<div style="font-size:13px;color:var(--text);margin-bottom:5px">✓ ${s}</div>`).join('')}
+      <div style="font-size:10px;color:var(--muted2);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin:12px 0 8px">To Improve</div>
+      ${verbalScores.improvements.map(s=>`<div style="font-size:13px;color:var(--text);margin-bottom:5px">→ ${s}</div>`).join('')}
+    </div>
+    ` : ''}
+
+    <div style="padding:12px 16px;background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.2);border-radius:10px">
+      ⚡ <strong>+${xpEarned} XP</strong> · Level ${S.xpLevel}
+    </div>
+  `;
+
+  showToast('📹', `Real-Time session complete! +${xpEarned} XP`);
+}
+
+function resetRealTime() {
+  document.getElementById('rt-debrief').classList.add('hidden');
+  document.getElementById('rt-setup').classList.remove('hidden');
+  document.getElementById('rt-config').classList.add('hidden');
+  document.querySelectorAll('[id^=rt-mode-]').forEach(c => { c.style.borderColor=''; c.style.background=''; });
+  rtMode = null;
+}
+
 // ── VOICE ENGINE — fully immersive voice conversation loop ────
 const VoiceEngine = {
   active: false,
@@ -3799,6 +4476,8 @@ const VoiceEngine = {
     if (this.currentAudio) { this.currentAudio.pause(); this.currentAudio = null; }
     ScribeSTT.stop();
     this._updateUI('idle');
+    const tapBtn = document.getElementById('ve-tap-to-talk-btn');
+    if (tapBtn) tapBtn.style.display = 'none';
     console.log('VoiceEngine stopped');
   },
 
@@ -3815,7 +4494,14 @@ const VoiceEngine = {
     if (!this.active) return;
     if (this.onCoachSpeaking) this.onCoachSpeaking(false);
 
-    // Auto-activate mic after coach finishes
+    // Auto-activate mic after coach finishes — unless the user turned off
+    // "Microphone Auto-start" in Settings, in which case show a manual
+    // "Tap to Respond" button instead (there's no other way to speak otherwise).
+    if (S.micAuto === false) {
+      const btn = document.getElementById('ve-tap-to-talk-btn');
+      if (btn) btn.style.display = 'inline-block';
+      return;
+    }
     setTimeout(() => {
       if (this.active) this._startListening();
     }, this.autoMicDelay);
@@ -3825,6 +4511,8 @@ const VoiceEngine = {
   _startListening() {
     if (!this.active) return;
     this._updateUI('user-speaking');
+    const tapBtn = document.getElementById('ve-tap-to-talk-btn');
+    if (tapBtn) tapBtn.style.display = 'none';
 
     ScribeSTT.autoSubmitDelay = this.silenceThreshold;
     ScribeSTT.start({
@@ -4191,7 +4879,7 @@ const COACHES={
   Luna:{color:'#6c63ff',accent:'rgba(108,99,255,0.8)',bg:'rgba(108,99,255,0.12)',greeting:"Welcome. What would be most useful for you right now?",style:"Balanced, adaptive. Read what they need and adjust.",voice:{pitch:1.05,rate:1.0}}
 };
 
-const PAGE_TITLES={home:'Overview',warmup:'Warmup',practice:'Practice Lab',voice:'Voice Session',debate:'Live Debate',coldopen:'Cold Open',qbank:'Question Bank',companion:'AI Companion',skills:'Skills & Progress',daily:'Daily Challenge',coachnotes:'Coach Notes',insights:'Insights',history:'History',briefing:'Briefing',profiles:'AI Profiles',settings:'Settings'};
+const PAGE_TITLES={home:'Overview',warmup:'Warmup',practice:'Practice Lab',voice:'Voice Session',debate:'Live Debate',coldopen:'Cold Open',qbank:'Question Bank',companion:'AI Companion',realtime:'Real-Time Analysis',skills:'Skills & Progress',daily:'Daily Challenge',coachnotes:'Coach Notes',insights:'Insights',history:'History',briefing:'Briefing',profiles:'AI Profiles',settings:'Settings'};
 
 const FACE_F={
   Blaze:{eyeColor:'#f87171',irisColor:'#ff4444',browAngle:0.3,mouthCurve:-0.1},
@@ -4327,8 +5015,20 @@ function updateHeroStats() {
 }
 
 // ── Streak ────────────────────────────────────────────────────────────────────
+// "Today" for streaks/daily challenges, in the user's configured Time Zone
+// setting rather than always the browser's local zone — otherwise someone who
+// travels or explicitly picks a home timezone gets their streak reset/rollover
+// at the wrong moment. Falls back to local time for 'auto' or an invalid zone.
+function tzDateKey(offsetDays = 0) {
+  const d = new Date(Date.now() + offsetDays * 86400000);
+  const tz = S.timezone && S.timezone !== 'auto' ? S.timezone : undefined;
+  if (!tz) return d.toDateString();
+  try { return d.toLocaleDateString('en-US', { timeZone: tz }); }
+  catch { return d.toDateString(); }
+}
+
 function updateStreak() {
-  const today = new Date().toDateString();
+  const today = tzDateKey();
   const lastSessionDate = localStorage.getItem('conver_last_session_date');
 
   if (lastSessionDate === today) {
@@ -4336,7 +5036,7 @@ function updateStreak() {
     return;
   }
 
-  const yesterday = new Date(Date.now() - 86400000).toDateString();
+  const yesterday = tzDateKey(-1);
 
   if (!lastSessionDate) {
     // First ever session — start streak at 1
@@ -4347,12 +5047,37 @@ function updateStreak() {
   } else {
     // Skipped one or more days — streak is broken, reset to 0 then 1
     S.streak = 0; // reset visibly to 0 first
-    showToast('🔥', 'Streak reset — but you showed up. Starting fresh 🔥');
+    if (S.motivation !== false) showToast('🔥', 'Streak reset — but you showed up. Starting fresh 🔥');
     S.streak = 1; // today counts as day 1 of the new streak
   }
 
   localStorage.setItem('conver_last_session_date', today);
   saveUserData(); // persist updated streak to Supabase immediately
+}
+
+// Motivational Messages setting — "Encouragement and milestone celebrations"
+// was saved but nothing ever checked it. Fires a one-off toast the first time
+// total session count crosses a milestone.
+const SESSION_MILESTONES = [5, 10, 25, 50, 100, 250, 500];
+function checkSessionMilestone() {
+  if (S.motivation === false) return;
+  if (SESSION_MILESTONES.includes(S.sessions)) {
+    showToast('🎉', `${S.sessions} sessions completed — you're building a real habit!`);
+  }
+}
+
+// Streak Reminders / Daily Challenge Reminder settings — previously saved but
+// never surfaced anything. Runs once per app load, after user data is restored
+// so S.streak reflects the real saved value. Streak warning takes priority
+// over the daily-challenge nudge so the user isn't hit with two toasts at once.
+function checkDailyReminders() {
+  const today = tzDateKey();
+  const practicedToday = localStorage.getItem('conver_last_session_date') === today;
+  if (S.streakWarn !== false && S.streak > 0 && !practicedToday) {
+    showToast('🔥', `Don't lose your ${S.streak}-day streak — practice today!`);
+  } else if (S.dailyRemind !== false && !localStorage.getItem('conver_daily_done_' + today)) {
+    showToast('🎯', "Today's Daily Challenge is ready — head to the Daily tab!");
+  }
 }
 
 // ── Conver Score ──────────────────────────────────────────────────────────────
@@ -4480,6 +5205,27 @@ function getLevelTier(level) {
   return { name: 'Beginner', color: '#f87171', bg: 'rgba(248,113,113,0.1)', border: 'rgba(248,113,113,0.3)' };
 }
 
+// Shared XP-award helper — updates S.xp/S.xpLevel and fires the "XP earned" and
+// "Level Up" toasts, each gated by its own Settings toggle (xpNotify/levelup).
+// Previously only Practice Lab had a level-up celebration at all, and none of
+// the 4 XP-awarding modes (Practice Lab, Voice Session, Debate, Cold Open)
+// respected either toggle — both settings were saved but did nothing.
+function awardXP(xpEarned, label) {
+  const xpBefore = S.xp || 0;
+  const levelBefore = getLevelFromXP(xpBefore);
+  S.xp = xpBefore + xpEarned;
+  S.xpLevel = getLevelFromXP(S.xp);
+  if (S.xpNotify !== false) showToast('⚡', `+${xpEarned} XP${label ? ' ' + label : ''}`);
+  if (S.xpLevel > levelBefore && S.levelup !== false) {
+    const tier = getLevelTier(S.xpLevel);
+    setTimeout(() => {
+      showToast('🎉', `Level Up! Lv.${S.xpLevel} — ${tier.name}`);
+      const ring = document.getElementById('score-ring');
+      if (ring) ring.style.stroke = tier.color;
+    }, 1200);
+  }
+}
+
 // XP progress within current level
 function getXPProgress(xp) {
   const level = getLevelFromXP(xp);
@@ -4497,7 +5243,12 @@ function updateConverScore() {
   const level = getLevelFromXP(xp);
   const tier = getLevelTier(level);
   const prog = getXPProgress(xp);
-  S.level = level;
+  // Named xpLevel (not S.level) — S.level is the Settings "Experience Level"
+  // string (beginner/intermediate/advanced) used to tune the AI's tone. The two
+  // used to collide under the same S.level key: this XP-based numeric level was
+  // overwriting the settings string on every session/score update, silently
+  // breaking the "Experience Level" personalization.
+  S.xpLevel = level;
 
   // Home ring — shows level progress through current tier
   const tierStart = [1,11,21,31,41,49][['Beginner','Developing','Capable','Proficient','Advanced','Elite'].indexOf(tier.name)] || 1;
@@ -4518,7 +5269,7 @@ function updateConverScore() {
   // Sub = XP progress
   const subEl = document.getElementById('home-grade-sub');
   if (subEl) subEl.textContent = S.sessions
-    ? (level >= 50 ? 'Max level — Elite communicator' : `${prog.current.toLocaleString()} / ${prog.needed.toLocaleString()} XP · Level ${level + 1}`)
+    ? (level >= 50 ? 'Max level — Elite communicator' : `${prog.current.toLocaleString()} / ${prog.needed.toLocaleString()} XP to Level ${level + 1}`)
     : 'Complete a session to begin';
 
   // Sidebar
@@ -4531,7 +5282,7 @@ function updateConverScore() {
 }
 
 // Legacy compat
-function calcConverScore() { return S.level || 1; }
+function calcConverScore() { return S.xpLevel || 1; }
 function scoreGrade(n) { return getLevelTier(getLevelFromXP(S.xp || 0)); }
 
 // ── Profile select ────────────────────────────────────────────────────────────
@@ -4614,6 +5365,7 @@ Return ONLY valid JSON, no markdown, no explanation outside the JSON:
 "storytelling": ,
 "conciseness": ,
 "composite": ,
+"scoring_confidence": "<1-10: how confident YOU are in the accuracy of these scores, given how much material you had to go on — a 15-word response gives you less to judge than a 150-word one>",
 "strengths": ["", ""],
 "improvements": ["", "", ""],
 "filler_feedback": "",
@@ -4629,6 +5381,7 @@ CRITICAL: Never use asterisks for actions or stage directions. Never write thing
     const m=raw.match(/\{[\s\S]*\}/);if(!m)throw new Error('No JSON');
     const a=JSON.parse(m[0]);
     S.sessions++;
+    checkSessionMilestone();
     S.scores.clarity.push(a.clarity);S.scores.confidence.push(a.confidence);S.scores.persuasion.push(a.persuasion);
     // Update rolling skills
     const lerp=(cur,next,t)=>cur+(next-cur)*t;const t=0.3;
@@ -4641,11 +5394,7 @@ CRITICAL: Never use asterisks for actions or stage directions. Never write thing
 
     // Calculate and award XP
     const xpEarned = calcSessionXP(a, wordCount, fillerData.count, S.sessions);
-    const xpBefore = S.xp || 0;
-    S.xp = xpBefore + xpEarned;
-    const levelBefore = getLevelFromXP(xpBefore);
-    const levelAfter = getLevelFromXP(S.xp);
-    S.level = levelAfter;
+    awardXP(xpEarned, `· Composite: ${a.composite}/10`);
 
     const newSession={scenario:S.scenario,coach:S.coach,question,text,analysis:a,time:new Date()};
     S.history.unshift(newSession);
@@ -4654,19 +5403,6 @@ CRITICAL: Never use asterisks for actions or stage directions. Never write thing
     updateChips();updateConverScore();renderResults(a,text);
     if(fillerData.count>0){showToast('🚨',`${fillerData.count} filler word${fillerData.count>1?'s':''} detected: ${fillerData.found.slice(0,3).join(', ')}`);}
     if(S.autoReport)setTimeout(()=>openReport(S.history[0]),600);
-
-    // Show XP toast
-    showToast('⚡', `+${xpEarned} XP · Composite: ${a.composite}/10`);
-
-    // Level up celebration
-    if (levelAfter > levelBefore) {
-      const tier = getLevelTier(levelAfter);
-      setTimeout(() => {
-        showToast('🎉', `Level Up! Lv.${levelAfter} — ${tier.name}`);
-        const ring = document.getElementById('score-ring');
-        if (ring) { ring.style.stroke = tier.color; }
-      }, 1200);
-    }
   }catch(e){document.getElementById('results-area').innerHTML=`<div class="empty-state"><p style="color:var(--red)">Failed: ${e.message}</p></div>`;}
   btn.disabled=false;btn.textContent='Analyze Response';
 }
@@ -4707,6 +5443,11 @@ function renderResults(a, text) {
         <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">Session Score</div>
         <div style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:800;letter-spacing:-1px;color:${a.composite>=8?'var(--green)':a.composite>=6?'var(--accent3)':'var(--amber)'}">${a.composite}/10</div>
       </div>
+      ${S.confidenceScore && a.scoring_confidence ? `
+      <div style="text-align:center">
+        <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">AI Confidence</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:var(--muted2)">${a.scoring_confidence}/10</div>
+      </div>` : ''}
       <div style="text-align:right">
         <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">XP Earned</div>
         <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:var(--accent2)">+${xpEarned} XP</div>
@@ -4770,7 +5511,7 @@ function renderResults(a, text) {
     ${S.rewrite && a.rewrite ? `
     <div style="margin-bottom:12px">
       <div style="font-size:10px;color:var(--accent3);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">${S.coach}'s Version — How It Could Sound</div>
-      <div style="background:linear-gradient(135deg,rgba(124,111,255,0.08),rgba(56,189,248,0.04));border:1px solid var(--border3);border-radius:12px;padding:16px;font-size:13.5px;color:var(--text);line-height:1.75;font-style:italic">${a.rewrite}</div>
+      <div style="background:linear-gradient(135deg,rgba(var(--accent-rgb),0.08),rgba(56,189,248,0.04));border:1px solid var(--border3);border-radius:12px;padding:16px;font-size:13.5px;color:var(--text);line-height:1.75;font-style:italic">${a.rewrite}</div>
     </div>
     ${S.showDiff ? `<div style="margin-top:8px">${renderDiff(text,a.rewrite)}</div>` : ''}
     ` : ''}
@@ -4900,7 +5641,7 @@ function drawRadar(){
     if(i===0)ctx.moveTo(cx+Math.cos(a)*val,cy+Math.sin(a)*val);
     else ctx.lineTo(cx+Math.cos(a)*val,cy+Math.sin(a)*val);
   });
-  ctx.closePath();ctx.fillStyle='rgba(108,99,255,0.15)';ctx.fill();ctx.strokeStyle='rgba(108,99,255,0.6)';ctx.lineWidth=2;ctx.stroke();
+  ctx.closePath();ctx.fillStyle=`rgba(${getAccentRGB()},0.15)`;ctx.fill();ctx.strokeStyle=`rgba(${getAccentRGB()},0.6)`;ctx.lineWidth=2;ctx.stroke();
   // Dots + labels
   skills.forEach((s,i)=>{
     const a=-Math.PI/2+i*angleStep;const val=(S.skills[s]/100)*maxR;
@@ -4983,7 +5724,7 @@ function startWaveformIdle(){
       const el=document.getElementById('wb'+i);if(!el)continue;
       let h=voiceState==='listening'?4+Math.random()*26:voiceState==='speaking'?6+Math.random()*20+Math.sin(Date.now()/80+i)*7:4+Math.sin(Date.now()/600+i*0.7)*2.5;
       el.style.height=Math.max(4,h)+'px';
-      el.style.background=voiceState==='listening'?'var(--accent2)':voiceState==='speaking'?'var(--accent3)':'rgba(108,99,255,0.35)';
+      el.style.background=voiceState==='listening'?'var(--accent2)':voiceState==='speaking'?'var(--accent3)':'rgba(var(--accent-rgb),0.35)';
     }
   },80);
 }
@@ -5013,7 +5754,7 @@ function switchVoiceCoach(name,silent=false){
     voiceAvatarEl.className = 'coach-session-card ' + (COACH_DATA[name]?.cssClass || '');
   }
   S.voiceChatHistory=[];addVoiceLog(name,COACHES[name].greeting,'ai');
-  if(!silent)speakText(COACHES[name].greeting);
+  if(!silent && S.autoplay !== false)speakText(COACHES[name].greeting);
 }
 
 function addVoiceLog(who,text,type){
@@ -5170,12 +5911,14 @@ VOICE RULES — CRITICAL:
   VoiceEngine.speakThenListen(opening, null, coach);
 }
 
-function _veAddHistory(who, text, isUser) {
+function _veAddHistory(who, text, isUser, variant) {
   const container = document.getElementById('ve-history');
   if (!container) return;
   const div = document.createElement('div');
-  div.className = 've-history-item ' + (isUser ? 've-history-you' : 've-history-coach');
-  div.textContent = text.length > 120 ? text.slice(0, 117) + '...' : text;
+  const cls = variant === 'tip' ? 've-history-tip' : (isUser ? 've-history-you' : 've-history-coach');
+  div.className = 've-history-item ' + cls;
+  const label = variant === 'tip' ? `🤝 ${who}: ` : '';
+  div.textContent = label + text;
   container.appendChild(div);
   container.scrollTop = container.scrollHeight;
   // Keep only last 6 items
@@ -5244,7 +5987,7 @@ async function scoreVoiceSession() {
         <div class="score-box"><div class="score-num ${scoreClass(r.confidence)}">${r.confidence}</div><div class="score-lbl">Confidence</div></div>
         <div class="score-box"><div class="score-num ${scoreClass(r.persuasion)}">${r.persuasion}</div><div class="score-lbl">Persuasion</div></div>
       </div>
-      <div style="background:rgba(108,99,255,0.07);border:1px solid rgba(108,99,255,0.15);border-radius:10px;padding:14px;margin-bottom:12px">
+      <div style="background:rgba(var(--accent-rgb),0.07);border:1px solid rgba(var(--accent-rgb),0.15);border-radius:10px;padding:14px;margin-bottom:12px">
         <div style="font-size:10px;color:var(--accent3);font-family:'DM Mono',monospace;margin-bottom:6px">VERDICT</div>
         <div style="font-size:13.5px;color:var(--text);line-height:1.7">${r.verdict}</div>
       </div>
@@ -5267,6 +6010,7 @@ async function scoreVoiceSession() {
 
     // Wire into Conver Score / Insights / History, same as every other mode
     S.sessions++;
+    checkSessionMilestone();
     S.scores.clarity.push(r.clarity);
     S.scores.confidence.push(r.confidence);
     S.scores.persuasion.push(r.persuasion);
@@ -5297,9 +6041,7 @@ async function scoreVoiceSession() {
     // Voice Session XP — based on conversation length
     const voiceTurns = S.voiceChatHistory.filter(m => m.role === 'user').length;
     const voiceXP = Math.round(15 + (voiceTurns * 10));
-    S.xp = (S.xp || 0) + voiceXP;
-    S.level = getLevelFromXP(S.xp);
-    showToast('⚡', `+${voiceXP} XP for voice session`);
+    awardXP(voiceXP, 'for voice session');
     updateConverScore();
     saveUserData();
   } catch(e) {
@@ -5466,7 +6208,26 @@ function renderHistory(){
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function clearHistory(){if(!confirm('Clear all history?'))return;S.history=[];S.sessions=0;S.scores={clarity:[],confidence:[],persuasion:[]};S.skills={clarity:0,confidence:0,persuasion:0,storytelling:0,conciseness:0};S.streak=0;updateChips();renderHistory();}
 function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function showToast(icon,msg){const t=document.getElementById('toast');document.getElementById('toast-icon').textContent=icon;document.getElementById('toast-msg').textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
+// Sound Effects setting — "UI sounds for toasts and completions" was saved
+// but the app had no sound system at all to gate. A short synthesized chime
+// (Web Audio API — no asset file needed) plays on every toast, muted when off.
+let _sfxCtx = null;
+function playSFX(){
+  if (S.sfx === false) return;
+  try {
+    _sfxCtx = _sfxCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = _sfxCtx;
+    const osc = ctx.createOscillator(), gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + 0.2);
+  } catch(e) {}
+}
+function showToast(icon,msg){const t=document.getElementById('toast');document.getElementById('toast-icon').textContent=icon;document.getElementById('toast-msg').textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);playSFX();}
 
 
 // ── FILLER WORD DETECTOR ──────────────────────────────────────────────────────
@@ -5531,7 +6292,7 @@ async function renderDailyChallenge() {
   document.getElementById('daily-streak').textContent = S.streak;
   
   // Check if already generated today
-  const today = new Date().toDateString();
+  const today = tzDateKey();
   const stored = localStorage.getItem('conver_daily_' + today);
   if (stored) {
     dailyChallenge = JSON.parse(stored);
@@ -5605,7 +6366,7 @@ function getWeakSpots() {
 
 function startDailyChallenge() {
   if (!dailyChallenge) return;
-  const today = new Date().toDateString();
+  const today = tzDateKey();
   localStorage.setItem('conver_daily_done_' + today, 'true');
   dailyCompleted = true;
   navTo('practice');
@@ -5613,7 +6374,7 @@ function startDailyChallenge() {
     document.getElementById('p-question').value = dailyChallenge.question;
     document.getElementById('p-text').focus();
     showToast('⚡', 'Daily challenge loaded — go!');
-    speakText(dailyChallenge.question);
+    if (S.autoplay !== false) speakText(dailyChallenge.question);
   }, 200);
 }
 
@@ -5733,11 +6494,11 @@ function downloadScoreCard() {
   
   // Glow
   const glow = ctx.createRadialGradient(500,50,10,500,50,180);
-  glow.addColorStop(0,'rgba(108,99,255,0.25)'); glow.addColorStop(1,'rgba(0,0,0,0)');
+  glow.addColorStop(0,`rgba(${getAccentRGB()},0.25)`); glow.addColorStop(1,'rgba(0,0,0,0)');
   ctx.fillStyle = glow; ctx.fillRect(0,0,600,400);
-  
+
   // Border
-  ctx.strokeStyle = 'rgba(108,99,255,0.25)'; ctx.lineWidth = 1;
+  ctx.strokeStyle = `rgba(${getAccentRGB()},0.25)`; ctx.lineWidth = 1;
   ctx.strokeRect(1,1,598,398);
   
   // Logo
@@ -5867,7 +6628,25 @@ let debateMouthA = 0, debateMouthB = 0;
 let debateBlinkT = 0;
 let debateUserArgs = [], debateOppResponses = [];
 
-function initDebatePage() { updateDebateCoachAvatar(); }
+function initDebatePage() {
+  // "Your Coach" should default to whichever coach the user has actually
+  // picked as their companion elsewhere in the app, not the first hardcoded
+  // <option> in the dropdown — otherwise it always shows Blaze regardless of
+  // who the user chose in Profiles. Skip this if a debate is already running
+  // so navigating back to the tab mid-debate doesn't reshuffle coaches.
+  if (!debateRunning) {
+    const coachASelect = document.getElementById('debate-coach-a');
+    const coachBSelect = document.getElementById('debate-coach-b');
+    if (coachASelect && S.coach && [...coachASelect.options].some(o => o.value === S.coach)) {
+      coachASelect.value = S.coach;
+    }
+    if (coachBSelect && coachASelect && coachBSelect.value === coachASelect.value) {
+      const alt = [...coachBSelect.options].map(o => o.value).find(v => v !== coachASelect.value);
+      if (alt) coachBSelect.value = alt;
+    }
+  }
+  updateDebateCoachAvatar();
+}
 
 function updateDebateCoachAvatar() {
   const name = document.getElementById('debate-coach-a')?.value || S.coach;
@@ -5910,6 +6689,7 @@ async function startDebate() {
   document.getElementById('debate-setup-screen').style.display = 'none';
   document.getElementById('debate-live-screen').style.display = 'block';
   showBackBtn(true,'Debate Setup');
+  document.getElementById('debate-conversation').style.display = 'block';
   document.getElementById('debate-score-panel').style.display = 'none';
   document.getElementById('debate-topic-display').textContent = '\u201c' + topic + '\u201d';
 
@@ -5967,11 +6747,21 @@ function startDebateVoice() {
     const toneNote = tone ? ` The opponent sounds ${tone}.` : '';
     const isLast = debateRound >= maxRounds;
     const sys = `You are ${debateCoachB}, a sharp debate opponent on the topic: "${debateTopic || 'the assigned topic'}". ${toneNote} ${isLast ? 'This is the final round — give your strongest closing argument.' : `Round ${debateRound} of ${maxRounds}. Push back hard on their point with a direct counter-argument.`} 2-3 sentences max. No asterisks or stage directions. Speak like you are actually debating live.`;
+    // Your own coach checks in on the side each round — this isn't just a 1v1
+    // against the opponent; the coach the user picked in setup should stay
+    // present, reacting to what was just said and coaching them for next round.
+    // Runs in parallel with the opponent's reply so it doesn't add latency, and
+    // renders as a quiet text aside rather than interrupting the opponent's TTS.
+    const tipSys = isLast ? null : `You are ${debateCoachA}, the user's own debate coach watching from the side. Topic: "${debateTopic || 'the assigned topic'}". They just argued: "${userText}". In ONE short sentence, give them a quick tactical tip or encouragement for the next round. No asterisks or stage directions, plain spoken words only.`;
 
     try {
-      const reply = await callAI(debateVoiceHistory, sys);
+      const [reply, tip] = await Promise.all([
+        callAI(debateVoiceHistory, sys),
+        tipSys ? callAI([{role:'user', content: userText}], tipSys).catch(() => null) : Promise.resolve(null)
+      ]);
       debateVoiceHistory.push({ role: 'assistant', content: reply });
       debateOppResponses.push(reply);
+      if (tip) _veAddHistory(debateCoachA, tip.trim(), false, 'tip');
       _veAddHistory(debateCoachB, reply, false);
 
       if (isLast) {
@@ -6060,7 +6850,7 @@ function drawDebateFace(side) {
   if(state==='speaking'){
     ctx.beginPath(); ctx.arc(cx,cy,r+2,0,Math.PI*2);
     const col = side==='a'
-      ? `rgba(108,99,255,${0.3+0.25*Math.sin(Date.now()/200)})`
+      ? `rgba(${getAccentRGB()},${0.3+0.25*Math.sin(Date.now()/200)})`
       : `rgba(248,113,113,${0.3+0.25*Math.sin(Date.now()/200)})`;
     ctx.strokeStyle=col; ctx.lineWidth=2; ctx.stroke();
   }
@@ -6076,7 +6866,7 @@ function startDebateWaveform(){
       const el=document.getElementById('dwb'+i); if(!el)continue;
       const h=isListening?4+Math.random()*24:4+Math.sin(Date.now()/600+i*0.7)*2.5;
       el.style.height=Math.max(4,h)+'px';
-      el.style.background=isListening?'var(--accent2)':'rgba(108,99,255,0.35)';
+      el.style.background=isListening?'var(--accent2)':'rgba(var(--accent-rgb),0.35)';
     }
   },80);
 }
@@ -6084,7 +6874,7 @@ function startDebateWaveform(){
 function addDebateLogMsg(side, who, text, isUser=false){
   const log=document.getElementById('debate-log-'+side);
   const div=document.createElement('div');
-  div.style.cssText=`padding:8px 10px;border-radius:8px;font-size:12px;line-height:1.6;${isUser?'background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.15);color:var(--text);':'background:var(--bg2);border:1px solid var(--border);color:var(--muted2);'}`;
+  div.style.cssText=`padding:8px 10px;border-radius:8px;font-size:12px;line-height:1.6;${isUser?'background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.15);color:var(--text);':'background:var(--bg2);border:1px solid var(--border);color:var(--muted2);'}`;
   div.innerHTML=`<div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:3px">${who}</div>${escHtml(text)}`;
   log.appendChild(div); log.scrollTop=log.scrollHeight;
 }
@@ -6207,7 +6997,13 @@ async function stopDebateListening(){
 }
 
 async function scoreDebate(){
-  document.getElementById('debate-global-status').textContent='Scoring your performance...';
+  // Go straight to scoring — don't leave the live conversation UI (coach panels,
+  // mic button, waveform) sitting on screen stuck in its last "processing" state
+  // while the score panel renders below it. The debate is over; show only the result.
+  document.getElementById('debate-conversation').style.display='none';
+  const panel=document.getElementById('debate-score-panel');
+  panel.style.display='block';
+  document.getElementById('debate-final-scores').innerHTML=`<div class="loading-dots"><span></span><span></span><span></span></div>`;
   const yourSide=debateSide==='for'?'FOR':'AGAINST';
   // Interleave both sides so the model can actually see what each of the user's
   // arguments was responding to — scoring only the user's isolated statements
@@ -6221,15 +7017,13 @@ async function scoreDebate(){
     raw=raw.replace(/\`\`\`json|\`\`\`/g,'').trim();
     const m=raw.match(/\{[\s\S]*\}/);if(!m)throw new Error('No JSON');
     const r=JSON.parse(m[0]);
-    const panel=document.getElementById('debate-score-panel');
-    panel.style.display='block';
     document.getElementById('debate-final-scores').innerHTML=`
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
         <div class="score-box"><div class="score-num ${scoreClass(r.clarity)}">${r.clarity}</div><div class="score-lbl">Clarity</div></div>
         <div class="score-box"><div class="score-num ${scoreClass(r.persuasion)}">${r.persuasion}</div><div class="score-lbl">Persuasion</div></div>
         <div class="score-box"><div class="score-num ${scoreClass(r.confidence)}">${r.confidence}</div><div class="score-lbl">Confidence</div></div>
       </div>
-      <div style="background:rgba(108,99,255,0.07);border:1px solid rgba(108,99,255,0.15);border-radius:10px;padding:14px;margin-bottom:12px">
+      <div style="background:rgba(var(--accent-rgb),0.07);border:1px solid rgba(var(--accent-rgb),0.15);border-radius:10px;padding:14px;margin-bottom:12px">
         <div style="font-size:10px;color:var(--accent3);font-family:'DM Mono',monospace;margin-bottom:6px">VERDICT</div>
         <div style="font-size:13.5px;color:var(--text);line-height:1.7">${r.verdict}</div>
       </div>
@@ -6252,6 +7046,7 @@ async function scoreDebate(){
     // Speak the verdict
     // Wire into Conver Score
     S.sessions++;
+    checkSessionMilestone();
     S.scores.clarity.push(r.clarity);
     S.scores.confidence.push(r.confidence);
     S.scores.persuasion.push(r.persuasion);
@@ -6280,16 +7075,16 @@ async function scoreDebate(){
 
     // Award XP for debate session
     const debateXP = calcSessionXP(r, 150, 0, S.sessions); // estimate 150 words for debate
-    S.xp = (S.xp || 0) + debateXP;
-    S.level = getLevelFromXP(S.xp);
+    awardXP(debateXP, 'for debate session');
     updateConverScore();
-    showToast('⚡', `+${debateXP} XP for debate session`);
     saveUserData();
 
     await speakDebate(r.verdict,'a');
     document.getElementById('debate-global-status').textContent='';
     showToast('📊','Debate score added to your Conver Score!');
-  }catch(e){document.getElementById('debate-global-status').textContent='Error scoring: '+e.message;}
+  }catch(e){
+    document.getElementById('debate-final-scores').innerHTML=`<div style="color:var(--red);font-size:13px;padding:8px 0">Couldn't score this debate: ${e.message}</div><button onclick="resetDebate()" class="btn-primary" style="margin-top:16px">⚔️ Start New Debate</button>`;
+  }
 }
 
 function resetDebate(){
@@ -6324,7 +7119,7 @@ const DEFAULT_SETTINGS = {
   motivation: true, socratic: false, autoplay: true, micAuto: false,
   sfx: true, weakspot: true, confidenceScore: false, examples: true,
   xpNotify: true, levelup: true, streakWarn: true, dailyRemind: true,
-  reduceMotion: false, compactMode: false, analytics: true,
+  reduceMotion: false, compactMode: false,
 };
 
 function loadSettings() {
@@ -6361,7 +7156,6 @@ function loadSettings() {
   S.dailyRemind = settings.dailyRemind;
   S.reduceMotion = settings.reduceMotion;
   S.compactMode = settings.compactMode;
-  S.analytics = settings.analytics;
   document.body.classList.toggle('reducemotion', !!settings.reduceMotion);
   document.body.classList.toggle('compact-mode', !!settings.compactMode);
   return settings;
@@ -6403,7 +7197,9 @@ function applySettingsToUI() {
   setChk('tog-daily-remind', settings.dailyRemind);
   setChk('tog-reduce-motion', settings.reduceMotion);
   setChk('tog-compact', settings.compactMode);
-  setChk('tog-analytics', settings.analytics);
+  document.querySelectorAll('.accent-swatch').forEach(el => {
+    el.classList.toggle('selected', el.dataset.color === (localStorage.getItem('conver_accent') || '#7c6fff'));
+  });
   const sc = document.getElementById('settings-scenario-cards');
   if (sc && sc.children.length === 0) {
     SCENARIOS.forEach(s => {
@@ -6456,16 +7252,48 @@ function saveSettings() {
     dailyRemind: getChk('tog-daily-remind'),
     reduceMotion: getChk('tog-reduce-motion'),
     compactMode: getChk('tog-compact'),
-    analytics: getChk('tog-analytics'),
   };
   localStorage.setItem('conver_settings', JSON.stringify(settings));
   loadSettings();
   showToast('✓', 'Settings saved');
 }
 
-// Accent color switcher
+// Accent color switcher — each swatch drives a full coordinated palette
+// (accent/accent2/accent3/glow/brand-gradient), since most of the app's
+// branded surfaces (logo, nav indicator, buttons, progress bars) render
+// from --g-brand / --grad-purple rather than --accent alone.
+// Canvas 2D contexts can't resolve CSS custom properties in fillStyle/strokeStyle —
+// this resolves the current accent to a concrete "r,g,b" string for canvas drawing code.
+function getAccentRGB() {
+  return getComputedStyle(document.documentElement).getPropertyValue('--accent-rgb').trim() || '124,111,255';
+}
+
+const ACCENT_PALETTES = {
+  '#7c6fff': { accent:'#7c6fff', rgb:'124,111,255', accent2:'#38bdf8', accent3:'#c084fc' },
+  '#38bdf8': { accent:'#38bdf8', rgb:'56,189,248',  accent2:'#7c6fff', accent3:'#7dd3fc' },
+  '#2dd4a0': { accent:'#2dd4a0', rgb:'45,212,160',  accent2:'#38bdf8', accent3:'#6ee7b7' },
+  '#f472b6': { accent:'#f472b6', rgb:'244,114,182', accent2:'#c084fc', accent3:'#f9a8d4' },
+  '#fbbf24': { accent:'#fbbf24', rgb:'251,191,36',  accent2:'#fb923c', accent3:'#fde68a' },
+};
+
+function applyAccentPalette(color) {
+  const p = ACCENT_PALETTES[color] || ACCENT_PALETTES['#7c6fff'];
+  const root = document.documentElement.style;
+  root.setProperty('--accent', p.accent);
+  root.setProperty('--accent-rgb', p.rgb);
+  root.setProperty('--accent2', p.accent2);
+  root.setProperty('--accent3', p.accent3);
+  root.setProperty('--accent-glow', `rgba(${p.rgb},0.2)`);
+  root.setProperty('--border3', `rgba(${p.rgb},0.45)`);
+  root.setProperty('--grad-purple', `linear-gradient(135deg, ${p.accent} 0%, ${p.accent3} 100%)`);
+  root.setProperty('--g-brand', `linear-gradient(135deg, ${p.accent} 0%, ${p.accent3} 100%)`);
+  document.querySelectorAll('.accent-swatch').forEach(el => {
+    el.classList.toggle('selected', el.dataset.color === p.accent);
+  });
+}
+
 function setAccentColor(color) {
-  document.documentElement.style.setProperty('--accent', color);
+  applyAccentPalette(color);
   localStorage.setItem('conver_accent', color);
   showToast('🎨', 'Accent color updated');
 }
@@ -6524,8 +7352,8 @@ function updateAccountDisplay() {
 
 // Load saved accent color on boot
 (function() {
-  const saved = localStorage.getItem('conver_accent');
-  if (saved) document.documentElement.style.setProperty('--accent', saved);
+  const saved = localStorage.getItem('conver_accent') || '#7c6fff';
+  applyAccentPalette(saved);
 })();
 
 function buildSystemPromptExtras() {
@@ -7029,7 +7857,7 @@ async function endColdOpen(){
         <div class="score-box"><div class="score-num ${scoreClass(r.warmth)}">${r.warmth}</div><div class="score-lbl">Warmth</div></div>
         <div class="score-box"><div class="score-num ${scoreClass(r.impact)}">${r.impact}</div><div class="score-lbl">Impact</div></div>
       </div>
-      <div style="background:rgba(108,99,255,0.07);border:1px solid rgba(108,99,255,0.15);border-radius:10px;padding:14px;margin-bottom:12px">
+      <div style="background:rgba(var(--accent-rgb),0.07);border:1px solid rgba(var(--accent-rgb),0.15);border-radius:10px;padding:14px;margin-bottom:12px">
         <div style="font-size:10px;color:var(--accent3);font-family:'DM Mono',monospace;margin-bottom:6px">ASSESSMENT</div>
         <div style="font-size:13.5px;color:var(--text);line-height:1.7">${r.verdict}</div>
       </div>
@@ -7051,6 +7879,7 @@ async function endColdOpen(){
       <button onclick="resetColdOpen()" class="btn-primary" style="margin-top:16px">🎲 Try Another</button>`;
     animateScoreReveal(document.getElementById('co-scores'));
     S.sessions++;
+    checkSessionMilestone();
     S.scores.clarity.push(r.naturalness);S.scores.confidence.push(r.warmth);S.scores.persuasion.push(r.impact);
     const lerp=(c,n,t)=>c+(n-c)*t;
     S.skills.clarity=lerp(S.skills.clarity,r.naturalness*10,0.3);
@@ -7077,10 +7906,8 @@ async function endColdOpen(){
 
     // Cold Open XP — based on number of turns and quality
     const coXP = Math.round(20 + (coState.turns * 8));
-    S.xp = (S.xp || 0) + coXP;
-    S.level = getLevelFromXP(S.xp);
+    awardXP(coXP, 'for Cold Open session');
     updateConverScore();
-    showToast('⚡', `+${coXP} XP for Cold Open session`);
     saveUserData();
     // No scrollIntoView here — the score panel now sits right at the top of the
     // page (the chat section above it is hidden), so it's already in view. An
@@ -7212,7 +8039,7 @@ function practiceQBQuestion(question) {
     document.getElementById('p-question').value = question;
     document.getElementById('p-text').focus();
     showToast('📚', 'Question loaded — go!');
-    speakText(question);
+    if (S.autoplay !== false) speakText(question);
   }, 200);
 }
 
@@ -7303,6 +8130,7 @@ function startWarmupVoice(question) {
         overlay.style.display = 'none';
         // Update streak and session count
         S.sessions++;
+        checkSessionMilestone();
         updateStreak();
         updateChips();
         saveUserData();
@@ -7544,8 +8372,8 @@ async function loadUserData() {
         // Validate streak on load — if last session was more than 1 day ago, reset streak
         const savedLastDate = localStorage.getItem('conver_last_session_date');
         if (savedLastDate) {
-          const yesterday = new Date(Date.now() - 86400000).toDateString();
-          const today = new Date().toDateString();
+          const yesterday = tzDateKey(-1);
+          const today = tzDateKey();
           if (savedLastDate !== today && savedLastDate !== yesterday) {
             // More than 1 day gap — streak should already be 0 but ensure it
             S.streak = 0;
@@ -7619,6 +8447,7 @@ async function loadUserData() {
     updateChips();
     checkOnboarding();
     showWelcomeBack();
+    checkDailyReminders();
   } catch(e) {
     console.error('Load user data error:', e);
   }
@@ -7883,7 +8712,7 @@ initAuth();
       if (d.y < 0) d.y = c.height;
       if (d.y > c.height) d.y = 0;
       cx.beginPath(); cx.arc(d.x,d.y,d.r,0,Math.PI*2);
-      cx.fillStyle = `rgba(124,111,255,${d.a})`; cx.fill();
+      cx.fillStyle = `rgba(${getAccentRGB()},${d.a})`; cx.fill();
     });
     requestAnimationFrame(draw);
   }
@@ -7923,7 +8752,7 @@ document.querySelectorAll('.tab-item').forEach(t => {
   t.addEventListener('click', e => {
     const rip = document.createElement('span');
     const r = t.getBoundingClientRect();
-    rip.style.cssText = `position:absolute;left:${e.clientX-r.left}px;top:${e.clientY-r.top}px;width:0;height:0;background:rgba(124,111,255,0.25);border-radius:50%;transform:translate(-50%,-50%);animation:ripple 0.45s ease forwards;pointer-events:none`;
+    rip.style.cssText = `position:absolute;left:${e.clientX-r.left}px;top:${e.clientY-r.top}px;width:0;height:0;background:rgba(var(--accent-rgb),0.25);border-radius:50%;transform:translate(-50%,-50%);animation:ripple 0.45s ease forwards;pointer-events:none`;
     t.style.overflow = 'hidden';
     t.appendChild(rip);
     setTimeout(() => rip.remove(), 450);
@@ -7946,7 +8775,7 @@ document.head.appendChild(rippleStyle);
     position:relative;overflow:hidden;
     box-shadow:0 32px 80px rgba(0,0,0,0.6);
   ">
-    <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(124,111,255,0.6),transparent)"></div>
+    <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(var(--accent-rgb),0.6),transparent)"></div>
     <!-- Step indicator -->
     <div style="display:flex;gap:6px;margin-bottom:32px">
       <div class="ob-step-dot active" id="ob-dot-1"></div>
@@ -7990,7 +8819,7 @@ document.head.appendChild(rippleStyle);
 
 <div id="voice-immersive-overlay" style="display:none;position:fixed;inset:0;background:var(--s0,#03030a);z-index:5000;flex-direction:column;align-items:center;justify-content:center;gap:0">
   <!-- Ambient background -->
-  <div style="position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 40%,rgba(124,111,255,0.08) 0%,transparent 60%);pointer-events:none"></div>
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 40%,rgba(var(--accent-rgb),0.08) 0%,transparent 60%);pointer-events:none"></div>
 
   <!-- Top bar -->
   <div style="position:absolute;top:0;left:0;right:0;padding:20px 28px;display:flex;align-items:center;justify-content:space-between;z-index:2">
@@ -8023,6 +8852,10 @@ document.head.appendChild(rippleStyle);
       <button id="ve-done-btn" onclick="ScribeSTT.submitNow()"
         style="display:none;background:linear-gradient(135deg,#2dd4a0,#38bdf8);border:none;border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;padding:11px 28px;cursor:pointer;box-shadow:0 4px 16px rgba(45,212,160,0.35)">
         ✓ Done Speaking
+      </button>
+      <button id="ve-tap-to-talk-btn" onclick="VoiceEngine._startListening()"
+        style="display:none;background:linear-gradient(135deg,#7c6fff,#c084fc);border:none;border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;padding:11px 28px;cursor:pointer;box-shadow:0 4px 16px rgba(124,111,255,0.35)">
+        🎙️ Tap to Respond
       </button>
     </div>
   </div>
