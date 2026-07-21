@@ -2909,10 +2909,6 @@ body.reducemotion .coach-orb-wave { animation: none !important; }
                    End & Score button on the camera overlay itself, so it's
                    obvious there IS a normal way to finish and save the session -->
               <button class="btn-primary" onclick="endRealTimeSession()" style="margin-top:14px">✅ End Session & Save</button>
-              <!-- Download button — shown after session ends -->
-              <button id="rt-download-btn" style="display:none;margin-top:12px;width:100%;padding:11px;background:linear-gradient(135deg,#7c6fff,#b48cff);border:none;border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;cursor:pointer" onclick="downloadRecording()">
-                ⬇ Download Recording (WebM — plays in Chrome, Firefox, VLC)
-              </button>
             </div>
 
             <!-- Right: live metrics panel -->
@@ -2982,6 +2978,14 @@ body.reducemotion .coach-orb-wave { animation: none !important; }
         <!-- Debrief -->
         <div id="rt-debrief" class="hidden">
           <div id="rt-debrief-content"></div>
+          <!-- Download button lives here, inside #rt-debrief, not #rt-session —
+               it was previously a child of #rt-session, which gets hidden the
+               moment the session ends, so the button was invisible no matter
+               what its own display style said (a hidden ancestor hides
+               everything inside it regardless of the child's own style). -->
+          <button id="rt-download-btn" style="display:none;margin-top:16px;width:100%;max-width:420px;padding:12px;background:linear-gradient(135deg,#7c6fff,#b48cff);border:none;border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;cursor:pointer" onclick="downloadRecording()">
+            ⬇ Download Recording (WebM — plays in Chrome, Firefox, VLC)
+          </button>
           <button class="btn-primary" onclick="resetRealTime()" style="margin-top:16px;max-width:220px">New Session</button>
         </div>
       </div>
@@ -4216,7 +4220,7 @@ const RealTimeAnalyzer = {
     if (recentTranscript.length < 15) return; // nothing substantive to react to yet
     try {
       const exprNote = avgExpr > 0.005 ? 'engaged/warm' : avgExpr < -0.005 ? 'tense' : 'neutral';
-      const prompt = `You are a communication coach watching someone live, mid-response, in a ${rtMode || 'practice'} session. Their current nonverbal read: ${eyePct}% eye contact, ${headPct}% head stability, expression is ${exprNote}. What they're saying right now (may be a fragment, they're still talking): "${recentTranscript.slice(-400)}"\n\nGive ONE short, specific, spoken-style piece of coaching (max 18 words) — react to the actual content if there's something concrete to react to (vague claim, strong point, rambling, filler words), otherwise coach the delivery. No generic praise. No stage directions or asterisks.`;
+      const prompt = `You are a blunt, no-nonsense communication coach watching someone live, mid-response, in a ${rtMode || 'practice'} session. Their current nonverbal read: ${eyePct}% eye contact, ${headPct}% head stability, expression is ${exprNote}. What they're saying right now (may be a fragment, they're still talking): "${recentTranscript.slice(-400)}"\n\nGive ONE short, sharp, spoken-style piece of coaching (max 18 words) that reacts to THIS SPECIFIC moment — not a generic template. Rules:\n- If they said something vague, hedge-y, or unsupported, call it out directly and name what's missing (a number, an example, a decision).\n- If they said something genuinely strong, say specifically why it landed — never just "good job" or "keep it up."\n- If they're rambling or repeating themselves, tell them to cut to the point.\n- Quote or paraphrase their actual words when possible — never a comment so generic it could apply to any response.\nNo stage directions, no asterisks, no filler praise, no softening.`;
       const tip = await callAI([{role:'user', content: prompt}]);
       if (tip && tip.trim()) this._appendFeedbackLog('💬 ' + tip.trim(), true);
     } catch(e) { /* non-fatal — live tips are a bonus, not required */ }
@@ -4756,7 +4760,23 @@ CRITICAL: Never use asterisks for actions or stage directions.`
   const verbalComposite = verbalScores
     ? (verbalScores.clarity*0.25 + verbalScores.confidence*0.20 + verbalScores.persuasion*0.25 + verbalScores.storytelling*0.15 + verbalScores.conciseness*0.15)
     : (RealTimeAnalyzer.userResponses.length === 0 ? 1 : 2);
-  const combinedScore = ((verbalComposite * 0.6) + (metrics.nonverbalComposite * 0.4)).toFixed(1);
+  const rawCombinedScore = (verbalComposite * 0.6) + (metrics.nonverbalComposite * 0.4);
+
+  // Effort cap — a straight 60/40 blend meant a strong nonverbal read (which
+  // just requires sitting still and looking at the camera, no talking
+  // required) could drag someone who said little or nothing up into a
+  // "passing" 3-4/10. How much you actually SAID has to gate the ceiling,
+  // not just get diluted by a weighted average — a session where you barely
+  // spoke was barely a session, no matter how good your posture was.
+  const totalWordsSpoken = combinedResponseText.trim() ? combinedResponseText.trim().split(/\s+/).filter(Boolean).length : 0;
+  const effortCap =
+    totalWordsSpoken === 0 ? 0.5 :   // said nothing at all
+    totalWordsSpoken < 15  ? 1.5 :   // a few words, bailed almost immediately
+    totalWordsSpoken < 35  ? 2.5 :   // roughly a 10-15 second attempt, then quit
+    totalWordsSpoken < 70  ? 5   :   // some real effort but thin
+    totalWordsSpoken < 130 ? 7.5 :   // solid engagement
+    10;                              // sustained, substantive — no cap
+  const combinedScore = Math.min(rawCombinedScore, effortCap).toFixed(1);
 
   // Wire into Conver Score / Insights / History / Skills — same as every
   // other mode. This was entirely missing before: the session scored fine
