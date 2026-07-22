@@ -25,11 +25,31 @@ if (!rawUrl.startsWith('https://') || !rawUrl.includes('.supabase.co')) {
 }
 console.log('────────────────────────────────────────────────\n');
 
-// Supabase admin client
+// Supabase admin client — used ONLY for .from(...) data operations (profiles,
+// user_stats, sessions). Never call .auth.signUp/.signInWithPassword/.getUser
+// on this instance: those methods mutate the GoTrue client's internal
+// "current session" even with persistSession:false (that option only controls
+// whether the session is written to disk/localStorage, not whether the
+// in-memory client holds onto it). Once mutated, every subsequent .from()
+// call on this SAME shared instance silently executes as that signed-in
+// user's own "authenticated" role instead of service_role — RLS then blocks
+// operations the service role should have bypassed, for every request
+// sharing this client until the next sign-in overwrites it again. Confirmed
+// directly: an upsert that succeeds before any signInWithPassword() call on
+// this client starts failing with "new row violates row-level security
+// policy" immediately after one, with nothing else changed.
 const supabase = createClient(rawUrl, rawKey, {
   auth: { autoRefreshToken: false, persistSession: false },
   db: { schema: 'public' },
 });
+
+// Fresh, throwaway client for any operation that touches user identity
+// (sign up, sign in, token verification, sign out) — isolates their session
+// mutation from the admin client above so authenticating one user can never
+// downgrade or cross-contaminate every other request's database access.
+function freshAuthClient() {
+  return createClient(rawUrl, rawKey, { auth: { autoRefreshToken: false, persistSession: false } });
+}
 
 // Quick connectivity test at boot
 (async () => {
@@ -98,21 +118,21 @@ function cleanForTTS(text) {
 // ── Auth routes ───────────────────────────────────────────────────────────────
 app.post('/api/auth/signup', async (req, res) => {
   const { email, password } = req.body;
-  const { data, error } = await supabase.auth.signUp({ email, password });
+  const { data, error } = await freshAuthClient().auth.signUp({ email, password });
   if (error) return res.status(400).json({ error: error.message });
   res.json({ user: data.user, session: data.session });
 });
 
 app.post('/api/auth/signin', async (req, res) => {
   const { email, password } = req.body;
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await freshAuthClient().auth.signInWithPassword({ email, password });
   if (error) return res.status(400).json({ error: error.message });
   res.json({ user: data.user, session: data.session });
 });
 
 app.post('/api/auth/signout', async (req, res) => {
   const token = req.headers.authorization?.replace('Bearer ', '');
-  if (token) await supabase.auth.admin?.signOut(token);
+  if (token) await freshAuthClient().auth.admin?.signOut(token);
   res.json({ success: true });
 });
 
@@ -120,7 +140,7 @@ app.post('/api/auth/signout', async (req, res) => {
 async function requireAuth(req, res, next) {
   const token = req.headers.authorization?.replace('Bearer ', '');
   if (!token) return res.status(401).json({ error: 'Not authenticated' });
-  const { data: { user }, error } = await supabase.auth.getUser(token);
+  const { data: { user }, error } = await freshAuthClient().auth.getUser(token);
   if (error || !user) return res.status(401).json({ error: 'Invalid token' });
   req.user = user;
   req.token = token;
