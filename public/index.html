@@ -2433,6 +2433,19 @@ body.reducemotion .coach-orb-inner,
 body.reducemotion .coach-orb::before,
 body.reducemotion .coach-orb-inner::before,
 body.reducemotion .coach-orb-wave { animation: none !important; }
+
+@keyframes targetPulse {
+  0% { box-shadow: 0 0 0 0 rgba(239,68,68,0.7); transform: scale(1); }
+  50% { box-shadow: 0 0 0 10px rgba(239,68,68,0); transform: scale(1.1); }
+  100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); transform: scale(1); }
+}
+@keyframes targetPulseGreen {
+  0% { box-shadow: 0 0 0 0 rgba(45,212,160,0.8); transform: scale(1); }
+  50% { box-shadow: 0 0 0 14px rgba(45,212,160,0); transform: scale(1.15); }
+  100% { box-shadow: 0 0 0 0 rgba(45,212,160,0); transform: scale(1); }
+}
+#rt-target-dot { transition: opacity 0.3s; }
+#rt-session:not(.active) #rt-target-dot { opacity: 0; }
 </style>
 </head>
 <body>
@@ -2871,6 +2884,16 @@ body.reducemotion .coach-orb-wave { animation: none !important; }
                 <canvas id="rt-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;transform:scaleX(-1);will-change:contents;backface-visibility:hidden"></canvas>
                 <!-- Hidden composite canvas for recording — camera + overlay burned together -->
                 <canvas id="rt-record-canvas" style="display:none"></canvas>
+
+                <!-- Camera target dot — shows where to look for eye contact. The
+                     camera lens sits at the top of the screen while the other
+                     person's face (on screen) is lower down, so this trains the
+                     user to look at the lens, which is what reads as eye contact
+                     to whoever watches the recording. -->
+                <div id="rt-target-dot" style="position:absolute;top:46px;left:50%;transform:translateX(-50%);z-index:10;display:flex;flex-direction:column;align-items:center;gap:5px;pointer-events:none">
+                  <div id="rt-dot-inner" style="width:16px;height:16px;border-radius:50%;background:#ef4444;border:2px solid rgba(255,255,255,0.9);animation:targetPulse 2s ease-in-out infinite;position:relative"></div>
+                  <div id="rt-dot-label" style="font-size:9px;font-family:'DM Mono',monospace;color:rgba(255,255,255,0.85);background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);padding:2px 8px;border-radius:10px;letter-spacing:0.5px;white-space:nowrap">LOOK HERE</div>
+                </div>
 
                 <!-- Live metric overlays on camera -->
                 <div style="position:absolute;top:12px;left:12px;display:flex;gap:8px;flex-wrap:wrap">
@@ -4155,9 +4178,9 @@ const RealTimeAnalyzer = {
     });
     this.faceMesh.setOptions({
       maxNumFaces: 1,
-      refineLandmarks: false, // iris tracking needs GPU, drops to ~5fps on CPU — biggest single perf win
-      minDetectionConfidence: 0.6,
-      minTrackingConfidence: 0.6,
+      refineLandmarks: true, // MUST be true — iris landmarks 468-477 are the only reliable signal for actual gaze direction; nose position alone can't tell "face centered" from "eyes on camera"
+      minDetectionConfidence: 0.5,
+      minTrackingConfidence: 0.5,
       selfieMode: true // slight perf boost for front-facing camera
     });
     this.faceMesh.onResults((results) => this.onFrame(results));
@@ -4275,32 +4298,111 @@ const RealTimeAnalyzer = {
     // rest of the session, no matter how good things looked afterward.
     this.trackedFrames = (this.trackedFrames || 0) + 1;
 
-    // ── EYE CONTACT ──────────────────────────────────────────
-    // Nose-to-face-center offset, normalized by face size, compared against
-    // THIS user's calibrated baseline (not one hardcoded number that fails
-    // for anyone whose "centered" isn't exactly 0).
-    const noseOffX = Math.abs(noseTip.x - faceCenterX) / Math.max(faceW, 0.01);
-    const noseOffY = Math.abs(noseTip.y - faceCenterY) / Math.max(faceH, 0.01);
-    const horizOK = noseOffX < this.baseline.noseOffset;
-    const vertOK = noseOffY < this.baseline.noseVert;
-    const rawEyeContact = (horizOK && vertOK) ? 1.0 : (horizOK || vertOK) ? 0.4 : 0.0;
+    // ── EYE CONTACT — IRIS BASED ──────────────────────────────
+    // MediaPipe iris landmarks (only present when refineLandmarks: true):
+    // Left iris center: 468 · Right iris center: 473
+    // Left eye corners: 33 (outer), 133 (inner) · Right eye corners: 362 (inner), 263 (outer)
+    // Nose position only tells you if the FACE is centered — you can look
+    // away while keeping your face forward, or look at the camera while
+    // turning slightly, and nose-offset catches neither correctly. Iris
+    // position relative to the eye socket is the actual signal for gaze.
+    const hasIris = lm.length > 477;
+    let rawEyeContact = 0;
+    if (hasIris) {
+      const leftIris = lm[468];
+      const rightIris = lm[473];
+      const leftEyeInner = lm[133];
+      const rightEyeInner = lm[362];
+      const leftEyeCenterX = (leftEyeOuter.x + leftEyeInner.x) / 2;
+      const rightEyeCenterX = (rightEyeInner.x + rightEyeOuter.x) / 2;
+      const leftEyeCenterY = (leftEyeOuter.y + leftEyeInner.y) / 2;
+      const rightEyeCenterY = (rightEyeInner.y + rightEyeOuter.y) / 2;
+      const leftEyeW = Math.abs(leftEyeInner.x - leftEyeOuter.x);
+      const rightEyeW = Math.abs(rightEyeOuter.x - rightEyeInner.x);
+      // 0 = iris perfectly centered in socket (looking at camera)
+      // 1 = iris at the edge of the socket (looking far to the side)
+      const leftOffX = leftEyeW > 0 ? Math.abs(leftIris.x - leftEyeCenterX) / leftEyeW : 0.5;
+      const rightOffX = rightEyeW > 0 ? Math.abs(rightIris.x - rightEyeCenterX) / rightEyeW : 0.5;
+      const leftEyeH = Math.abs(leftEyeUpper.y - leftEyeLower.y);
+      const rightEyeH = Math.abs(rightEyeUpper.y - rightEyeLower.y);
+      const leftOffY = leftEyeH > 0 ? Math.abs(leftIris.y - leftEyeCenterY) / leftEyeH : 0.5;
+      const rightOffY = rightEyeH > 0 ? Math.abs(rightIris.y - rightEyeCenterY) / rightEyeH : 0.5;
+      const horizOffset = (leftOffX + rightOffX) / 2;
+      const vertOffset = (leftOffY + rightOffY) / 2;
+      // Intentionally lenient — natural eye movement within these bands is
+      // still perceived as "at camera" by someone watching the video.
+      const lookingHoriz = horizOffset < 0.20;
+      const lookingVert = vertOffset < 0.25;
+      if (lookingHoriz && lookingVert) rawEyeContact = 1.0;
+      else if (lookingHoriz || vertOffset < 0.30) rawEyeContact = 0.5;
+      else rawEyeContact = 0.0;
+      // Stored for the live gaze debug indicator on the display canvas
+      this._lastIrisData = { horizOffset: horizOffset.toFixed(3), vertOffset: vertOffset.toFixed(3), lookingHoriz, lookingVert };
+    } else {
+      // Fallback if iris landmarks aren't available for some reason — use
+      // the calibrated nose-offset method instead of failing silently.
+      const noseOffX = Math.abs(noseTip.x - faceCenterX) / Math.max(faceW, 0.01);
+      const noseOffY = Math.abs(noseTip.y - faceCenterY) / Math.max(faceH, 0.01);
+      const horizOK = noseOffX < this.baseline.noseOffset;
+      const vertOK = noseOffY < this.baseline.noseVert;
+      rawEyeContact = (horizOK && vertOK) ? 0.8 : (horizOK || vertOK) ? 0.4 : 0.0;
+      this._lastIrisData = null;
+    }
     // EMA smoothing — a single turned-away frame no longer tanks the score
     const smoothEye = this._ema('eyeContact', rawEyeContact);
     this.eyeContactFrames += smoothEye;
     this.eyePctRunning = this.trackedFrames > 0 ? Math.round((this.eyeContactFrames / this.trackedFrames) * 100) : 0;
 
-    // ── HEAD STABILITY ────────────────────────────────────────
-    // Frame-to-frame nose movement, not distance from an assumed center —
-    // stability is about steadiness over time, not being perfectly centered.
-    const rawHeadStable = (() => {
-      if (!this._lastNosePos) { this._lastNosePos = {x: noseTip.x, y: noseTip.y}; return 1.0; }
+    // Live gaze debug indicator — a small box on the display canvas with a
+    // dot that moves with the iris, so eye-contact tracking can be visually
+    // verified against what your eyes are actually doing before trusting
+    // the score. Placed below the eye/pose badges (not literally top-left)
+    // since those opaque HTML badges paint over that corner of the canvas.
+    if (displayCanvas && this._lastIrisData) {
+      const dctx = displayCanvas.getContext('2d');
+      const dotBoxSize = 60;
+      const dotX = displayCanvas.width * 0.05;
+      const dotY = displayCanvas.height * 0.22;
+      dctx.fillStyle = 'rgba(0,0,0,0.5)';
+      dctx.fillRect(dotX - 5, dotY - 5, dotBoxSize + 10, dotBoxSize + 10);
+      const onTarget = this._lastIrisData.lookingHoriz && this._lastIrisData.lookingVert;
+      dctx.strokeStyle = onTarget ? '#2dd4a0' : '#f87171';
+      dctx.lineWidth = 2;
+      dctx.strokeRect(dotX, dotY, dotBoxSize, dotBoxSize);
+      const irisX = dotX + dotBoxSize * 0.5 + (parseFloat(this._lastIrisData.horizOffset) - 0.1) * dotBoxSize * 2;
+      const irisY = dotY + dotBoxSize * 0.5 + (parseFloat(this._lastIrisData.vertOffset) - 0.1) * dotBoxSize * 2;
+      dctx.fillStyle = onTarget ? '#2dd4a0' : '#f87171';
+      dctx.beginPath();
+      dctx.arc(
+        Math.min(dotX + dotBoxSize, Math.max(dotX, irisX)),
+        Math.min(dotY + dotBoxSize, Math.max(dotY, irisY)),
+        6, 0, Math.PI * 2
+      );
+      dctx.fill();
+      dctx.fillStyle = 'rgba(255,255,255,0.7)';
+      dctx.font = '9px monospace';
+      dctx.fillText('GAZE', dotX + 18, dotY + dotBoxSize + 16);
+      dctx.fillText(onTarget ? '● ON' : '○ OFF', dotX + 2, dotY + dotBoxSize + 16);
+    }
+
+    // ── HEAD STABILITY — MOVEMENT DELTA ───────────────────────
+    // How much the nose tip moves between consecutive frames, normalized by
+    // face size — steadiness over time, not distance from an assumed
+    // center (which reads the same whether you're still or moving, as long
+    // as you're roughly facing forward on average).
+    let rawHeadStable;
+    if (this._lastNosePos) {
       const dx = Math.abs(noseTip.x - this._lastNosePos.x) / Math.max(faceW, 0.01);
       const dy = Math.abs(noseTip.y - this._lastNosePos.y) / Math.max(faceH, 0.01);
-      this._lastNosePos = {x: noseTip.x, y: noseTip.y};
-      const movement = dx + dy;
-      return movement < 0.015 ? 1.0 : movement < 0.035 ? 0.7 : movement < 0.06 ? 0.4 : 0.0;
-    })();
-    const smoothHead = this._ema('headStable', rawHeadStable);
+      const totalMovement = dx + dy;
+      rawHeadStable = totalMovement < 0.008 ? 1.0 : totalMovement < 0.020 ? 0.75 : totalMovement < 0.045 ? 0.4 : 0.0;
+    } else {
+      rawHeadStable = 1.0; // first frame — assume stable
+    }
+    this._lastNosePos = { x: noseTip.x, y: noseTip.y };
+    // Stability reacts faster than eye contact (alpha 0.25 vs the shared 0.15)
+    this.ema.headStable = 0.25 * rawHeadStable + 0.75 * this.ema.headStable;
+    const smoothHead = this.ema.headStable;
     this.headStableFrames += smoothHead;
     this.headPctRunning = this.trackedFrames > 0 ? Math.round((this.headStableFrames / this.trackedFrames) * 100) : 0;
 
@@ -4398,23 +4500,54 @@ const RealTimeAnalyzer = {
       const avgSmile = avg(this.smileSamples);
       const mouthLiftAvg = avg(this.smileSamples); // reused as expression proxy
 
-      // Eye contact
-      const eyeColor = eyePct >= 65 ? 'var(--green)' : eyePct >= 40 ? 'var(--amber)' : 'var(--red)';
-      const eyeNote = eyePct >= 65 ? 'Strong eye contact' : eyePct >= 40 ? 'Moderate — look at camera more' : 'Low — you appear distracted';
+      // Eye contact — iris-based thresholds (70%+ consistently on camera,
+      // 45-70% looking around but returning, <45% mostly looking away)
+      const eyeColor = eyePct >= 70 ? 'var(--green)' : eyePct >= 45 ? 'var(--amber)' : 'var(--red)';
+      const eyeNote = eyePct >= 70 ? 'Strong eye contact — commanding' : eyePct >= 45 ? 'Moderate — return to camera more often' : 'Low — you appear distracted or reading notes';
       const eyePctEl = document.getElementById('rt-eye-pct');
       if (eyePctEl) { eyePctEl.textContent = eyePct + '%'; eyePctEl.style.color = eyeColor; }
       const eyeBarEl = document.getElementById('rt-eye-bar'); if (eyeBarEl) eyeBarEl.style.width = eyePct + '%';
       const eyeNoteEl = document.getElementById('rt-eye-note'); if (eyeNoteEl) eyeNoteEl.textContent = eyeNote;
-      this.updateBadge('rt-eye-badge', `👁️ ${eyePct}% eye contact`, eyePct>=65?'#2dd4a0':eyePct>=40?'#fbbf24':'#f87171');
+      this.updateBadge('rt-eye-badge', `👁️ ${eyePct}% eye contact`, eyePct>=70?'#2dd4a0':eyePct>=45?'#fbbf24':'#f87171');
 
-      // Head stability
-      const headColor = headPct >= 70 ? 'var(--accent2)' : headPct >= 45 ? 'var(--amber)' : 'var(--red)';
-      const headNote = headPct >= 70 ? 'Very steady — strong presence' : headPct >= 45 ? 'Some movement' : 'Unstable — plant your feet';
+      // Head stability — movement-delta thresholds (75%+ mostly still,
+      // 50-75% noticeable but not excessive, <50% actively moving around)
+      const headColor = headPct >= 75 ? 'var(--accent2)' : headPct >= 50 ? 'var(--amber)' : 'var(--red)';
+      const headNote = headPct >= 75 ? 'Very steady — strong physical presence' : headPct >= 50 ? 'Some head movement — try to stay still' : 'Too much head movement — plant your feet and breathe';
       const headPctEl = document.getElementById('rt-head-pct');
       if (headPctEl) { headPctEl.textContent = headPct + '%'; headPctEl.style.color = headColor; }
       const headBarEl = document.getElementById('rt-head-bar'); if (headBarEl) headBarEl.style.width = headPct + '%';
       const headNoteEl = document.getElementById('rt-head-note'); if (headNoteEl) headNoteEl.textContent = headNote;
-      this.updateBadge('rt-pose-badge', `🧍 ${headPct>=70?'Steady':headPct>=45?'Moving':'Unstable'}`, headPct>=70?'#38bdf8':headPct>=45?'#fbbf24':'#f87171');
+      this.updateBadge('rt-pose-badge', `🧍 ${headPct>=75?'Steady':headPct>=50?'Moving':'Unstable'}`, headPct>=75?'#38bdf8':headPct>=50?'#fbbf24':'#f87171');
+
+      // ── TARGET DOT UPDATE ────────────────────────────────────
+      // Dot turns green + faster pulse when eye contact is on target,
+      // stays red + slow pulse otherwise — trains the user to look at the
+      // camera lens (top of screen) rather than the other person's face on
+      // screen (bottom), which is what actually reads as eye contact to
+      // whoever watches the recording.
+      const dotInner = document.getElementById('rt-dot-inner');
+      const dotLabel = document.getElementById('rt-dot-label');
+      if (dotInner && dotLabel) {
+        const isOnTarget = eyePct >= 65;
+        if (isOnTarget) {
+          dotInner.style.background = '#2dd4a0';
+          dotInner.style.border = '2px solid rgba(255,255,255,0.95)';
+          dotInner.style.animation = 'targetPulseGreen 1s ease-in-out infinite';
+          dotInner.style.width = '18px';
+          dotInner.style.height = '18px';
+          dotLabel.textContent = '✓ GOOD';
+          dotLabel.style.color = '#2dd4a0';
+        } else {
+          dotInner.style.background = '#ef4444';
+          dotInner.style.border = '2px solid rgba(255,255,255,0.9)';
+          dotInner.style.animation = 'targetPulse 2s ease-in-out infinite';
+          dotInner.style.width = '16px';
+          dotInner.style.height = '16px';
+          dotLabel.textContent = 'LOOK HERE';
+          dotLabel.style.color = 'rgba(255,255,255,0.85)';
+        }
+      }
 
       // Blink rate
       const blinkLabel = blinkPerMin < 5 ? 'Very low — stressed?' : blinkPerMin <= 25 ? 'Normal' : 'High — nervous?';
@@ -4653,12 +4786,15 @@ const RealTimeAnalyzer = {
     // as a glitch and gets ignored/dismissed, which looks exactly like "the
     // system isn't hearing me at all." Pre-authorizing mic access here means
     // that later getUserMedia call resolves silently, no second prompt.
-    // 480p, not 720p — plenty sharp for this use case and roughly half the
-    // pixels MediaPipe and the recording canvas have to process per frame.
+    // Request 1080p (min 720p) — the display is CSS-scaled into a fixed box
+    // regardless of source resolution, so this only affects sharpness, not
+    // layout. The recording canvas upscales from this into a full 1920x1080
+    // export; MediaPipe stays cheap via the existing 8fps throttle, not by
+    // starving it of resolution.
     const stream = await navigator.mediaDevices.getUserMedia({
       video: {
-        width: { ideal: 640, max: 854 },
-        height: { ideal: 480, max: 480 },
+        width: { ideal: 1920, min: 1280 },
+        height: { ideal: 1080, min: 720 },
         facingMode: 'user',
         frameRate: { ideal: 30, max: 30 }
       },
@@ -4690,7 +4826,12 @@ const RealTimeAnalyzer = {
         this._lastMPFrame = now;
         await this.faceMesh.send({ image: videoEl });
       },
-      width: 640, height: 480
+      // camera_utils' Camera.start() issues its own getUserMedia call using
+      // these dimensions and reassigns video.srcObject to it — our own
+      // 1080p getUserMedia call above only secures early permission + the
+      // audio track; THIS is what actually determines the live video (and
+      // therefore recording) resolution, so it has to match.
+      width: 1920, height: 1080
     });
     this.camera.start();
 
@@ -4731,10 +4872,10 @@ const RealTimeAnalyzer = {
   startRecording() {
     const recordCanvas = document.getElementById('rt-record-canvas');
     const videoEl = document.getElementById('rt-video');
-    // Record at 640x480 — clean enough for review, half the pixels to
-    // draw/encode per frame versus the previous 1280x720.
-    recordCanvas.width = 640;
-    recordCanvas.height = 480;
+    // Record at 1920x1080 — full HD regardless of what the display canvas
+    // shows on screen; the camera frame is upscaled/letterboxed to fill this.
+    recordCanvas.width = 1920;
+    recordCanvas.height = 1080;
     this.compositeCtx = recordCanvas.getContext('2d');
 
     // Start drawing composite frames
@@ -4749,15 +4890,16 @@ const RealTimeAnalyzer = {
     const audioTrack = this.micStream?.getAudioTracks()[0];
     if (audioTrack) stream.addTrack(audioTrack);
     this.recordedChunks = [];
-    // VP8 is lighter than VP9 to encode in real time — VP9 gives smaller
-    // files but costs more CPU during encoding, which is exactly what's
-    // being throttled everywhere else in this pipeline.
-    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8')
-      ? 'video/webm;codecs=vp8'
-      : 'video/webm';
+    // VP9 gives better quality per bit than VP8 at 1080p — worth the extra
+    // encode cost now that the canvas itself is full HD; falls back to VP8
+    // then plain webm on browsers that don't support VP9 encoding.
+    const mimeType =
+      MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' :
+      MediaRecorder.isTypeSupported('video/webm;codecs=vp8') ? 'video/webm;codecs=vp8' :
+      'video/webm';
     this.mediaRecorder = new MediaRecorder(stream, {
       mimeType,
-      videoBitsPerSecond: 1_500_000 // 1.5 Mbps — good quality, low encoding cost
+      videoBitsPerSecond: 8_000_000 // 8 Mbps — standard bitrate for 1080p30
     });
     this.mediaRecorder.ondataavailable = (e) => {
       if (e.data && e.data.size > 0) this.recordedChunks.push(e.data);
@@ -4780,13 +4922,32 @@ const RealTimeAnalyzer = {
       const canvas = document.getElementById('rt-record-canvas');
       const videoEl = document.getElementById('rt-video');
       if (canvas && videoEl && videoEl.readyState >= 2) {
-        // Draw camera frame (mirrored like display)
+        const cw = canvas.width;  // 1920
+        const ch = canvas.height; // 1080
+
+        // Draw the camera frame upscaled to fill the 1920x1080 canvas,
+        // preserving aspect ratio (crop to fill, like object-fit:cover on
+        // the live <video> element) rather than stretching or distorting it.
+        const vw = videoEl.videoWidth || 1280;
+        const vh = videoEl.videoHeight || 720;
+        const scale = Math.max(cw / vw, ch / vh);
+        const drawW = vw * scale;
+        const drawH = vh * scale;
+        const drawX = (cw - drawW) / 2;
+        const drawY = (ch - drawH) / 2;
+
         ctx.save();
+        // Mirror horizontally (selfie mode) around the canvas center
+        ctx.translate(cw, 0);
         ctx.scale(-1, 1);
-        ctx.drawImage(videoEl, -canvas.width, 0, canvas.width, canvas.height);
+        ctx.drawImage(videoEl, cw - drawX - drawW, drawY, drawW, drawH);
         ctx.restore();
-        // Draw scoring overlay panel — top right corner
-        this._drawScoringOverlay(ctx, canvas.width, canvas.height);
+
+        // Target dot — burned in so viewers can see where the user was
+        // looking relative to the camera lens at any point in the video
+        this._drawTargetDot(ctx, cw, ch);
+        // Scoring overlay panel — top right corner
+        this._drawScoringOverlay(ctx, cw, ch);
       }
     }
 
@@ -4794,13 +4955,47 @@ const RealTimeAnalyzer = {
     this.compositeAnimFrame = requestAnimationFrame(() => this._drawCompositeFrame());
   },
 
-  _getOrCreateOverlayCanvas() {
-    if (!this._overlayCanvas) {
-      this._overlayCanvas = document.createElement('canvas');
-      this._overlayCanvas.width = 280;
-      this._overlayCanvas.height = 300;
-    }
-    return this._overlayCanvas;
+  // Target dot burned into the recording — same on-target logic as the live
+  // HTML dot, drawn at the top-center of the frame where a webcam lens sits.
+  // Sized proportionally to canvas height so it stays legible whether the
+  // canvas ends up 1080p or falls back to something smaller.
+  _drawTargetDot(ctx, cw, ch) {
+    const dotX = cw / 2;
+    const dotY = Math.round(ch * 0.035); // 3.5% from top
+    const dotRadius = Math.round(ch * 0.009); // ~10px at 1080p
+    const isOnTarget = (this.eyePctRunning || 0) >= 65;
+    const dotColor = isOnTarget ? '#2dd4a0' : '#ef4444';
+    const ringColor = isOnTarget ? 'rgba(45,212,160,' : 'rgba(239,68,68,';
+
+    const elapsed = this.sessionStart ? (Date.now() - this.sessionStart) / 1000 : 0;
+    const pulsePhase = (elapsed % 2) / 2; // 0-1 over 2 seconds
+    const ringRadius = dotRadius + pulsePhase * dotRadius * 1.4;
+    const ringAlpha = (1 - pulsePhase) * 0.7;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(dotX, dotY, ringRadius, 0, Math.PI * 2);
+    ctx.strokeStyle = ringColor + ringAlpha + ')';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(dotX, dotY, dotRadius, 0, Math.PI * 2);
+    ctx.fillStyle = dotColor;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(dotX, dotY, dotRadius, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.font = `bold ${Math.round(ch * 0.011)}px "DM Mono", monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(dotX - dotRadius * 3.5, dotY + dotRadius + 3, dotRadius * 7, dotRadius * 2);
+    ctx.fillStyle = isOnTarget ? '#2dd4a0' : 'rgba(255,255,255,0.85)';
+    ctx.fillText(isOnTarget ? '✓ GOOD' : 'LOOK HERE', dotX, dotY + dotRadius * 2.5);
+    ctx.restore();
   },
 
   // The panel used to be fully redrawn onto the main recording canvas every
@@ -4808,118 +5003,106 @@ const RealTimeAnalyzer = {
   // sec (tied to the UI update throttle). Now it's rendered once onto a
   // small offscreen canvas whenever the values change, and just blitted
   // (a single drawImage, far cheaper than re-running every fillText/stroke)
-  // onto the recording canvas every frame.
+  // onto the recording canvas every frame. Also compacted (was 260px wide,
+  // dominating the frame) and scaled proportionally to canvas height so it
+  // stays crisp instead of blurry now that recording is full 1080p.
   _drawScoringOverlay(ctx, cw, ch) {
     const od = this.overlayData;
-    const panelW = 260;
-    const panelH = 280;
-    const panelX = cw - panelW - 16;
-    const panelY = 16;
-    const r = 12; // border radius
+    const scaleFactor = Math.max(1, ch / 720);
+    const panelW = Math.round(172 * scaleFactor);
+    const panelH = Math.round(220 * scaleFactor);
+    const panelX = cw - panelW - Math.round(10 * scaleFactor);
+    const panelY = Math.round(10 * scaleFactor);
+    const r = Math.round(8 * scaleFactor);
 
-    const overlayCanvas = this._getOrCreateOverlayCanvas();
-    const valStr = `${od.liveScore}|${od.eyePct}|${od.headPct}|${od.exprLabel}|${Math.floor(od.elapsed/2)}|${od.currentTip?.slice(0,20)}`;
-    const needsRedraw = valStr !== this._lastOverlayValues;
-
-    if (needsRedraw) {
-      this._lastOverlayValues = valStr;
-      const oc = overlayCanvas.getContext('2d');
-      oc.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-      oc.save();
-
-      // Panel background — coordinates relative to (0,0) of the offscreen canvas
-      oc.globalAlpha = 0.88;
-      oc.fillStyle = '#07080f';
-      this._roundRect(oc, 0, 0, panelW, panelH, r);
-      oc.fill();
-      oc.globalAlpha = 1;
-
-      // Panel border
-      oc.strokeStyle = 'rgba(124,111,255,0.5)';
-      oc.lineWidth = 1.5;
-      this._roundRect(oc, 0, 0, panelW, panelH, r);
-      oc.stroke();
-
-      // Top gradient line
-      const grad = oc.createLinearGradient(0, 0, panelW, 0);
-      grad.addColorStop(0, 'transparent');
-      grad.addColorStop(0.5, 'rgba(124,111,255,0.8)');
-      grad.addColorStop(1, 'transparent');
-      oc.strokeStyle = grad;
-      oc.lineWidth = 1;
-      oc.beginPath(); oc.moveTo(r, 0); oc.lineTo(panelW-r, 0); oc.stroke();
-
-      const tx = 14;
-      let ty = 20;
-
-      // "CONVER AI" label
-      oc.font = 'bold 9px "DM Mono", monospace';
-      oc.fillStyle = 'rgba(124,111,255,0.7)';
-      oc.fillText('CONVER AI · LIVE ANALYSIS', tx, ty);
-      ty += 18;
-
-      // Live score — big number
-      const scoreColor = od.liveScore >= 75 ? '#2dd4a0' : od.liveScore >= 50 ? '#fbbf24' : '#f87171';
-      oc.font = 'bold 38px "Space Grotesk", sans-serif';
-      oc.fillStyle = scoreColor;
-      oc.fillText(od.liveScore || '—', tx, ty + 28);
-      oc.font = '10px "DM Mono", monospace';
-      oc.fillStyle = 'rgba(255,255,255,0.35)';
-      oc.fillText('/ 100 PRESENCE SCORE', tx + 56, ty + 22);
-      ty += 44;
-
-      // Separator
-      oc.strokeStyle = 'rgba(255,255,255,0.06)';
-      oc.lineWidth = 1;
-      oc.beginPath(); oc.moveTo(10, ty); oc.lineTo(panelW-10, ty); oc.stroke();
-      ty += 12;
-
-      // Metrics rows
-      const metrics = [
-        { label: 'EYE CONTACT', value: od.eyePct + '%', color: od.eyePct >= 70 ? '#2dd4a0' : od.eyePct >= 40 ? '#fbbf24' : '#f87171' },
-        { label: 'HEAD STABILITY', value: od.headPct + '%', color: od.headPct >= 70 ? '#38bdf8' : od.headPct >= 40 ? '#fbbf24' : '#f87171' },
-        { label: 'EXPRESSION', value: od.exprLabel || '—', color: '#c084fc' },
-        { label: 'ELAPSED', value: this._formatTime(od.elapsed), color: 'rgba(255,255,255,0.5)' },
-      ];
-      metrics.forEach(m => {
-        oc.font = '9px "DM Mono", monospace';
-        oc.fillStyle = 'rgba(255,255,255,0.4)';
-        oc.fillText(m.label, tx, ty);
-        oc.font = 'bold 11px "Space Grotesk", sans-serif';
-        oc.fillStyle = m.color;
-        oc.fillText(m.value, panelW - 14 - oc.measureText(m.value).width, ty);
-        ty += 18;
-      });
-      ty += 6;
-
-      // Separator
-      oc.strokeStyle = 'rgba(255,255,255,0.06)';
-      oc.lineWidth = 1;
-      oc.beginPath(); oc.moveTo(10, ty); oc.lineTo(panelW-10, ty); oc.stroke();
-      ty += 10;
-
-      // Live tip
-      if (od.currentTip) {
-        oc.font = '10px "Plus Jakarta Sans", sans-serif';
-        oc.fillStyle = 'rgba(255,255,255,0.6)';
-        const tipWords = od.currentTip.split(' ');
-        let line = '', lineY = ty;
-        tipWords.forEach(word => {
-          const test = line + word + ' ';
-          if (oc.measureText(test).width > panelW - 28) {
-            oc.fillText(line.trim(), tx, lineY);
-            line = word + ' '; lineY += 13;
-          } else { line = test; }
-        });
-        if (line.trim()) oc.fillText(line.trim(), tx, lineY);
-      }
-
-      oc.restore();
+    // Cache check — only redraw when values change
+    const valStr = `${od.liveScore}|${od.eyePct}|${od.headPct}|${od.smileLabel}|${od.browLabel}|${od.paceLabel}|${Math.floor((od.elapsed||0)/3)}`;
+    if (valStr === this._lastOverlayValues && this._overlayCanvas) {
+      ctx.drawImage(this._overlayCanvas, panelX, panelY);
+      return;
     }
+    this._lastOverlayValues = valStr;
 
-    // Blit the cached overlay onto the main recording canvas — one drawImage
-    // call, regardless of whether it was just redrawn or not.
-    ctx.drawImage(overlayCanvas, panelX, panelY);
+    if (!this._overlayCanvas) this._overlayCanvas = document.createElement('canvas');
+    this._overlayCanvas.width = panelW;
+    this._overlayCanvas.height = panelH;
+    const oc = this._overlayCanvas.getContext('2d');
+    oc.clearRect(0, 0, panelW, panelH);
+
+    // Panel background
+    oc.globalAlpha = 0.82;
+    oc.fillStyle = '#06070f';
+    this._roundRect(oc, 0, 0, panelW, panelH, r);
+    oc.fill();
+    oc.globalAlpha = 1;
+
+    // Panel border
+    oc.strokeStyle = 'rgba(124,111,255,0.45)';
+    oc.lineWidth = 1;
+    this._roundRect(oc, 0, 0, panelW, panelH, r);
+    oc.stroke();
+
+    // Top gradient line
+    const grad = oc.createLinearGradient(0, 0, panelW, 0);
+    grad.addColorStop(0, 'transparent');
+    grad.addColorStop(0.5, 'rgba(124,111,255,0.7)');
+    grad.addColorStop(1, 'transparent');
+    oc.strokeStyle = grad;
+    oc.lineWidth = 1;
+    oc.beginPath(); oc.moveTo(r, 0); oc.lineTo(panelW - r, 0); oc.stroke();
+
+    let ty = Math.round(12 * scaleFactor);
+    const lx = Math.round(8 * scaleFactor);
+    const rx = panelW - Math.round(8 * scaleFactor);
+
+    // Header
+    oc.font = `bold ${Math.round(7 * scaleFactor)}px monospace`;
+    oc.fillStyle = 'rgba(124,111,255,0.65)';
+    oc.textAlign = 'left';
+    oc.fillText('CONVER AI · LIVE', lx, ty);
+    ty += Math.round(13 * scaleFactor);
+
+    // Presence score — compact inline
+    const scoreColor = (od.liveScore||0) >= 70 ? '#2dd4a0' : (od.liveScore||0) >= 45 ? '#fbbf24' : '#f87171';
+    oc.font = `bold ${Math.round(18 * scaleFactor)}px sans-serif`;
+    oc.fillStyle = scoreColor;
+    oc.textAlign = 'left';
+    oc.fillText((od.liveScore || '—') + '', lx, ty + Math.round(14 * scaleFactor));
+    oc.font = `${Math.round(7 * scaleFactor)}px monospace`;
+    oc.fillStyle = 'rgba(255,255,255,0.3)';
+    oc.fillText('/ 100', lx + Math.round(32 * scaleFactor), ty + Math.round(8 * scaleFactor));
+    oc.fillText('PRESENCE', lx + Math.round(32 * scaleFactor), ty + Math.round(16 * scaleFactor));
+    ty += Math.round(22 * scaleFactor);
+
+    // Thin separator
+    oc.strokeStyle = 'rgba(255,255,255,0.07)';
+    oc.lineWidth = 1;
+    oc.beginPath(); oc.moveTo(Math.round(6*scaleFactor), ty); oc.lineTo(panelW - Math.round(6*scaleFactor), ty); oc.stroke();
+    ty += Math.round(8 * scaleFactor);
+
+    // 6 metric rows — compact
+    const metrics = [
+      { label: 'EYE', value: (od.eyePct || 0) + '%', color: (od.eyePct||0) >= 70 ? '#2dd4a0' : (od.eyePct||0) >= 45 ? '#fbbf24' : '#f87171' },
+      { label: 'HEAD', value: (od.headPct || 0) + '%', color: (od.headPct||0) >= 75 ? '#38bdf8' : (od.headPct||0) >= 50 ? '#fbbf24' : '#f87171' },
+      { label: 'SMILE', value: od.smileLabel || '—', color: od.smileLabel === 'Genuine' ? '#2dd4a0' : od.smileLabel === 'Partial' ? '#fbbf24' : 'rgba(255,255,255,0.35)' },
+      { label: 'BROWS', value: od.browLabel || '—', color: od.browLabel === 'Expressive' ? '#2dd4a0' : od.browLabel === 'Moderate' ? '#fbbf24' : '#f87171' },
+      { label: 'PACE', value: (od.paceLabel || '—').replace('Good', 'Good ✓'), color: (od.paceLabel||'').includes('Good') ? '#2dd4a0' : '#fbbf24' },
+      { label: 'TIME', value: this._formatTime(od.elapsed || 0), color: 'rgba(255,255,255,0.4)' },
+    ];
+    oc.font = `${Math.round(7.5 * scaleFactor)}px monospace`;
+    metrics.forEach(m => {
+      oc.textAlign = 'left';
+      oc.fillStyle = 'rgba(255,255,255,0.38)';
+      oc.fillText(m.label, lx, ty);
+      oc.textAlign = 'right';
+      oc.font = `bold ${Math.round(8 * scaleFactor)}px sans-serif`;
+      oc.fillStyle = m.color;
+      oc.fillText(m.value, rx, ty);
+      oc.font = `${Math.round(7.5 * scaleFactor)}px monospace`;
+      ty += Math.round(17 * scaleFactor);
+    });
+
+    ctx.drawImage(this._overlayCanvas, panelX, panelY);
   },
 
   _roundRect(ctx, x, y, w, h, r) {
