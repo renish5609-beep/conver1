@@ -9837,6 +9837,15 @@ async function initAuth() {
     localStorage.removeItem('conver_token');
   }
   if (authToken) {
+    // This path (restoring a token from an OAuth callback) never went
+    // through afterSignIn(), so it skipped profile creation entirely and
+    // went straight to loadUserData() — any later saveUserData() call for
+    // this session would hit the same missing-profile foreign key error.
+    // Ensure the profile row exists before touching stats, same as
+    // afterSignIn() does for the normal sign-in path.
+    await fetch('/api/user/profile', {
+      method: 'POST', headers: {'Content-Type':'application/json','Authorization':'Bearer '+authToken}
+    });
     await loadUserData();
   } else {
     showAuthScreen();
