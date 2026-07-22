@@ -4388,7 +4388,14 @@ const RealTimeAnalyzer = {
       },
       audio: true
     });
-    stream.getAudioTracks().forEach(t => t.stop()); // don't need this track ourselves — ScribeSTT manages its own mic capture
+    // Keep this stream's audio track alive (was previously stopped
+    // immediately, on the assumption we'd never need it ourselves since
+    // ScribeSTT manages its own separate mic capture for transcription) —
+    // the RECORDING needs a real audio track too, and stopping it here meant
+    // every downloaded video was silent. <video> has the `muted` attribute
+    // so this doesn't cause audible feedback; the track just rides along
+    // for startRecording() to attach to the composite canvas stream.
+    this.micStream = stream;
     videoEl.srcObject = stream;
     await new Promise(resolve => videoEl.onloadedmetadata = resolve);
     canvas.width = videoEl.videoWidth;
@@ -4446,6 +4453,11 @@ const RealTimeAnalyzer = {
     // Record the canvas stream at 30fps (the recording draw loop itself is
     // throttled to 24fps internally — see _drawCompositeFrame)
     const stream = recordCanvas.captureStream(30);
+    // canvas.captureStream() only ever produces a VIDEO track — attach the
+    // mic audio track we kept alive in startCamera() so the download
+    // actually has sound. Without this, every recording was silent.
+    const audioTrack = this.micStream?.getAudioTracks()[0];
+    if (audioTrack) stream.addTrack(audioTrack);
     this.recordedChunks = [];
     // VP8 is lighter than VP9 to encode in real time — VP9 gives smaller
     // files but costs more CPU during encoding, which is exactly what's
@@ -4656,6 +4668,7 @@ const RealTimeAnalyzer = {
       video.srcObject.getTracks().forEach(t => t.stop());
       video.srcObject = null;
     }
+    this.micStream = null;
     if (this.timerInterval) { clearInterval(this.timerInterval); this.timerInterval = null; }
   }
 };
@@ -4962,6 +4975,15 @@ async function endRealTimeSession() {
   document.getElementById('rt-debrief').classList.remove('hidden');
   const dlBtn = document.getElementById('rt-download-btn');
   if (dlBtn) dlBtn.style.display = RealTimeAnalyzer.recordedChunks.length ? 'block' : 'none';
+
+  // Show an immediate loading state — the scoring API call below can take a
+  // couple of seconds, and #rt-debrief-content stayed completely empty the
+  // whole time it was awaited, which read as the app freezing/showing a
+  // blank page right after ending the session. Populate it instantly instead.
+  document.getElementById('rt-debrief-content').innerHTML = `
+    <div style="font-family:'Italiana',serif;font-size:32px;color:var(--text);margin-bottom:24px">Scoring your session...</div>
+    <div class="loading-dots"><span></span><span></span><span></span></div>
+  `;
 
   // Score verbal responses — same numeric rubric as Practice Lab's
   // analyzeResponse(), not a vague "score 1-10" ask, so Real-Time sessions
