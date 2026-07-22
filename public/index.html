@@ -4909,6 +4909,20 @@ function _rtHandleResponse(fullText) {
 }
 
 async function endRealTimeSession() {
+  // Capture any in-progress transcript before ending — ScribeSTT's
+  // onAutoSubmit only fires after ~5s of silence, so if the user was still
+  // mid-sentence (or just finished talking) when they clicked "End Session,"
+  // their last response was sitting in ScribeSTT.accumulatedText and never
+  // made it into RealTimeAnalyzer.userResponses. That's why the debrief kept
+  // saying "no verbal responses recorded" even after clearly talking —
+  // ScribeSTT.stop() below would have discarded it before it was ever read.
+  if (ScribeSTT.accumulatedText && ScribeSTT.accumulatedText.trim().length > 2) {
+    const currentPrompt = RealTimeAnalyzer.promptQueue?.[RealTimeAnalyzer.currentPromptIdx] || '';
+    RealTimeAnalyzer.userResponses.push({
+      prompt: currentPrompt,
+      response: ScribeSTT.accumulatedText.trim()
+    });
+  }
   ScribeSTT?.stop();
   const metrics = RealTimeAnalyzer.getFinalMetrics();
   const duration = Math.floor((Date.now() - RealTimeAnalyzer.sessionStart) / 1000);
