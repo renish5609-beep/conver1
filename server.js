@@ -137,7 +137,21 @@ app.get('/api/user/stats', requireAuth, async (req, res) => {
 app.post('/api/user/stats', requireAuth, async (req, res) => {
   const { stats } = req.body;
   const payload = { user_id: req.user.id, ...stats, updated_at: new Date().toISOString() };
-  const { error } = await supabase.from('user_stats').upsert(payload, { onConflict: 'user_id' });
+  let { error } = await supabase.from('user_stats').upsert(payload, { onConflict: 'user_id' });
+  // user_stats.user_id has a foreign key against profiles — if the one
+  // POST /api/user/profile call at sign-in never fired or failed (a slow
+  // network, a dropped request, anything), EVERY subsequent stats save
+  // (streak, XP, sessions, everything) would fail on this FK constraint
+  // forever, with nothing surfacing it since the client didn't check
+  // response status either. Self-heal by creating the profile row here too
+  // and retrying once, instead of leaving the account permanently stuck.
+  if (error && error.code === '23503') {
+    console.warn('Stats save hit missing profile row for user', req.user.id, '— creating it and retrying');
+    const { error: profileErr } = await supabase.from('profiles').upsert({ id: req.user.id, email: req.user.email }, { onConflict: 'id' });
+    if (!profileErr) {
+      ({ error } = await supabase.from('user_stats').upsert(payload, { onConflict: 'user_id' }));
+    }
+  }
   if (error) { console.error('Stats save error:', error); return res.status(400).json({ error: error.message }); }
   res.json({ success: true });
 });

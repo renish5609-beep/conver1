@@ -10055,7 +10055,7 @@ async function loadUserData() {
 async function saveUserData() {
   if (!authToken) return;
   try {
-    await fetch('/api/user/stats', {
+    const res = await fetch('/api/user/stats', {
       method: 'POST',
       headers: {'Content-Type':'application/json','Authorization':'Bearer '+authToken},
       body: JSON.stringify({
@@ -10078,6 +10078,17 @@ async function saveUserData() {
         }
       })
     });
+    // fetch() only rejects/throws on a network-level failure — a 400/500
+    // response resolves normally, so this used to silently swallow every
+    // server-side save error (e.g. a missing profiles row breaking the
+    // user_stats foreign key) with zero indication anything was wrong.
+    // Whatever the UI showed (streak, XP, sessions...) would look correct
+    // locally but never actually persist, then get overwritten by the old
+    // stale server value on the next load.
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      console.error('Save stats failed:', res.status, body.error || '');
+    }
   } catch(e) { console.error('Save stats error:', e); }
 }
 
