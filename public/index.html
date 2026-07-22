@@ -2884,6 +2884,12 @@ body.reducemotion .coach-orb-wave { animation: none !important; }
                 <canvas id="rt-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;transform:scaleX(-1);will-change:contents;backface-visibility:hidden"></canvas>
                 <!-- Hidden composite canvas for recording — camera + overlay burned together -->
                 <canvas id="rt-record-canvas" style="display:none"></canvas>
+                <!-- Hidden video fed by a SEPARATE high-res camera stream, used only
+                     as the source frame for the recording composite. Kept fully apart
+                     from rt-video (the live display + MediaPipe input) so 1080p
+                     decode/render cost never touches the live analysis loop — that's
+                     what was causing the in-app lag once both were merged to 1080p. -->
+                <video id="rt-record-video" autoplay playsinline muted style="display:none"></video>
 
                 <!-- Camera target dot — shows where to look for eye contact. The
                      camera lens sits at the top of the screen while the other
@@ -4778,19 +4784,16 @@ const RealTimeAnalyzer = {
   async startCamera() {
     const videoEl = document.getElementById('rt-video');
     const canvas = document.getElementById('rt-canvas');
+    const recordVideoEl = document.getElementById('rt-record-video');
 
-    // Request camera AND mic together, in one prompt. Speech transcription
-    // (ScribeSTT) requests its own mic stream separately later, once prompts
-    // load — if that came as a SECOND, delayed permission prompt appearing
-    // after the user is already looking at their live camera feed, it reads
-    // as a glitch and gets ignored/dismissed, which looks exactly like "the
-    // system isn't hearing me at all." Pre-authorizing mic access here means
-    // that later getUserMedia call resolves silently, no second prompt.
-    // Request 1080p (min 720p) — the display is CSS-scaled into a fixed box
-    // regardless of source resolution, so this only affects sharpness, not
-    // layout. The recording canvas upscales from this into a full 1920x1080
-    // export; MediaPipe stays cheap via the existing 8fps throttle, not by
-    // starving it of resolution.
+    // High-res stream (1080p, min 720p) — feeds ONLY the hidden recording
+    // video and carries the mic audio track. This never touches rt-video,
+    // MediaPipe, or the display canvas, so decoding/rendering a full 1080p
+    // stream can't lag the live preview or the analysis loop. Requesting
+    // camera+mic together in one prompt also means ScribeSTT's later mic
+    // getUserMedia call resolves silently (already granted) instead of a
+    // second permission prompt appearing after the user's already looking
+    // at their live feed, which reads as a glitch.
     const stream = await navigator.mediaDevices.getUserMedia({
       video: {
         width: { ideal: 1920, min: 1280 },
@@ -4808,13 +4811,17 @@ const RealTimeAnalyzer = {
     // so this doesn't cause audible feedback; the track just rides along
     // for startRecording() to attach to the composite canvas stream.
     this.micStream = stream;
-    videoEl.srcObject = stream;
-    await new Promise(resolve => videoEl.onloadedmetadata = resolve);
-    canvas.width = videoEl.videoWidth;
-    canvas.height = videoEl.videoHeight;
+    recordVideoEl.srcObject = stream;
+    await new Promise(resolve => recordVideoEl.onloadedmetadata = resolve);
 
-    // MediaPipe processes at low res — the camera display is CSS-scaled up,
-    // so visual quality on screen is unaffected by the lower capture size.
+    // Separate LOW-res stream for the live preview + MediaPipe input.
+    // camera_utils' Camera.start() issues its own independent getUserMedia
+    // call using the width/height below and assigns that stream directly to
+    // videoEl — deliberately kept small (640x480) since this is the pipeline
+    // that MediaPipe (8fps) and the display canvas touch every frame. The
+    // live preview is CSS-scaled into a fixed box regardless of source
+    // resolution, so visual quality on screen is unaffected; only the
+    // recording (drawn from recordVideoEl above) benefits from the 1080p.
     this.camera = new Camera(videoEl, {
       onFrame: async () => {
         if (!this.active || !this.faceMesh) return;
@@ -4826,14 +4833,11 @@ const RealTimeAnalyzer = {
         this._lastMPFrame = now;
         await this.faceMesh.send({ image: videoEl });
       },
-      // camera_utils' Camera.start() issues its own getUserMedia call using
-      // these dimensions and reassigns video.srcObject to it — our own
-      // 1080p getUserMedia call above only secures early permission + the
-      // audio track; THIS is what actually determines the live video (and
-      // therefore recording) resolution, so it has to match.
-      width: 1920, height: 1080
+      width: 640, height: 480
     });
-    this.camera.start();
+    await this.camera.start();
+    canvas.width = videoEl.videoWidth || 640;
+    canvas.height = videoEl.videoHeight || 480;
 
     this.active = true;
     this.sessionStart = Date.now();
@@ -4881,22 +4885,33 @@ const RealTimeAnalyzer = {
     // Start drawing composite frames
     this._drawCompositeFrame();
 
-    // Record the canvas stream at 30fps (the recording draw loop itself is
-    // throttled to 24fps internally — see _drawCompositeFrame)
-    const stream = recordCanvas.captureStream(30);
+    // Capture at 24fps to match the draw loop's own internal throttle
+    // exactly (see _drawCompositeFrame) — requesting 30 here just made the
+    // encoder re-process the same still-unchanged canvas content 6 extra
+    // times a second for nothing, pure wasted CPU that fed straight into
+    // real-time encode lag/dropped frames.
+    const stream = recordCanvas.captureStream(24);
     // canvas.captureStream() only ever produces a VIDEO track — attach the
     // mic audio track we kept alive in startCamera() so the download
     // actually has sound. Without this, every recording was silent.
     const audioTrack = this.micStream?.getAudioTracks()[0];
     if (audioTrack) stream.addTrack(audioTrack);
     this.recordedChunks = [];
-    // VP9 gives better quality per bit than VP8 at 1080p — worth the extra
-    // encode cost now that the canvas itself is full HD; falls back to VP8
-    // then plain webm on browsers that don't support VP9 encoding.
+    // Prefer H.264 — Chrome/Edge hardware-encode it on virtually all modern
+    // laptops, which is what actually delivers "clean 1080p with zero
+    // buffering": VP9 gives slightly better quality per bit but is a
+    // software encode that can't keep up with 1080p30 in real time on
+    // weaker hardware, causing exactly the dropped-frame/stutter problem
+    // this is fixing. VP8 (also software but far cheaper than VP9) is the
+    // fallback, then plain webm as a last resort.
     const mimeType =
-      MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' :
+      MediaRecorder.isTypeSupported('video/mp4;codecs=avc1.640028') ? 'video/mp4;codecs=avc1.640028' :
+      MediaRecorder.isTypeSupported('video/mp4;codecs=h264') ? 'video/mp4;codecs=h264' :
+      MediaRecorder.isTypeSupported('video/webm;codecs=h264') ? 'video/webm;codecs=h264' :
       MediaRecorder.isTypeSupported('video/webm;codecs=vp8') ? 'video/webm;codecs=vp8' :
+      MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' :
       'video/webm';
+    this.recordingMimeType = mimeType; // downloadRecording() needs this for the Blob type + file extension
     this.mediaRecorder = new MediaRecorder(stream, {
       mimeType,
       videoBitsPerSecond: 8_000_000 // 8 Mbps — standard bitrate for 1080p30
@@ -4920,7 +4935,11 @@ const RealTimeAnalyzer = {
       this._lastRecordFrame = now;
       const ctx = this.compositeCtx;
       const canvas = document.getElementById('rt-record-canvas');
-      const videoEl = document.getElementById('rt-video');
+      // Draw from the hidden HIGH-RES video (its own separate 1080p stream),
+      // never rt-video (the low-res live/MediaPipe feed) — this is what
+      // makes the recording sharp without the live preview or analysis loop
+      // ever having to decode/render 1080p frames.
+      const videoEl = document.getElementById('rt-record-video');
       if (canvas && videoEl && videoEl.readyState >= 2) {
         const cw = canvas.width;  // 1920
         const ch = canvas.height; // 1080
@@ -5140,6 +5159,13 @@ const RealTimeAnalyzer = {
     if (video && video.srcObject) {
       video.srcObject.getTracks().forEach(t => t.stop());
       video.srcObject = null;
+    }
+    // Separate high-res stream feeding rt-record-video — stopping its
+    // tracks also covers this.micStream, since that stream IS this one.
+    const recordVideo = document.getElementById('rt-record-video');
+    if (recordVideo && recordVideo.srcObject) {
+      recordVideo.srcObject.getTracks().forEach(t => t.stop());
+      recordVideo.srcObject = null;
     }
     this.micStream = null;
     if (this.timerInterval) { clearInterval(this.timerInterval); this.timerInterval = null; }
@@ -5677,27 +5703,31 @@ function resetRealTime() {
   RealTimeAnalyzer.recordedChunks = [];
 }
 
-// Chrome's MediaRecorder only produces .webm (VP9), not .mp4 — true MP4 would
-// need a server-side transcode (FFmpeg), which is out of scope here. .webm
-// plays natively in Chrome, Firefox, and VLC, and has the overlay burned in
-// identically — functionally the same file, just not natively Windows-Media-
-// Player-friendly. Labeled honestly in the button rather than promised as MP4.
+// MediaRecorder's actual container/codec varies by browser — startRecording()
+// now prefers hardware-encoded H.264 (in an .mp4 container, plays natively
+// everywhere including Windows Media Player and QuickTime) and only falls
+// back to VP8/VP9 (.webm — Chrome, Firefox, VLC) on browsers that can't do
+// H.264 encode. Whichever was actually used is read back from
+// RealTimeAnalyzer.recordingMimeType so the Blob type and file extension
+// always match what's actually inside the file.
 function downloadRecording() {
   const chunks = RealTimeAnalyzer.recordedChunks;
   if (!chunks || chunks.length === 0) {
     showToast('❌', 'No recording data — try again');
     return;
   }
-  const blob = new Blob(chunks, { type: 'video/webm' });
+  const mimeType = RealTimeAnalyzer.recordingMimeType || 'video/webm';
+  const isMp4 = mimeType.startsWith('video/mp4');
+  const blob = new Blob(chunks, { type: mimeType });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   const date = new Date().toISOString().slice(0,10);
   const mode = (rtMode || 'session').charAt(0).toUpperCase() + (rtMode || 'session').slice(1);
   a.href = url;
-  a.download = `Conver-${mode}-${date}.webm`;
+  a.download = `Conver-${mode}-${date}.${isMp4 ? 'mp4' : 'webm'}`;
   a.click();
   URL.revokeObjectURL(url);
-  showToast('⬇', 'Recording downloaded! Open in Chrome, Firefox, or VLC.');
+  showToast('⬇', isMp4 ? 'Recording downloaded!' : 'Recording downloaded! Open in Chrome, Firefox, or VLC.');
 }
 
 // Real-Time has no full-screen immersive overlay like Voice/Debate/Cold Open —
