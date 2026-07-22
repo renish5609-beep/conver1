@@ -3855,7 +3855,7 @@ const ScribeSTT = {
   partialText: '',
   accumulatedText: '',  // full response built across multiple final transcripts
   silenceTimer: null,   // timer for auto-submit after long silence
-  autoSubmitDelay: 4000, // ms of silence before auto-submitting (4 seconds)
+  autoSubmitDelay: 2000, // ms of silence before auto-submitting (2 seconds) — feels like an actual back-and-forth conversation instead of an interrogation-paced pause
   onAutoSubmit: null,   // callback when auto-submit fires
 
   // Fetch a single-use token from our server
@@ -3950,7 +3950,7 @@ const ScribeSTT = {
           language_code: 'en',
           no_verbatim: true,             // removes filler words (um, uh, like)
           filter_background_audio: true, // reduces background noise
-          vad_silence_threshold_secs: 2.5, // wait 2.5 seconds of silence before committing — prevents mid-thought cutoffs
+          vad_silence_threshold_secs: 1.2, // wait 1.2s of silence before committing the final chunk of a phrase — must stay comfortably under autoSubmitDelay (2s) or the auto-submit timer could fire before Scribe ever commits the user's last words, dropping them
           keyterms: [
             'clarity', 'confidence', 'persuasion', 'storytelling', 'conciseness',
             'interview', 'pitch', 'networking', 'leadership', 'debate',
@@ -5327,6 +5327,15 @@ async function _rtSpeakThenListen(promptText) {
   const el = document.getElementById('rt-transcript');
   if (el) el.textContent = 'Listening...';
 
+  // Stop any mic connection still open from the previous turn BEFORE the
+  // coach speaks — unlike VoiceEngine.speakThenListen() (which already does
+  // this), this path never closed the mic first, so it kept listening
+  // straight through the TTS playback and picked up the AI's own voice
+  // through the speakers, leaking the AI's question into the start of the
+  // user's next accumulated response.
+  await ScribeSTT.stop();
+  ScribeSTT.resetAccumulator();
+
   if (promptText && S.autoplay !== false) {
     _rtSetMicStatus('🔊 Speaking prompt...', 'var(--accent2)');
     await _rtSpeak(promptText);
@@ -5403,7 +5412,7 @@ function _rtSpeak(text) {
 
 function _rtStartListening() {
   if (typeof ScribeSTT === 'undefined') return;
-  ScribeSTT.autoSubmitDelay = 5000;
+  ScribeSTT.autoSubmitDelay = 2000;
   ScribeSTT.resetAccumulator();
   ScribeSTT.start({
     onStart: () => _rtSetMicStatus('🎤 Listening...', 'var(--green)'),
@@ -5807,7 +5816,7 @@ const VoiceEngine = {
   onUserSpeech: null,   // callback(transcript, tone) — called when user finishes speaking
   onCoachSpeaking: null,// callback(true/false)
   autoMicDelay: 400,    // ms after coach finishes before mic activates
-  silenceThreshold: 4000, // ms of silence = user is done
+  silenceThreshold: 2000, // ms of silence = user is done
 
   // Start a voice-native session
   start(mode, onUserSpeech) {
