@@ -291,7 +291,7 @@ app.post('/api/contact', async (req, res) => {
   }
   if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
     console.error('Contact form: GMAIL_USER / GMAIL_APP_PASSWORD not configured in .env');
-    return res.status(500).json({ error: 'Contact form is not configured yet. Please email renishdjoshi@gmail.com directly.' });
+    return res.status(500).json({ error: 'Contact form is not configured yet. Please email appconver@gmail.com directly.' });
   }
 
   // Gmail SMTP with an App Password (not the real account password) —
@@ -306,7 +306,7 @@ app.post('/api/contact', async (req, res) => {
 
   const mailOptions = {
     from: `"Conver Contact Form" <${process.env.GMAIL_USER}>`,
-    to: 'renishdjoshi@gmail.com',
+    to: 'appconver@gmail.com',
     replyTo: email,
     subject: `[Conver] ${topic || 'General'} — from ${name}`,
     html: `
@@ -330,7 +330,7 @@ app.post('/api/contact', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error('Contact form email error:', err);
-    res.status(500).json({ error: 'Failed to send message. Please email renishdjoshi@gmail.com directly.' });
+    res.status(500).json({ error: 'Failed to send message. Please email appconver@gmail.com directly.' });
   }
 });
 

@@ -3732,7 +3732,7 @@ body.reducemotion .coach-orb-wave { animation: none !important; }
                 <p>AI powered by <strong style="color:var(--accent3)">Claude (claude-sonnet-4-5)</strong></p>
                 <p>Voice by <strong style="color:var(--accent2)">ElevenLabs</strong></p>
                 <p>Auth & data by <strong style="color:var(--green)">Supabase</strong></p>
-                <p style="margin-top:8px;font-size:11.5px">Voice works best in Chrome. For support: <a href="mailto:renishdjoshi@gmail.com" style="color:var(--accent3)">renishdjoshi@gmail.com</a></p>
+                <p style="margin-top:8px;font-size:11.5px">Voice works best in Chrome. For support: <a href="mailto:appconver@gmail.com" style="color:var(--accent3)">appconver@gmail.com</a></p>
                 <div style="margin-top:12px;display:flex;gap:10px">
                   <a href="/privacy.html" target="_blank" style="font-size:11px;color:var(--muted);text-decoration:none;font-family:'DM Mono',monospace">Privacy</a>
                   <a href="/terms.html" target="_blank" style="font-size:11px;color:var(--muted);text-decoration:none;font-family:'DM Mono',monospace">Terms</a>
@@ -3807,7 +3807,7 @@ body.reducemotion .coach-orb-wave { animation: none !important; }
             <div class="panel">
               <div class="settings-section-title">Contact Info</div>
               <div style="font-size:13px;color:var(--muted2);line-height:2">
-                <div>✉ <a href="mailto:renishdjoshi@gmail.com" style="color:var(--accent3)">renishdjoshi@gmail.com</a></div>
+                <div>✉ <a href="mailto:appconver@gmail.com" style="color:var(--accent3)">appconver@gmail.com</a></div>
                 <div style="font-size:12px;color:var(--muted);margin-top:8px">Response time: typically within 24-48 hours.</div>
                 <div style="margin-top:14px;display:flex;flex-direction:column;gap:6px">
                   <a href="/privacy.html" target="_blank" style="font-size:12px;color:var(--muted2);text-decoration:none;font-family:'DM Mono',monospace" onmouseover="this.style.color='var(--accent3)'" onmouseout="this.style.color='var(--muted2)'">→ Privacy Policy</a>
@@ -8875,7 +8875,7 @@ async function submitContactForm() {
     });
     const data = await res.json();
     if (!res.ok || data.error) {
-      showContactError(data.error || 'Something went wrong. Please email renishdjoshi@gmail.com directly.');
+      showContactError(data.error || 'Something went wrong. Please email appconver@gmail.com directly.');
     } else {
       document.getElementById('contact-form').style.opacity = '0.3';
       document.getElementById('contact-form').style.pointerEvents = 'none';
@@ -8883,7 +8883,7 @@ async function submitContactForm() {
       showToast('✓', 'Message sent! We will get back to you soon.');
     }
   } catch(e) {
-    showContactError('Network error. Please email renishdjoshi@gmail.com directly.');
+    showContactError('Network error. Please email appconver@gmail.com directly.');
   }
   btn.disabled = false;
   btn.textContent = 'Send Message →';
@@ -8897,7 +8897,7 @@ function showContactError(msg) {
 // Show delete account modal (stub — just shows confirmation)
 function showDeleteAccountModal() {
   if (confirm('This will permanently delete your account and all data. This cannot be undone.\n\nType your email below to confirm, or cancel.')) {
-    alert('To complete account deletion, email renishdjoshi@gmail.com with your account email. We will delete your account within 48 hours.');
+    alert('To complete account deletion, email appconver@gmail.com with your account email. We will delete your account within 48 hours.');
   }
 }
 
