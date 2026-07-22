@@ -2582,7 +2582,7 @@ body.reducemotion .coach-orb-wave { animation: none !important; }
       <button class="tab-item" data-page="coldopen" onclick="navTo('coldopen')"><span class="tab-icon">❄️</span>Cold Open</button>
       <button class="tab-item" data-page="qbank" onclick="navTo('qbank')"><span class="tab-icon">❓</span>Questions</button>
       <button class="tab-item" data-page="companion" onclick="navTo('companion')"><span class="tab-icon">💬</span>AI Companion</button>
-      <button class="tab-item" data-page="realtime" onclick="navTo('realtime')"><span class="tab-icon">📹</span>Real-Time</button>
+      <button class="tab-item" data-page="realtime" onclick="navTo('realtime')"><span class="tab-icon">📹</span>Real-Time<span style="margin-left:6px;font-size:9px;font-weight:800;letter-spacing:0.5px;color:#fbbf24;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.3);border-radius:20px;padding:2px 7px;vertical-align:middle;font-family:'DM Mono',monospace">BETA</span></button>
     </div>
     <div class="tabs-divider"></div>
     <div class="tabs-group tabs-group-right">
@@ -2820,7 +2820,7 @@ body.reducemotion .coach-orb-wave { animation: none !important; }
       <!-- REAL-TIME VIDEO ANALYSIS -->
       <div class="page" id="page-realtime">
         <div class="section-head">
-          <h2>Real-Time Analysis</h2>
+          <h2>Real-Time Analysis <span style="margin-left:8px;font-size:11px;font-weight:800;letter-spacing:0.5px;color:#fbbf24;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.3);border-radius:20px;padding:3px 10px;vertical-align:middle;font-family:'DM Mono',monospace">BETA</span></h2>
           <p>Camera on. Live nonverbal analysis. Full debrief on your verbal AND physical presence.</p>
         </div>
 
@@ -6024,7 +6024,13 @@ function navTo(page){
     activeTab.classList.add('active');
     activeTab.scrollIntoView({block:'nearest', inline:'nearest', behavior:'smooth'});
   }
-  document.getElementById('page-title') && (document.getElementById('page-title').textContent = PAGE_TITLES[page] || page);
+  if (document.getElementById('page-title')) {
+    const titleEl = document.getElementById('page-title');
+    const titleText = PAGE_TITLES[page] || page;
+    titleEl.innerHTML = page === 'realtime'
+      ? titleText + ' <span style="margin-left:6px;font-size:9px;font-weight:800;letter-spacing:0.5px;color:#fbbf24;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.3);border-radius:20px;padding:2px 7px;vertical-align:middle;font-family:\'DM Mono\',monospace">BETA</span>'
+      : titleText;
+  }
   if(page==='insights')renderInsights();
   if(page==='history')renderHistory();
   if(page==='skills'){renderSkills();drawRadar();}
