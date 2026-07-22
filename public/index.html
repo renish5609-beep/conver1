@@ -4700,6 +4700,7 @@ const RealTimeAnalyzer = {
       const exprNote = avgSmile > 0.5 ? 'engaged/warm' : avgSmile > 0.2 ? 'neutral' : 'tense';
       const prompt = `You are a blunt, no-nonsense communication coach watching someone live, mid-response, in a ${rtMode || 'practice'} session. Their current nonverbal read: ${eyePct}% eye contact, ${headPct}% head stability, expression is ${exprNote}. What they're saying right now (may be a fragment, they're still talking): "${recentTranscript.slice(-400)}"\n\nGive ONE short, sharp, spoken-style piece of coaching (max 18 words) that reacts to THIS SPECIFIC moment — not a generic template. Rules:\n- If they said something vague, hedge-y, or unsupported, call it out directly and name what's missing (a number, an example, a decision).\n- If they said something genuinely strong, say specifically why it landed — never just "good job" or "keep it up."\n- If they're rambling or repeating themselves, tell them to cut to the point.\n- Quote or paraphrase their actual words when possible — never a comment so generic it could apply to any response.\nNo stage directions, no asterisks, no filler praise, no softening.`;
       const tip = await callAI([{role:'user', content: prompt}]);
+      if (!this.active) return; // session ended while this call was in flight
       if (tip && tip.trim()) this._appendFeedbackLog('💬 ' + tip.trim(), true);
     } catch(e) { /* non-fatal — live tips are a bonus, not required */ }
   },
@@ -5314,6 +5315,13 @@ function _rtSetMicStatus(text, color) {
 // subsequent one so there's exactly one place that wires STT callbacks,
 // instead of a duplicated inline copy per call site.
 async function _rtSpeakThenListen(promptText) {
+  // The session may have already been ended (user clicked "End Session")
+  // while whatever produced this promptText was still in flight (a TTS
+  // call, an AI follow-up question, ScribeSTT's auto-submit) — without this
+  // guard the AI kept talking and the mic kept relistening after the user
+  // had already moved on to the debrief screen.
+  if (!RealTimeAnalyzer.active) return;
+
   const promptEl = document.getElementById('rt-prompt-text');
   if (promptEl) promptEl.textContent = promptText;
   const el = document.getElementById('rt-transcript');
@@ -5323,6 +5331,7 @@ async function _rtSpeakThenListen(promptText) {
     _rtSetMicStatus('🔊 Speaking prompt...', 'var(--accent2)');
     await _rtSpeak(promptText);
   }
+  if (!RealTimeAnalyzer.active) return; // ended while the TTS was playing
   _rtStartListening();
 }
 
@@ -5346,8 +5355,18 @@ function _rtUnlockAudio() {
 }
 
 let _rtTTSFailedOnce = false;
+// Tracks whatever audio _rtSpeak() currently has playing (ElevenLabs clip or
+// browser speechSynthesis) so endRealTimeSession()/RealTimeAnalyzer.stop()
+// can cut it off immediately instead of letting it play out to completion
+// after the user has already clicked "End Session."
+let _rtCurrentAudio = null;
+function _rtStopSpeaking() {
+  if (_rtCurrentAudio) { try { _rtCurrentAudio.pause(); } catch(e) {} _rtCurrentAudio = null; }
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+}
 function _rtSpeak(text) {
   return new Promise(async (resolve) => {
+    if (!RealTimeAnalyzer.active) return resolve(); // session already ended
     try {
       const res = await fetch('/api/speak', {
         method: 'POST',
@@ -5355,14 +5374,17 @@ function _rtSpeak(text) {
         body: JSON.stringify({ text, coach: rtVoiceCoach || S.coach })
       });
       if (!res.ok) throw new Error('TTS request failed: ' + res.status);
+      if (!RealTimeAnalyzer.active) return resolve(); // ended while TTS was generating
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const audio = new Audio(url);
-      audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
-      audio.onerror = () => { URL.revokeObjectURL(url); resolve(); };
+      _rtCurrentAudio = audio;
+      audio.onended = () => { URL.revokeObjectURL(url); if (_rtCurrentAudio === audio) _rtCurrentAudio = null; resolve(); };
+      audio.onerror = () => { URL.revokeObjectURL(url); if (_rtCurrentAudio === audio) _rtCurrentAudio = null; resolve(); };
       await audio.play();
     } catch (e) {
       console.warn('Real-Time TTS failed, falling back to browser speech:', e.name, e.message);
+      if (!RealTimeAnalyzer.active) return resolve();
       if (!_rtTTSFailedOnce) {
         _rtTTSFailedOnce = true;
         showToast('⚠️', 'Voice service unavailable — using your browser\'s built-in voice instead');
@@ -5425,6 +5447,12 @@ async function _rtGenerateNextInterviewQuestion() {
 // Advances to the next prompt after a response comes in, or ends the session
 // once the queue/rounds are exhausted.
 async function _rtHandleResponse(fullText) {
+  // ScribeSTT's auto-submit can fire from a mic session that was already
+  // torn down (e.g. it captured a trailing silence-timeout right as the
+  // user hit "End Session") — bail before pushing a response into a session
+  // that no longer exists.
+  if (!RealTimeAnalyzer.active) return;
+
   RealTimeAnalyzer.userResponses.push({
     prompt: RealTimeAnalyzer.promptQueue[RealTimeAnalyzer.currentPromptIdx] || '',
     response: fullText
@@ -5435,6 +5463,9 @@ async function _rtHandleResponse(fullText) {
     if (RealTimeAnalyzer.currentPromptIdx < RealTimeAnalyzer.maxRounds) {
       _rtSetMicStatus('🤔 Thinking of a follow-up...', 'var(--accent2)');
       const nextQuestion = await _rtGenerateNextInterviewQuestion();
+      // Session may have ended while the AI was generating the follow-up —
+      // don't push a new question or speak/relisten into a dead session.
+      if (!RealTimeAnalyzer.active) return;
       RealTimeAnalyzer.promptQueue.push(nextQuestion);
       _rtSpeakThenListen(nextQuestion);
     } else {
@@ -5451,6 +5482,21 @@ async function _rtHandleResponse(fullText) {
 }
 
 async function endRealTimeSession() {
+  // Bail if the session was already ended — _rtHandleResponse's "queue
+  // exhausted" branch and the End Session button could otherwise both call
+  // this and double-process everything below.
+  if (!RealTimeAnalyzer.active) return;
+
+  // Flip this — and kill any AI speech that's currently playing — as the
+  // very FIRST thing, before anything else in this function. Scoring below
+  // can take a few seconds, and the async follow-up-question/TTS/relisten
+  // chain elsewhere (_rtHandleResponse, _rtSpeakThenListen, _rtSpeak) only
+  // checks RealTimeAnalyzer.active at its own await points; the AI kept
+  // talking and the mic kept relistening after "End Session" because that
+  // flag wasn't flipped until several await-ridden steps later.
+  RealTimeAnalyzer.active = false;
+  _rtStopSpeaking();
+
   // Capture any in-progress transcript before ending — ScribeSTT's
   // onAutoSubmit only fires after ~5s of silence, so if the user was still
   // mid-sentence (or just finished talking) when they clicked "End Session,"
@@ -9897,8 +9943,16 @@ async function afterSignIn() {
   document.getElementById('user-email-display').textContent = email;
   document.getElementById('user-avatar').textContent = email[0].toUpperCase();
   if (typeof updateAccountDisplay === 'function') updateAccountDisplay();
-  hideAuthScreen();
+  // Load the real S.streak/S.sessions/etc from the server BEFORE exposing
+  // the interactive app — hideAuthScreen() used to run first, which meant
+  // anything that could end a session (and call updateStreak()) in the gap
+  // while this fetch was still in flight ran against S.streak's default
+  // value of 0 instead of the account's actual streak, then persisted that
+  // wrong low number back to the server via saveUserData(), silently
+  // clobbering real progress (e.g. a real 4-day streak overwritten down to
+  // 1, which the next legitimate consecutive day then incremented to 2).
   await loadUserData();
+  hideAuthScreen();
   showToast('👋', 'Welcome back!');
 }
 
