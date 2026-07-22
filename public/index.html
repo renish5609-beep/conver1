@@ -4695,6 +4695,21 @@ function selectRTMode(mode) {
 async function startRealTimeSession() {
   if (!rtMode) { showToast('⚠','Select a mode first'); return; }
 
+  // Unlock audio playback WHILE still inside the synchronous part of this
+  // click handler — this is the actual bug behind "voice keeps using the
+  // default browser voice instead of ElevenLabs." By the time the real TTS
+  // audio.play() call happens, it's several awaits removed from this click
+  // (camera permission, an AI call for interview questions, a network fetch
+  // for the audio itself) — Chrome's autoplay policy only grants unprompted
+  // playback within a short window of an actual user gesture, and that
+  // window had already expired, so audio.play() was silently rejecting
+  // every time and falling through to the browser-speech fallback. Playing
+  // a real (silent) clip HERE, synchronously in the click handler, registers
+  // this page as having user-activated audio playback, which Chrome then
+  // continues to honor for subsequent script-initiated audio.play() calls
+  // later in the session — including the real ElevenLabs TTS.
+  _rtUnlockAudio();
+
   // Random coach voice for this session's spoken prompts — picked once here
   // so it stays consistent for the whole session rather than changing voice
   // between prompts.
@@ -4811,6 +4826,19 @@ async function _rtSpeakThenListen(promptText) {
 // "the app just isn't talking" with zero indication why. This version falls
 // back to the browser's built-in speech synthesis if the ElevenLabs call
 // fails, and warns once so a real failure doesn't go unnoticed.
+// A 1-sample silent WAV, played once synchronously inside the "Start
+// Camera & Begin" click handler to satisfy the browser's autoplay policy
+// for every subsequent script-initiated audio.play() call this session.
+let _rtAudioUnlocked = false;
+function _rtUnlockAudio() {
+  if (_rtAudioUnlocked) return;
+  _rtAudioUnlocked = true;
+  try {
+    const el = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=');
+    el.play().catch(() => {});
+  } catch(e) { /* non-fatal — worst case we fall back to browser speech same as before */ }
+}
+
 let _rtTTSFailedOnce = false;
 function _rtSpeak(text) {
   return new Promise(async (resolve) => {
@@ -4828,7 +4856,7 @@ function _rtSpeak(text) {
       audio.onerror = () => { URL.revokeObjectURL(url); resolve(); };
       await audio.play();
     } catch (e) {
-      console.warn('Real-Time TTS failed, falling back to browser speech:', e.message);
+      console.warn('Real-Time TTS failed, falling back to browser speech:', e.name, e.message);
       if (!_rtTTSFailedOnce) {
         _rtTTSFailedOnce = true;
         showToast('⚠️', 'Voice service unavailable — using your browser\'s built-in voice instead');
