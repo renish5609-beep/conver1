@@ -6411,13 +6411,14 @@ function updateConverScore() {
   // breaking the "Experience Level" personalization.
   S.xpLevel = level;
 
-  // Home ring — shows level progress through current tier
-  const tierStart = [1,11,21,31,41,49][['Beginner','Developing','Capable','Proficient','Advanced','Elite'].indexOf(tier.name)] || 1;
-  const tierEnd   = [10,20,30,40,48,50][['Beginner','Developing','Capable','Proficient','Advanced','Elite'].indexOf(tier.name)] || 10;
-  const tierPct = (level - tierStart) / Math.max(1, tierEnd - tierStart);
+  // Home ring — shows XP progress toward the next level (matches the
+  // "X / Y XP to Level N+1" text below it). Previously this measured how
+  // far through the current *tier* (a 10-level band) the user's level
+  // number was, which stays at 0 for every XP gain that doesn't cross a
+  // level boundary — the ring looked frozen even as XP visibly climbed.
   const circ = 327;
   const ringEl = document.getElementById('score-ring');
-  if (ringEl) ringEl.style.strokeDashoffset = circ - (circ * tierPct);
+  if (ringEl) ringEl.style.strokeDashoffset = circ - (circ * Math.min(1, prog.pct));
 
   // Score number = level
   const scoreEl = document.getElementById('home-conver-score');
