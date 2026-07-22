@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Help & Contact — Conver</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #050507; color: #f0f1f8; font-family: 'DM Sans', sans-serif; line-height: 1.7; }
+.header { padding: 20px 40px; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; gap: 16px; }
+.header a { color: rgba(124,111,255,0.8); font-size: 13px; font-family: 'DM Mono', monospace; text-decoration: none; }
+.header a:hover { color: #b48cff; }
+.logo { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; background: linear-gradient(135deg,#7c6fff,#b48cff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.container { max-width: 900px; margin: 0 auto; padding: 60px 40px; }
+h1 { font-family: 'Syne', sans-serif; font-size: 36px; font-weight: 800; letter-spacing: -1px; margin-bottom: 8px; }
+.meta { font-size: 14.5px; color: #9099b8; margin-bottom: 40px; }
+a { color: #7c6fff; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+@media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+.panel { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 24px; margin-bottom: 20px; }
+.panel-title { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: #b48cff; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
+label { font-size: 12px; color: #9099b8; font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 6px; }
+.field { margin-bottom: 14px; }
+input, select, textarea {
+  width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px; padding: 10px 12px; color: #f0f1f8; font-family: 'DM Sans', sans-serif; font-size: 14px;
+}
+input:focus, select:focus, textarea:focus { outline: none; border-color: #7c6fff; }
+textarea { resize: vertical; }
+.char-count { text-align: right; font-size: 10.5px; color: #6b7494; font-family: 'DM Mono', monospace; margin-top: 4px; }
+.btn-primary {
+  width: 100%; background: linear-gradient(135deg,#7c6fff,#c084fc); border: none; border-radius: 10px;
+  color: #fff; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; padding: 13px; cursor: pointer;
+}
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+.hidden { display: none !important; }
+.success-box { padding: 20px; background: rgba(45,212,160,0.08); border: 1px solid rgba(45,212,160,0.25); border-radius: 12px; margin-bottom: 16px; text-align: center; }
+.error-box { padding: 12px 16px; background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.25); border-radius: 10px; margin-bottom: 14px; font-size: 13px; color: #f87171; }
+.faq-item { margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.faq-q { font-family: 'Syne', sans-serif; font-size: 13.5px; font-weight: 700; color: #f0f1f8; margin-bottom: 4px; }
+.faq-a { font-size: 12.5px; color: #9099b8; line-height: 1.65; }
+.info-line { font-size: 13px; color: #9099b8; line-height: 2; }
+.legal-links { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; }
+.legal-links a { font-size: 12px; color: #9099b8; text-decoration: none; font-family: 'DM Mono', monospace; }
+.legal-links a:hover { color: #b48cff; }
+.footer { text-align: center; padding: 40px; border-top: 1px solid rgba(255,255,255,0.06); margin-top: 20px; font-size: 12px; color: #6b7494; font-family: 'DM Mono', monospace; }
+.footer a { color: #7c6fff; text-decoration: none; margin: 0 12px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="/" class="logo">Conver</a>
+  <a href="/app">← Back to app</a>
+</div>
+<div class="container">
+  <h1>Help & Contact</h1>
+  <div class="meta">Questions, feedback, bugs, or anything else — send it directly and we will get back to you. No account or sign-in required.</div>
+
+  <div class="grid">
+    <div class="panel">
+      <div class="panel-title">Send a Message</div>
+
+      <div id="contact-success" class="hidden success-box">
+        <div style="font-size:28px;margin-bottom:8px">✓</div>
+        <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:#2dd4a0;margin-bottom:4px">Message sent!</div>
+        <div style="font-size:13px;color:#9099b8">We'll get back to you at the email you provided.</div>
+      </div>
+      <div id="contact-error" class="hidden error-box"></div>
+
+      <div id="contact-form">
+        <div class="field">
+          <label>Your Name *</label>
+          <input type="text" id="cf-name" placeholder="First and last name" maxlength="100"/>
+        </div>
+        <div class="field">
+          <label>Your Email *</label>
+          <input type="email" id="cf-email" placeholder="your@email.com" maxlength="200"/>
+        </div>
+        <div class="field">
+          <label>Topic</label>
+          <select id="cf-topic">
+            <option value="General Question">General Question</option>
+            <option value="Bug Report">Bug Report</option>
+            <option value="Feature Request">Feature Request</option>
+            <option value="Account Issue">Account Issue</option>
+            <option value="Billing">Billing</option>
+            <option value="Feedback">Feedback</option>
+            <option value="Partnership">Partnership</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Message *</label>
+          <textarea id="cf-message" placeholder="Describe your question or issue in detail..." rows="5" maxlength="2000"></textarea>
+          <div class="char-count"><span id="cf-char-count">0</span> / 2000</div>
+        </div>
+        <button class="btn-primary" onclick="submitContactForm()" id="cf-submit-btn">Send Message →</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <div class="panel-title">Quick Help</div>
+        <div id="contact-faq"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Contact Info</div>
+        <div class="info-line">
+          <div>✉ <a href="mailto:appconver@gmail.com">appconver@gmail.com</a></div>
+          <div style="font-size:12px;color:#6b7494;margin-top:8px">Response time: typically within 24-48 hours.</div>
+          <div class="legal-links">
+            <a href="/privacy.html">→ Privacy Policy</a>
+            <a href="/terms.html">→ Terms of Service</a>
+            <a href="/cookies.html">→ Cookie Policy</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="footer">
+  © 2026 Conver ·
+  <a href="/privacy.html">Privacy</a>
+  <a href="/terms.html">Terms</a>
+  <a href="/cookies.html">Cookies</a>
+  <a href="mailto:appconver@gmail.com">Contact</a>
+</div>
+
+<script>
+const CONTACT_FAQ = [
+  { q:'Voice not working?', a:'Make sure you are using Chrome and have allowed microphone access. Click the lock icon in the address bar → Camera/Microphone → Allow.' },
+  { q:'Score seems too high or too low?', a:'Scores are calibrated so that average responses score 4-6. A 7+ requires specific examples, structure, and confidence. A 9-10 is genuinely rare.' },
+  { q:'Lost my progress?', a:'Progress is tied to your account. Make sure you are signed in. If you cleared browser storage, your cloud data is still safe — just sign in again.' },
+];
+
+document.getElementById('contact-faq').innerHTML = CONTACT_FAQ.map(f => `
+  <div class="faq-item">
+    <div class="faq-q">${f.q}</div>
+    <div class="faq-a">${f.a}</div>
+  </div>
+`).join('');
+
+const msgEl = document.getElementById('cf-message');
+msgEl.oninput = () => { document.getElementById('cf-char-count').textContent = msgEl.value.length; };
+
+function showContactError(msg) {
+  const el = document.getElementById('contact-error');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+async function submitContactForm() {
+  const name = document.getElementById('cf-name').value.trim();
+  const email = document.getElementById('cf-email').value.trim();
+  const topic = document.getElementById('cf-topic').value;
+  const message = document.getElementById('cf-message').value.trim();
+  const btn = document.getElementById('cf-submit-btn');
+  const errEl = document.getElementById('contact-error');
+  const sucEl = document.getElementById('contact-success');
+
+  errEl.classList.add('hidden');
+  if (!name) { showContactError('Please enter your name.'); return; }
+  if (!email || !email.includes('@')) { showContactError('Please enter a valid email address.'); return; }
+  if (!message) { showContactError('Please enter a message.'); return; }
+  if (message.length < 10) { showContactError('Message is too short — please provide more detail.'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+
+  try {
+    const res = await fetch('/api/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, topic, message })
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      showContactError(data.error || 'Something went wrong. Please email appconver@gmail.com directly.');
+    } else {
+      document.getElementById('contact-form').style.opacity = '0.3';
+      document.getElementById('contact-form').style.pointerEvents = 'none';
+      sucEl.classList.remove('hidden');
+    }
+  } catch (e) {
+    showContactError('Network error. Please email appconver@gmail.com directly.');
+  }
+  btn.disabled = false;
+  btn.textContent = 'Send Message →';
+}
+</script>
+</body>
+</html>
