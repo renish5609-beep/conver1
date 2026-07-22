@@ -2958,6 +2958,44 @@ body.reducemotion .coach-orb-wave { animation: none !important; }
                 <div id="rt-blink-note" style="font-size:10.5px;color:var(--muted);font-family:'DM Mono',monospace">Normal: 12-20 blinks/min</div>
               </div>
 
+              <!-- Additional nonverbal signals — compact rows, not full cards
+                   like the four above, so the sidebar doesn't balloon into
+                   11 separate boxes. Each row still gets its own coaching
+                   note beneath it. -->
+              <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:14px">
+                <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">More Signals</div>
+                <div style="display:flex;flex-direction:column;gap:10px">
+                  <div>
+                    <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:11.5px;color:var(--muted2)">Eyebrows</span><span id="rt-brow-label" style="font-size:12px;font-weight:700;font-family:'Space Grotesk',sans-serif;color:var(--muted2)">—</span></div>
+                    <div id="rt-brow-note" style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:1px">Analyzing...</div>
+                  </div>
+                  <div>
+                    <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:11.5px;color:var(--muted2)">Jaw Tension</span><span id="rt-jaw-label" style="font-size:12px;font-weight:700;font-family:'Space Grotesk',sans-serif;color:var(--muted2)">—</span></div>
+                    <div id="rt-jaw-note" style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:1px">Analyzing...</div>
+                  </div>
+                  <div>
+                    <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:11.5px;color:var(--muted2)">Lip Compression</span><span id="rt-lip-label" style="font-size:12px;font-weight:700;font-family:'Space Grotesk',sans-serif;color:var(--muted2)">—</span></div>
+                    <div id="rt-lip-note" style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:1px">Analyzing...</div>
+                  </div>
+                  <div>
+                    <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:11.5px;color:var(--muted2)">Head Nod</span><span id="rt-nod-label" style="font-size:12px;font-weight:700;font-family:'Space Grotesk',sans-serif;color:var(--muted2)">—</span></div>
+                    <div id="rt-nod-note" style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:1px">Analyzing...</div>
+                  </div>
+                  <div>
+                    <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:11.5px;color:var(--muted2)">Head Tilt</span><span id="rt-tilt-label" style="font-size:12px;font-weight:700;font-family:'Space Grotesk',sans-serif;color:var(--muted2)">—</span></div>
+                    <div id="rt-tilt-note" style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:1px">Analyzing...</div>
+                  </div>
+                  <div>
+                    <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:11.5px;color:var(--muted2)">Smile Authenticity</span><span id="rt-smile-label" style="font-size:12px;font-weight:700;font-family:'Space Grotesk',sans-serif;color:var(--muted2)">—</span></div>
+                    <div id="rt-smile-note" style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:1px">Analyzing...</div>
+                  </div>
+                  <div>
+                    <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:11.5px;color:var(--muted2)">Speaking Pace</span><span id="rt-pace-label" style="font-size:12px;font-weight:700;font-family:'Space Grotesk',sans-serif;color:var(--muted2)">—</span></div>
+                    <div id="rt-pace-note" style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:1px">Analyzing...</div>
+                  </div>
+                </div>
+              </div>
+
               <!-- Live nonverbal score -->
               <div style="background:linear-gradient(135deg,rgba(124,111,255,0.1),rgba(56,189,248,0.05));border:1px solid var(--border3);border-radius:12px;padding:16px;text-align:center">
                 <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Live Presence Score</div>
@@ -4058,13 +4096,35 @@ const RealTimeAnalyzer = {
   frames: 0,
   eyeContactFrames: 0,
   headStableFrames: 0,
+  eyePctRunning: 0,
+  headPctRunning: 0,
   blinkCount: 0,
-  wasEyeOpen: true,
-  expressionSamples: [],
-  prevNose: null,        // previous frame's nose position, for movement (not absolute-offset) based stability
-  movementSamples: [],   // rolling frame-to-frame head movement, scale-normalized
+  nodCount: 0,
+  mouthOpenCount: 0,
   lastFeedbackTips: [],  // last few tips shown, so we don't repeat the same one back-to-back
   lastAiTipAt: 0,        // session-time (ms) of the last AI-generated coaching aside
+
+  // Self-calibrating baseline system — first ~3s of a session is a
+  // calibration window. Everyone's resting face is different (naturally
+  // downturned lips, resting nose offset, etc.), so thresholds are relative
+  // to THIS user's own calibrated resting state, not one hardcoded number
+  // that assumes everyone looks the same when relaxed.
+  calibrated: false,
+  calibrationFrames: 0,
+  calibrationTarget: 24, // ~3 seconds at 8fps
+  calibrationData: { noseOffsets:[], noseVertOffsets:[], jawOpenness:[], lipThickness:[], browHeight:[], eyeTilt:[] },
+  baseline: { noseOffset:0.12, noseVert:0.18, jawOpen:0.010, lipThick:0.015, browH:0.030, eyeTilt:0.0 },
+
+  // EMA (Exponential Moving Average) smoothed values — a single frame where
+  // the face turned slightly used to immediately tank the metric; smoothing
+  // means transient movement doesn't trash the reading.
+  ema: { eyeContact:0.5, headStable:0.5, brow:0, jaw:0, lip:0, tilt:0, smile:0, mouthOpen:0 },
+  EMA_ALPHA: 0.15,
+
+  // Per-metric rolling sample buffers used for the debrief averages
+  eyebrowSamples: [], jawSamples: [], lipSamples: [], tiltSamples: [], smileSamples: [],
+  nodBuffer: [], _nodCooldown: 0,
+  _lastNosePos: null, _lastMouthOpen: false, _wasBlinking: false,
 
   // Session data
   sessionStart: null,
@@ -4104,218 +4164,401 @@ const RealTimeAnalyzer = {
     console.log('✓ MediaPipe FaceMesh initialized');
   },
 
+  _ema(key, newValue) {
+    this.ema[key] = this.EMA_ALPHA * newValue + (1 - this.EMA_ALPHA) * this.ema[key];
+    return this.ema[key];
+  },
+
   onFrame(results) {
     if (!this.active) return;
     this.frames++;
-    const canvas = document.getElementById('rt-canvas');
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Display canvas — just clear it, metrics show in the HTML panels, not
+    // drawn on the canvas itself (drawing the 468-point mesh every frame was
+    // expensive and not actually useful to look at).
+    const displayCanvas = document.getElementById('rt-canvas');
+    if (displayCanvas) displayCanvas.getContext('2d').clearRect(0, 0, displayCanvas.width, displayCanvas.height);
 
     if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
+      this._ema('eyeContact', 0);
+      this._ema('headStable', 0);
       this.updateBadge('rt-eye-badge', '🚫 No face detected', '#f87171');
       this.updateBadge('rt-pose-badge', '➡️ Move into frame', '#f87171');
       return;
     }
 
-    const landmarks = results.multiFaceLandmarks[0];
+    const lm = results.multiFaceLandmarks[0];
 
-    // A stable per-face reference distance (outer eye corner to outer eye
-    // corner) that scales with how close the face is to the camera. Used to
-    // normalize everything else below so the metrics don't drift just because
-    // someone sits closer to or further from their webcam.
-    const leftEyeLeft = landmarks[33];
-    const rightEyeRight = landmarks[263];
-    const faceScale = Math.hypot(rightEyeRight.x - leftEyeLeft.x, rightEyeRight.y - leftEyeLeft.y) || 1;
+    // ── KEY LANDMARKS ─────────────────────────────────────────
+    const noseTip = lm[1];
+    const leftCheek = lm[234];
+    const rightCheek = lm[454];
+    const forehead = lm[10];
+    const chin = lm[152];
 
-    const noseTip = landmarks[1];
-    const forehead = landmarks[10];
-    const chin = landmarks[152];
-
-    // ── EYE CONTACT DETECTION ───────────────────────────────
-    // Was iris-based (landmarks 468-477), which requires refineLandmarks:true
-    // — a second neural network that adds 40-60ms per frame on CPU. Now
-    // inferred from head pose instead: if the nose is centered and level
-    // relative to the face, the face is pointed at the camera. Less precise
-    // than tracking the iris directly, but the cheek/forehead/chin landmarks
-    // used here don't need refineLandmarks at all, so this runs at full speed.
-    const leftCheek = landmarks[234];
-    const rightCheek = landmarks[454];
+    // Face dimensions (normalized) — used to make all measurements scale-independent
+    const faceW = Math.abs(rightCheek.x - leftCheek.x);
+    const faceH = Math.abs(chin.y - forehead.y);
     const faceCenterX = (leftCheek.x + rightCheek.x) / 2;
-    const faceWidth = Math.abs(rightCheek.x - leftCheek.x);
-    const noseOffset = Math.abs(noseTip.x - faceCenterX);
-    const normalizedNoseOffset = faceWidth > 0 ? noseOffset / faceWidth : 1;
+    const faceCenterY = forehead.y + faceH * 0.5;
 
-    const faceHeight = Math.abs(chin.y - forehead.y);
-    const noseVertOffset = Math.abs(noseTip.y - (forehead.y + faceHeight * 0.5));
-    const normalizedVertOffset = faceHeight > 0 ? noseVertOffset / faceHeight : 1;
+    const leftEyeOuter = lm[33];
+    const rightEyeOuter = lm[263];
+    const leftEyeUpper = lm[159];
+    const rightEyeUpper = lm[386];
+    const leftEyeLower = lm[145];
+    const rightEyeLower = lm[374];
 
-    const isLookingAtCamera = normalizedNoseOffset < 0.08 && normalizedVertOffset < 0.15;
-    if (isLookingAtCamera) this.eyeContactFrames++;
+    const upperLipC = lm[0];
+    const lowerLipC = lm[17];
+    const leftMouth = lm[61];
+    const rightMouth = lm[291];
 
-    // ── BLINK DETECTION ─────────────────────────────────────
-    // Eyelid contour landmarks (159/145/386/374) — part of the base 468-point
-    // model, not the iris refinement, so this still works with
-    // refineLandmarks:false. Normalized by faceScale — a fixed absolute-
-    // distance threshold falsely reads as "always open" for someone sitting
-    // far from the camera and "always blinking" for someone sitting close.
-    const leftEyeTop = landmarks[159], leftEyeBottom = landmarks[145];
-    const rightEyeTop = landmarks[386], rightEyeBottom = landmarks[374];
-    const eyeOpenness = (Math.abs(leftEyeTop.y - leftEyeBottom.y) + Math.abs(rightEyeTop.y - rightEyeBottom.y)) / 2 / faceScale;
-    const isEyeOpen = eyeOpenness > 0.06;
-    if (this.wasEyeOpen && !isEyeOpen) this.blinkCount++;
-    this.wasEyeOpen = isEyeOpen;
+    const leftBrow = lm[70];
+    const rightBrow = lm[300];
 
-    // ── HEAD POSE STABILITY ──────────────────────────────────
-    // Tracks frame-to-frame MOVEMENT of the nose tip (scale-normalized),
-    // not absolute distance from a computed "center" — the original version
-    // treated anyone framed slightly off-center (extremely common with laptop
-    // webcams) as permanently "unstable" even while holding perfectly still.
-    // Stability is about steadiness over time, not centeredness in the frame.
-    if (this.prevNose) {
-      const movement = Math.hypot(noseTip.x - this.prevNose.x, noseTip.y - this.prevNose.y) / faceScale;
-      this.movementSamples.push(movement);
-      if (this.movementSamples.length > 30) this.movementSamples.shift();
-      const isHeadStable = movement < 0.01;
-      if (isHeadStable) this.headStableFrames++;
+    // ── CALIBRATION PHASE (first ~3 seconds) ──────────────────
+    // Everyone's resting face is different — someone with naturally
+    // downturned lips would always read "Tense" against a hardcoded
+    // threshold. Sample the user's own resting face for a few seconds first
+    // and use THAT as the reference point for everything below.
+    if (!this.calibrated && this.calibrationFrames < this.calibrationTarget) {
+      const nOff = Math.abs(noseTip.x - faceCenterX) / Math.max(faceW, 0.01);
+      const nVOff = Math.abs(noseTip.y - faceCenterY) / Math.max(faceH, 0.01);
+      const jawO = Math.abs(upperLipC.y - lowerLipC.y) / Math.max(faceH, 0.01);
+      const lipT = Math.abs(upperLipC.y - lowerLipC.y) / Math.max(faceH, 0.01);
+      const browH = Math.abs(leftEyeUpper.y - leftBrow.y) / Math.max(faceH, 0.01);
+      const eTilt = leftEyeOuter.y - rightEyeOuter.y;
+
+      this.calibrationData.noseOffsets.push(nOff);
+      this.calibrationData.noseVertOffsets.push(nVOff);
+      this.calibrationData.jawOpenness.push(jawO);
+      this.calibrationData.lipThickness.push(lipT);
+      this.calibrationData.browHeight.push(browH);
+      this.calibrationData.eyeTilt.push(eTilt);
+      this.calibrationFrames++;
+
+      if (this.calibrationFrames >= this.calibrationTarget) {
+        const med = arr => arr.slice().sort((a,b)=>a-b)[Math.floor(arr.length/2)];
+        // Floors on every calibrated value — if the user holds genuinely
+        // still during calibration (which is literally what "Hold still..."
+        // asks them to do), the median sample-to-sample noise can calibrate
+        // to near-zero. A near-zero threshold is then almost impossible to
+        // satisfy afterward — the exact "eye contact reads low despite
+        // looking at camera" failure this whole calibration system exists to
+        // fix, just reappearing through an over-tight learned threshold
+        // instead of a hardcoded one. Floors keep every threshold usable
+        // regardless of how still the calibration window happened to be.
+        this.baseline = {
+          noseOffset: Math.max(med(this.calibrationData.noseOffsets) * 1.8, 0.03),
+          noseVert: Math.max(med(this.calibrationData.noseVertOffsets) * 1.8, 0.04),
+          jawOpen: Math.max(med(this.calibrationData.jawOpenness), 0.01),
+          lipThick: Math.max(med(this.calibrationData.lipThickness), 0.01),
+          browH: Math.max(med(this.calibrationData.browHeight), 0.02),
+          eyeTilt: med(this.calibrationData.eyeTilt),
+        };
+        this.calibrated = true;
+        console.log('✓ Baseline calibrated:', this.baseline);
+        if (typeof showToast === 'function') showToast('✓', 'Calibration complete — analysis active');
+      }
+
+      this.updateBadge('rt-eye-badge', `⏳ Calibrating... ${Math.round((this.calibrationFrames/this.calibrationTarget)*100)}%`, '#fbbf24');
+      this.updateBadge('rt-pose-badge', '🧍 Hold still...', '#fbbf24');
+      return;
     }
-    this.prevNose = { x: noseTip.x, y: noseTip.y };
 
-    // ── EXPRESSION ANALYSIS ──────────────────────────────────
-    // Mouth corner position relative to mouth center — higher = smile.
-    // Normalized by faceScale for the same distance-invariance reason as above.
-    const leftMouthCorner = landmarks[61];
-    const rightMouthCorner = landmarks[291];
-    const mouthCenter = landmarks[13];
-    const mouthCornerHeight = (mouthCenter.y - ((leftMouthCorner.y + rightMouthCorner.y) / 2)) / faceScale;
-    this.expressionSamples.push(mouthCornerHeight);
-    if (this.expressionSamples.length > 30) this.expressionSamples.shift();
+    // Denominator for eye-contact/head-stability percentages — deliberately
+    // NOT this.frames, which also counts the ~24 calibration frames that
+    // never contribute to eyeContactFrames/headStableFrames (calibration
+    // returns early, before either is touched). Dividing by this.frames
+    // would permanently dilute both percentages by that dead window for the
+    // rest of the session, no matter how good things looked afterward.
+    this.trackedFrames = (this.trackedFrames || 0) + 1;
 
-    // ── UPDATE UI AT 4FPS ─────────────────────────────────────
-    // Was every 15 frames of MediaPipe processing — now time-based, since
-    // MediaPipe itself is throttled to 8fps (see the Camera() onFrame
-    // wrapper in startCamera()), so a frame-count condition would fire at an
-    // unpredictable rate. DOM writes are comparatively expensive; 4x/sec is
-    // plenty for numbers a human is reading, not 15-30x/sec.
+    // ── EYE CONTACT ──────────────────────────────────────────
+    // Nose-to-face-center offset, normalized by face size, compared against
+    // THIS user's calibrated baseline (not one hardcoded number that fails
+    // for anyone whose "centered" isn't exactly 0).
+    const noseOffX = Math.abs(noseTip.x - faceCenterX) / Math.max(faceW, 0.01);
+    const noseOffY = Math.abs(noseTip.y - faceCenterY) / Math.max(faceH, 0.01);
+    const horizOK = noseOffX < this.baseline.noseOffset;
+    const vertOK = noseOffY < this.baseline.noseVert;
+    const rawEyeContact = (horizOK && vertOK) ? 1.0 : (horizOK || vertOK) ? 0.4 : 0.0;
+    // EMA smoothing — a single turned-away frame no longer tanks the score
+    const smoothEye = this._ema('eyeContact', rawEyeContact);
+    this.eyeContactFrames += smoothEye;
+    this.eyePctRunning = this.trackedFrames > 0 ? Math.round((this.eyeContactFrames / this.trackedFrames) * 100) : 0;
+
+    // ── HEAD STABILITY ────────────────────────────────────────
+    // Frame-to-frame nose movement, not distance from an assumed center —
+    // stability is about steadiness over time, not being perfectly centered.
+    const rawHeadStable = (() => {
+      if (!this._lastNosePos) { this._lastNosePos = {x: noseTip.x, y: noseTip.y}; return 1.0; }
+      const dx = Math.abs(noseTip.x - this._lastNosePos.x) / Math.max(faceW, 0.01);
+      const dy = Math.abs(noseTip.y - this._lastNosePos.y) / Math.max(faceH, 0.01);
+      this._lastNosePos = {x: noseTip.x, y: noseTip.y};
+      const movement = dx + dy;
+      return movement < 0.015 ? 1.0 : movement < 0.035 ? 0.7 : movement < 0.06 ? 0.4 : 0.0;
+    })();
+    const smoothHead = this._ema('headStable', rawHeadStable);
+    this.headStableFrames += smoothHead;
+    this.headPctRunning = this.trackedFrames > 0 ? Math.round((this.headStableFrames / this.trackedFrames) * 100) : 0;
+
+    // ── BLINK DETECTION ───────────────────────────────────────
+    const leftEAR = Math.abs(leftEyeUpper.y - leftEyeLower.y) / Math.max(faceH, 0.01);
+    const rightEAR = Math.abs(rightEyeUpper.y - rightEyeLower.y) / Math.max(faceH, 0.01);
+    const ear = (leftEAR + rightEAR) / 2;
+    const isBlinking = ear < 0.018;
+    if (isBlinking && !this._wasBlinking) this.blinkCount++;
+    this._wasBlinking = isBlinking;
+
+    // ── EYEBROW ENGAGEMENT ────────────────────────────────────
+    const leftBrowGap = Math.abs(leftEyeUpper.y - leftBrow.y) / Math.max(faceH, 0.01);
+    const rightBrowGap = Math.abs(rightEyeUpper.y - rightBrow.y) / Math.max(faceH, 0.01);
+    const browGap = (leftBrowGap + rightBrowGap) / 2;
+    const browLift = browGap - this.baseline.browH; // raised above resting baseline = expressive
+    const rawBrow = browLift > 0.015 ? 1.0 : browLift > 0.005 ? 0.6 : 0.2;
+    const smoothBrow = this._ema('brow', rawBrow);
+    this.eyebrowSamples.push(smoothBrow);
+    if (this.eyebrowSamples.length > 60) this.eyebrowSamples.shift();
+
+    // ── JAW TENSION ───────────────────────────────────────────
+    const jawOpen = Math.abs(upperLipC.y - lowerLipC.y) / Math.max(faceH, 0.01);
+    const jawRelax = jawOpen / Math.max(this.baseline.jawOpen, 0.001);
+    const rawJaw = jawRelax >= 0.8 ? 1.0 : jawRelax >= 0.5 ? 0.6 : 0.2;
+    const smoothJaw = this._ema('jaw', rawJaw);
+    this.jawSamples.push(smoothJaw);
+    if (this.jawSamples.length > 60) this.jawSamples.shift();
+
+    // ── LIP COMPRESSION ──────────────────────────────────────
+    const lipThick = Math.abs(upperLipC.y - lowerLipC.y) / Math.max(faceH, 0.01);
+    const lipRatio = lipThick / Math.max(this.baseline.lipThick, 0.001);
+    const rawLip = lipRatio >= 0.85 ? 1.0 : lipRatio >= 0.6 ? 0.6 : 0.2;
+    const smoothLip = this._ema('lip', rawLip);
+    this.lipSamples.push(smoothLip);
+    if (this.lipSamples.length > 60) this.lipSamples.shift();
+
+    // ── HEAD NOD DETECTION ────────────────────────────────────
+    const relNoseY = (noseTip.y - faceCenterY) / Math.max(faceH, 0.01);
+    this.nodBuffer.push(relNoseY);
+    if (this.nodBuffer.length > 16) this.nodBuffer.shift();
+    if (this.nodBuffer.length >= 16) {
+      const range = Math.max(...this.nodBuffer) - Math.min(...this.nodBuffer);
+      if (range > 0.04 && !this._nodCooldown) { this.nodCount++; this._nodCooldown = 12; }
+      if (this._nodCooldown > 0) this._nodCooldown--;
+    }
+
+    // ── HEAD TILT (ROLL) ─────────────────────────────────────
+    const eyeTilt = (leftEyeOuter.y - rightEyeOuter.y) / Math.max(faceW, 0.01);
+    const tiltRelative = eyeTilt - this.baseline.eyeTilt;
+    this._ema('tilt', Math.abs(tiltRelative));
+    this.tiltSamples.push(tiltRelative);
+    if (this.tiltSamples.length > 60) this.tiltSamples.shift();
+
+    // ── SMILE AUTHENTICITY (DUCHENNE) ─────────────────────────
+    const mouthCenterY = (upperLipC.y + lowerLipC.y) / 2;
+    const leftCornerLift = mouthCenterY - leftMouth.y;
+    const rightCornerLift = mouthCenterY - rightMouth.y;
+    const mouthLift = ((leftCornerLift + rightCornerLift) / 2) / Math.max(faceH, 0.01);
+    const leftEyeNarrow = Math.abs(leftEyeUpper.y - leftEyeLower.y) / Math.max(faceH, 0.01);
+    const rightEyeNarrow = Math.abs(rightEyeUpper.y - rightEyeLower.y) / Math.max(faceH, 0.01);
+    const eyeNarrow = (leftEyeNarrow + rightEyeNarrow) / 2;
+    let smileRaw = 0;
+    if (mouthLift > 0.01) smileRaw += 0.5;
+    if (mouthLift > 0.02) smileRaw += 0.25;
+    if (!isBlinking && eyeNarrow < (this.baseline.jawOpen * 0.8)) smileRaw += 0.25; // genuine smile narrows the eyes too
+    const smoothSmile = this._ema('smile', smileRaw);
+    this.smileSamples.push(smoothSmile);
+    if (this.smileSamples.length > 60) this.smileSamples.shift();
+
+    // ── SPEAKING PACE ─────────────────────────────────────────
+    // Mouth open/close cycles as a syllable-rate proxy
+    const mouthOpenNow = jawOpen > (this.baseline.jawOpen * 1.5);
+    if (mouthOpenNow !== this._lastMouthOpen) {
+      if (mouthOpenNow) this.mouthOpenCount++;
+      this._lastMouthOpen = mouthOpenNow;
+    }
+
+    // ── UPDATE UI (throttled to 4fps) ────────────────────────
     const nowUI = Date.now();
     if (nowUI - (this._lastUIUpdate || 0) >= 250) {
       this._lastUIUpdate = nowUI;
-      const eyePct = Math.round((this.eyeContactFrames / this.frames) * 100);
-      const headPct = Math.round((this.headStableFrames / this.frames) * 100);
-      const avgExpr = this.expressionSamples.reduce((a,b)=>a+b,0) / this.expressionSamples.length;
-      const blinkPerMin = Math.round(this.blinkCount / ((Date.now()-this.sessionStart)/60000));
+      const eyePct = this.eyePctRunning || 0;
+      const headPct = this.headPctRunning || 0;
+      const sessionMins = this.sessionStart ? Math.max((Date.now()-this.sessionStart)/60000, 0.05) : 0.05;
+      const blinkPerMin = Math.round(this.blinkCount / sessionMins);
+      const nodsPerMin = Math.round(this.nodCount / sessionMins);
+      const syllPerMin = Math.round(this.mouthOpenCount / sessionMins);
+
+      const avg = arr => arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0;
+      const avgBrow = avg(this.eyebrowSamples);
+      const avgJaw = avg(this.jawSamples);
+      const avgLip = avg(this.lipSamples);
+      const tiltAbs = Math.abs(avg(this.tiltSamples));
+      const avgSmile = avg(this.smileSamples);
+      const mouthLiftAvg = avg(this.smileSamples); // reused as expression proxy
 
       // Eye contact
-      document.getElementById('rt-eye-pct').textContent = eyePct + '%';
-      document.getElementById('rt-eye-bar').style.width = eyePct + '%';
-      document.getElementById('rt-eye-note').textContent = eyePct >= 70 ? 'Strong eye contact' : eyePct >= 40 ? 'Moderate — look at camera more' : 'Low — you appear distracted';
-      this.updateBadge('rt-eye-badge', `👁️ ${eyePct}% eye contact`, eyePct>=70?'#2dd4a0':eyePct>=40?'#fbbf24':'#f87171');
+      const eyeColor = eyePct >= 65 ? 'var(--green)' : eyePct >= 40 ? 'var(--amber)' : 'var(--red)';
+      const eyeNote = eyePct >= 65 ? 'Strong eye contact' : eyePct >= 40 ? 'Moderate — look at camera more' : 'Low — you appear distracted';
+      const eyePctEl = document.getElementById('rt-eye-pct');
+      if (eyePctEl) { eyePctEl.textContent = eyePct + '%'; eyePctEl.style.color = eyeColor; }
+      const eyeBarEl = document.getElementById('rt-eye-bar'); if (eyeBarEl) eyeBarEl.style.width = eyePct + '%';
+      const eyeNoteEl = document.getElementById('rt-eye-note'); if (eyeNoteEl) eyeNoteEl.textContent = eyeNote;
+      this.updateBadge('rt-eye-badge', `👁️ ${eyePct}% eye contact`, eyePct>=65?'#2dd4a0':eyePct>=40?'#fbbf24':'#f87171');
 
       // Head stability
-      document.getElementById('rt-head-pct').textContent = headPct + '%';
-      document.getElementById('rt-head-bar').style.width = headPct + '%';
-      document.getElementById('rt-head-note').textContent = headPct >= 80 ? 'Very steady — strong presence' : headPct >= 60 ? 'Some movement — try to settle' : 'Unstable — plant your feet and breathe';
-      this.updateBadge('rt-pose-badge', `🧍 ${headPct>=80?'Steady':headPct>=60?'Moving':'Unstable'}`, headPct>=80?'#38bdf8':headPct>=60?'#fbbf24':'#f87171');
-
-      // Expression
-      const exprLabel = avgExpr > 0.008 ? 'Engaged 😊' : avgExpr > 0 ? 'Neutral 😐' : 'Tense 😬';
-      document.getElementById('rt-expr-label').textContent = exprLabel;
-      document.getElementById('rt-expr-note').textContent = avgExpr > 0.008 ? 'Good — warmth comes through' : avgExpr > 0 ? 'Neutral — consider more expression' : 'Tension showing — relax your jaw';
+      const headColor = headPct >= 70 ? 'var(--accent2)' : headPct >= 45 ? 'var(--amber)' : 'var(--red)';
+      const headNote = headPct >= 70 ? 'Very steady — strong presence' : headPct >= 45 ? 'Some movement' : 'Unstable — plant your feet';
+      const headPctEl = document.getElementById('rt-head-pct');
+      if (headPctEl) { headPctEl.textContent = headPct + '%'; headPctEl.style.color = headColor; }
+      const headBarEl = document.getElementById('rt-head-bar'); if (headBarEl) headBarEl.style.width = headPct + '%';
+      const headNoteEl = document.getElementById('rt-head-note'); if (headNoteEl) headNoteEl.textContent = headNote;
+      this.updateBadge('rt-pose-badge', `🧍 ${headPct>=70?'Steady':headPct>=45?'Moving':'Unstable'}`, headPct>=70?'#38bdf8':headPct>=45?'#fbbf24':'#f87171');
 
       // Blink rate
-      const blinkLabel = blinkPerMin < 8 ? 'Low (stress?)' : blinkPerMin > 25 ? 'High (nervous?)' : 'Normal';
-      document.getElementById('rt-blink-label').textContent = `${blinkPerMin}/min`;
-      document.getElementById('rt-blink-note').textContent = blinkLabel === 'Normal' ? 'Normal rate — relaxed' : blinkLabel;
+      const blinkLabel = blinkPerMin < 5 ? 'Very low — stressed?' : blinkPerMin <= 25 ? 'Normal' : 'High — nervous?';
+      const blinkColor = blinkPerMin >= 5 && blinkPerMin <= 25 ? 'var(--accent2)' : 'var(--amber)';
+      const blinkEl = document.getElementById('rt-blink-label');
+      if (blinkEl) { blinkEl.textContent = `${blinkPerMin}/min`; blinkEl.style.color = blinkColor; }
+      const blinkNoteEl = document.getElementById('rt-blink-note'); if (blinkNoteEl) blinkNoteEl.textContent = blinkLabel;
 
-      // Live nonverbal score
-      this.liveNonverbalScore = Math.round(
-        (eyePct * 0.4) +
-        (headPct * 0.3) +
-        (avgExpr > 0.008 ? 30 : avgExpr > 0 ? 20 : 10) +
-        (blinkPerMin >= 8 && blinkPerMin <= 25 ? 10 : 0)
-      );
-      const liveScore = Math.min(100, this.liveNonverbalScore);
-      document.getElementById('rt-live-score').textContent = liveScore;
-      document.getElementById('rt-live-score').style.color = liveScore>=75?'var(--green)':liveScore>=50?'var(--amber)':'var(--red)';
+      // Expression (mouth lift as proxy)
+      const exprLabel = mouthLiftAvg > 0.6 ? 'Warm 😊' : mouthLiftAvg > 0.3 ? 'Neutral 😐' : 'Tense 😬';
+      const exprEl = document.getElementById('rt-expr-label'); if (exprEl) exprEl.textContent = exprLabel;
+      const exprNoteEl = document.getElementById('rt-expr-note');
+      if (exprNoteEl) exprNoteEl.textContent = mouthLiftAvg > 0.6 ? 'Warmth comes through' : mouthLiftAvg > 0.3 ? 'Neutral — add some expression' : 'Tension showing — relax your face';
 
-      // Live coaching tip — nonverbal, instant, rule-based. Max once every
-      // 5 seconds so it doesn't feel spammy (was tied to frame count, which
-      // now fires unpredictably since MediaPipe itself is throttled).
-      if (nowUI - (this._lastTip || 0) >= 5000) {
-        this._lastTip = nowUI;
-        this.addLiveFeedback(eyePct, headPct, avgExpr, blinkPerMin);
-      }
-      // Deeper, content-aware AI coaching aside — every ~20s of session time,
-      // not every frame, since it's a real API call and looks at what you've
-      // actually been saying, not just face geometry. Fire-and-forget: never
-      // blocks the frame loop.
-      if (this.sessionStart && Date.now() - this.lastAiTipAt > 20000) {
-        this.lastAiTipAt = Date.now();
-        this.addAICoachingTip(eyePct, headPct, avgExpr, blinkPerMin);
+      // Eyebrow
+      const browLabel = avgBrow > 0.6 ? 'Expressive' : avgBrow > 0.35 ? 'Moderate' : 'Flat';
+      const browColor = avgBrow > 0.6 ? 'var(--green)' : avgBrow > 0.35 ? 'var(--amber)' : 'var(--red)';
+      const browEl = document.getElementById('rt-brow-label');
+      if (browEl) { browEl.textContent = browLabel; browEl.style.color = browColor; }
+      const browNoteEl = document.getElementById('rt-brow-note');
+      if (browNoteEl) browNoteEl.textContent = avgBrow > 0.6 ? 'Good facial expressiveness' : avgBrow > 0.35 ? 'Some expression — try a bit more' : 'Face looks flat — let it move';
+
+      // Jaw
+      const jawLabel = avgJaw > 0.65 ? 'Relaxed' : avgJaw > 0.4 ? 'Mild tension' : 'Clenched';
+      const jawColor = avgJaw > 0.65 ? 'var(--green)' : avgJaw > 0.4 ? 'var(--amber)' : 'var(--red)';
+      const jawEl = document.getElementById('rt-jaw-label');
+      if (jawEl) { jawEl.textContent = jawLabel; jawEl.style.color = jawColor; }
+      const jawNoteEl = document.getElementById('rt-jaw-note');
+      if (jawNoteEl) jawNoteEl.textContent = avgJaw > 0.65 ? 'Jaw relaxed — you look calm' : 'Jaw tension detected — unclench';
+
+      // Lip
+      const lipLabel = avgLip > 0.65 ? 'Natural' : avgLip > 0.4 ? 'Slightly compressed' : 'Compressed';
+      const lipColor = avgLip > 0.65 ? 'var(--green)' : avgLip > 0.4 ? 'var(--amber)' : 'var(--red)';
+      const lipEl = document.getElementById('rt-lip-label');
+      if (lipEl) { lipEl.textContent = lipLabel; lipEl.style.color = lipColor; }
+      const lipNoteEl = document.getElementById('rt-lip-note');
+      if (lipNoteEl) lipNoteEl.textContent = avgLip > 0.65 ? 'Lips natural' : 'Lips pressed — holding back?';
+
+      // Nod
+      const nodLabel = nodsPerMin < 2 ? 'Still' : nodsPerMin <= 9 ? 'Natural' : 'Excessive';
+      const nodColor = nodsPerMin < 2 ? 'var(--amber)' : nodsPerMin <= 9 ? 'var(--green)' : 'var(--amber)';
+      const nodEl = document.getElementById('rt-nod-label');
+      if (nodEl) { nodEl.textContent = `${nodsPerMin}/min · ${nodLabel}`; nodEl.style.color = nodColor; }
+      const nodNoteEl = document.getElementById('rt-nod-note');
+      if (nodNoteEl) nodNoteEl.textContent = nodsPerMin < 2 ? 'Add natural head movement' : nodsPerMin <= 9 ? 'Good natural rhythm' : 'Nodding too much — slow it down';
+
+      // Tilt
+      const tiltLabel = tiltAbs < 0.008 ? 'Level' : tiltAbs < 0.025 ? 'Slight tilt' : 'Strong tilt';
+      const tiltColor = tiltAbs < 0.025 ? 'var(--green)' : 'var(--amber)';
+      const tiltEl = document.getElementById('rt-tilt-label');
+      if (tiltEl) { tiltEl.textContent = tiltLabel; tiltEl.style.color = tiltColor; }
+      const tiltNoteEl = document.getElementById('rt-tilt-note');
+      if (tiltNoteEl) tiltNoteEl.textContent = tiltAbs < 0.008 ? 'Head level — professional' : tiltAbs < 0.025 ? 'Slight tilt — shows curiosity' : 'Head quite tilted — straighten up';
+
+      // Smile
+      const smileLabel = avgSmile > 0.65 ? 'Genuine ✓' : avgSmile > 0.35 ? 'Partial' : 'Neutral';
+      const smileColor = avgSmile > 0.65 ? 'var(--green)' : avgSmile > 0.35 ? 'var(--amber)' : 'var(--muted2)';
+      const smileEl = document.getElementById('rt-smile-label');
+      if (smileEl) { smileEl.textContent = smileLabel; smileEl.style.color = smileColor; }
+      const smileNoteEl = document.getElementById('rt-smile-note');
+      if (smileNoteEl) smileNoteEl.textContent = avgSmile > 0.65 ? 'Duchenne smile — genuine warmth' : avgSmile > 0.35 ? 'Partial smile' : 'No smile detected';
+
+      // Pace
+      const paceLabel = syllPerMin < 60 ? 'Too slow' : syllPerMin <= 220 ? 'Good pace' : 'Too fast';
+      const paceColor = syllPerMin < 60 ? 'var(--amber)' : syllPerMin <= 220 ? 'var(--green)' : 'var(--red)';
+      const paceEl = document.getElementById('rt-pace-label');
+      if (paceEl) { paceEl.textContent = `~${syllPerMin}/min · ${paceLabel}`; paceEl.style.color = paceColor; }
+      const paceNoteEl = document.getElementById('rt-pace-note');
+      if (paceNoteEl) paceNoteEl.textContent = paceLabel === 'Good pace' ? 'Speaking at a natural rate' : paceLabel === 'Too slow' ? 'Pick up the pace slightly' : 'Slow down — let ideas land';
+
+      // Live score — weighted across all 11 measured dimensions
+      const eyeS = Math.min(10, eyePct / 10);
+      const headS = Math.min(10, headPct / 10);
+      const blinkS = (blinkPerMin >= 5 && blinkPerMin <= 25) ? 9 : 5;
+      const browS = avgBrow > 0.6 ? 9 : avgBrow > 0.35 ? 7 : 4;
+      const jawS = avgJaw > 0.65 ? 9 : avgJaw > 0.4 ? 6 : 3;
+      const lipS = avgLip > 0.65 ? 8 : avgLip > 0.4 ? 6 : 4;
+      const nodS = (nodsPerMin >= 2 && nodsPerMin <= 9) ? 9 : nodsPerMin < 2 ? 5 : 6;
+      const tiltS = tiltAbs < 0.025 ? 9 : 6;
+      const smileS = avgSmile > 0.65 ? 10 : avgSmile > 0.35 ? 7 : 5;
+      const paceS = (syllPerMin >= 60 && syllPerMin <= 220) ? 9 : 5;
+      const exprS = mouthLiftAvg > 0.6 ? 8 : mouthLiftAvg > 0.3 ? 6 : 4;
+      const liveNVScore = Math.round(
+        eyeS * 0.18 + headS * 0.12 + blinkS * 0.06 +
+        browS * 0.10 + jawS * 0.08 + lipS * 0.06 +
+        nodS * 0.08 + tiltS * 0.06 + smileS * 0.10 +
+        paceS * 0.06 + exprS * 0.10
+      ) * 10;
+      this.liveNonverbalScore = Math.min(100, Math.max(0, liveNVScore));
+      const liveScoreEl = document.getElementById('rt-live-score');
+      if (liveScoreEl) {
+        liveScoreEl.textContent = this.liveNonverbalScore;
+        liveScoreEl.style.color = this.liveNonverbalScore >= 70 ? 'var(--green)' : this.liveNonverbalScore >= 45 ? 'var(--amber)' : 'var(--red)';
       }
 
       // Keep overlayData synced so the recording canvas burns in current values
       this.overlayData = {
-        eyePct, headPct, liveScore,
-        exprLabel: document.getElementById('rt-expr-label')?.textContent || '—',
+        eyePct, headPct, liveScore: this.liveNonverbalScore,
+        exprLabel, smileLabel, browLabel, paceLabel,
         currentTip: document.getElementById('rt-feedback-log')?.lastElementChild?.textContent || '',
         elapsed: this.sessionStart ? (Date.now() - this.sessionStart) / 1000 : 0,
         currentPrompt: document.getElementById('rt-prompt-text')?.textContent || ''
       };
-    }
-  },
 
-  // Much larger, tiered tip pool than a single generic line per metric — and
-  // never repeats the tip that was just shown, so a sustained issue (e.g.
-  // consistently low eye contact) still reads as fresh coaching rather than
-  // the same two sentences on loop.
-  addLiveFeedback(eyePct, headPct, avgExpr, blinkPerMin) {
-    const tips = [];
-    if (eyePct < 30) {
-      tips.push('👁️ You\'re barely looking at the camera — that reads as disengaged or unprepared');
-      tips.push('👁️ Find the camera lens, not the screen — that\'s where their eyes are');
-    } else if (eyePct < 55) {
-      tips.push('👁️ Your gaze keeps drifting off-camera — pull it back');
-      tips.push('👁️ Good moments of eye contact, but too much time looking away');
-    }
-    if (headPct < 40) {
-      tips.push('🧍 A lot of head movement — plant yourself and settle in');
-      tips.push('🧍 Try resting your elbows on the desk to steady your upper body');
-    } else if (headPct < 65) {
-      tips.push('🧍 Some restlessness in your posture — take a breath and steady up');
-    }
-    if (avgExpr < -0.01) {
-      tips.push('😬 Your jaw and brow look tight — consciously relax your face for a second');
-      tips.push('😬 A lot of tension showing — drop your shoulders, unclench your jaw');
-    } else if (avgExpr < 0) {
-      tips.push('😐 Your expression is pretty flat — a little more animation reads as more engaged');
-    }
-    if (blinkPerMin > 30) {
-      tips.push('😮‍💨 Blink rate is spiking — that often tracks with nerves, try slowing your breathing');
-    } else if (blinkPerMin > 0 && blinkPerMin < 6) {
-      tips.push('👀 You\'re barely blinking — natural, relaxed blinking reads better than a fixed stare');
-    }
-    if (eyePct >= 75 && headPct >= 75 && avgExpr >= 0) {
-      tips.push('✓ Strong presence right now — steady, present, engaged. Keep this up');
-      tips.push('✓ This is exactly the energy to bring — camera contact and composure are both landing');
-    }
-    if (tips.length === 0) return;
+      // Live coaching tip (nonverbal, rule-based) — max once per 5 seconds,
+      // never repeats whichever tip was just shown.
+      if (nowUI - (this._lastTip || 0) >= 5000) {
+        this._lastTip = nowUI;
+        const tips = [];
+        if (eyePct < 45) tips.push('👁️ Look directly at the camera');
+        if (headPct < 50) tips.push('🧍 Keep your head still');
+        if (avgSmile < 0.3) tips.push('😊 Relax and let your expression open up');
+        if (avgJaw < 0.4) tips.push('😬 Unclench your jaw — breathe');
+        if (syllPerMin > 220) tips.push('🏃 Slow down — you are rushing');
+        if (syllPerMin < 60 && syllPerMin > 0) tips.push('🐢 Pick up your pace slightly');
+        if (nodsPerMin > 10) tips.push('🙂‍↕️ Nodding a lot — dial it back');
+        if (avgBrow < 0.3) tips.push('🤨 Let your face move — raise your brows');
+        if (eyePct >= 70 && headPct >= 70 && avgSmile > 0.5) tips.push('✓ Great presence — keep it going');
 
-    // Filter out whichever tip(s) we just showed, unless that's literally all we have
-    const fresh = tips.filter(t => !this.lastFeedbackTips.includes(t));
-    const pool = fresh.length ? fresh : tips;
-    const tip = pool[Math.floor(Math.random() * pool.length)];
-    this.lastFeedbackTips = [tip, ...this.lastFeedbackTips].slice(0, 2);
-    this._appendFeedbackLog(tip);
+        if (tips.length > 0) {
+          const fresh = tips.filter(t => !this.lastFeedbackTips.includes(t));
+          const pool = fresh.length ? fresh : tips;
+          const tip = pool[Math.floor(Math.random() * pool.length)];
+          this.lastFeedbackTips = [tip, ...this.lastFeedbackTips].slice(0, 2);
+          this._appendFeedbackLog(tip);
+        }
+      }
+      // Deeper, content-aware AI coaching aside — every ~20s of session time,
+      // reacting to what was actually SAID, not face geometry.
+      if (this.sessionStart && Date.now() - this.lastAiTipAt > 20000) {
+        this.lastAiTipAt = Date.now();
+        this.addAICoachingTip(eyePct, headPct, avgSmile, blinkPerMin);
+      }
+    }
   },
 
   // Content-aware feedback from Claude, looking at what was actually said in
   // the last stretch of speech (not just face geometry) — the thing that was
   // missing entirely before, when every tip was generic nonverbal coaching.
-  async addAICoachingTip(eyePct, headPct, avgExpr, blinkPerMin) {
+  async addAICoachingTip(eyePct, headPct, avgSmile, blinkPerMin) {
     const recentTranscript = (RealTimeAnalyzer.currentTranscript || '').trim();
     if (recentTranscript.length < 15) return; // nothing substantive to react to yet
     try {
-      const exprNote = avgExpr > 0.005 ? 'engaged/warm' : avgExpr < -0.005 ? 'tense' : 'neutral';
+      const exprNote = avgSmile > 0.5 ? 'engaged/warm' : avgSmile > 0.2 ? 'neutral' : 'tense';
       const prompt = `You are a blunt, no-nonsense communication coach watching someone live, mid-response, in a ${rtMode || 'practice'} session. Their current nonverbal read: ${eyePct}% eye contact, ${headPct}% head stability, expression is ${exprNote}. What they're saying right now (may be a fragment, they're still talking): "${recentTranscript.slice(-400)}"\n\nGive ONE short, sharp, spoken-style piece of coaching (max 18 words) that reacts to THIS SPECIFIC moment — not a generic template. Rules:\n- If they said something vague, hedge-y, or unsupported, call it out directly and name what's missing (a number, an example, a decision).\n- If they said something genuinely strong, say specifically why it landed — never just "good job" or "keep it up."\n- If they're rambling or repeating themselves, tell them to cut to the point.\n- Quote or paraphrase their actual words when possible — never a comment so generic it could apply to any response.\nNo stage directions, no asterisks, no filler praise, no softening.`;
       const tip = await callAI([{role:'user', content: prompt}]);
       if (tip && tip.trim()) this._appendFeedbackLog('💬 ' + tip.trim(), true);
@@ -4340,29 +4583,62 @@ const RealTimeAnalyzer = {
     if (el) { el.textContent = text; el.style.color = color; }
   },
 
+  // Uses the smoothed EMA-derived running percentages and calibrated
+  // baselines accumulated throughout the session, not a naive raw frame
+  // count — so a single bad frame at the very end can't skew the summary.
   getFinalMetrics() {
-    const eyePct = this.frames ? Math.round((this.eyeContactFrames / this.frames) * 100) : 0;
-    const headPct = this.frames ? Math.round((this.headStableFrames / this.frames) * 100) : 0;
-    const avgExpr = this.expressionSamples.length ? this.expressionSamples.reduce((a,b)=>a+b,0)/this.expressionSamples.length : 0;
-    const sessionMinutes = (Date.now() - this.sessionStart) / 60000;
-    const blinkPerMin = sessionMinutes > 0 ? Math.round(this.blinkCount / sessionMinutes) : 0;
+    const avg = arr => arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0;
+    const sessionMins = this.sessionStart ? Math.max((Date.now()-this.sessionStart)/60000, 0.05) : 0.05;
 
-    // Nonverbal score out of 10
-    const eyeScore = Math.min(10, eyePct / 10);
-    const headScore = Math.min(10, headPct / 10);
-    const exprScore = avgExpr > 0.008 ? 8 : avgExpr > 0 ? 6 : 4;
-    const blinkScore = (blinkPerMin >= 8 && blinkPerMin <= 25) ? 9 : blinkPerMin < 8 ? 6 : 5;
+    const eyePct = this.eyePctRunning || 0;
+    const headPct = this.headPctRunning || 0;
+    const blinkPerMin = Math.round(this.blinkCount / sessionMins);
+    const nodsPerMin = Math.round(this.nodCount / sessionMins);
+    const syllPerMin = Math.round(this.mouthOpenCount / sessionMins);
 
-    const nonverbalComposite = (eyeScore*0.4 + headScore*0.3 + exprScore*0.2 + blinkScore*0.1);
+    const avgBrow = avg(this.eyebrowSamples);
+    const avgJaw = avg(this.jawSamples);
+    const avgLip = avg(this.lipSamples);
+    const avgTiltA = Math.abs(avg(this.tiltSamples));
+    const avgSmile = avg(this.smileSamples);
+
+    // Score every metric 0-10 using calibrated thresholds
+    const eyeScore = parseFloat(Math.min(10, eyePct / 10).toFixed(1));
+    const headScore = parseFloat(Math.min(10, headPct / 10).toFixed(1));
+    const blinkScore = parseFloat(((blinkPerMin >= 5 && blinkPerMin <= 25) ? 9 : blinkPerMin < 5 ? 5 : 4).toFixed(1));
+    const browScore = parseFloat((avgBrow > 0.6 ? 9 : avgBrow > 0.35 ? 7 : 4).toFixed(1));
+    const jawScore = parseFloat((avgJaw > 0.65 ? 9 : avgJaw > 0.4 ? 6 : 3).toFixed(1));
+    const lipScore = parseFloat((avgLip > 0.65 ? 8 : avgLip > 0.4 ? 6 : 4).toFixed(1));
+    const nodScore = parseFloat(((nodsPerMin >= 2 && nodsPerMin <= 9) ? 9 : nodsPerMin < 2 ? 5 : 6).toFixed(1));
+    const tiltScore = parseFloat((avgTiltA < 0.008 ? 8 : avgTiltA < 0.025 ? 9 : 6).toFixed(1));
+    const smileScore = parseFloat((avgSmile > 0.65 ? 10 : avgSmile > 0.35 ? 7 : 5).toFixed(1));
+    const paceScore = parseFloat(((syllPerMin >= 60 && syllPerMin <= 220) ? 9 : 5).toFixed(1));
+    const exprScore = parseFloat((avgSmile > 0.5 ? 8 : avgSmile > 0.25 ? 6 : 4).toFixed(1));
+
+    const nonverbalComposite = parseFloat((
+      eyeScore * 0.18 + headScore * 0.12 + blinkScore * 0.06 +
+      browScore * 0.10 + jawScore * 0.08 + lipScore * 0.06 +
+      nodScore * 0.08 + tiltScore * 0.06 + smileScore * 0.10 +
+      paceScore * 0.06 + exprScore * 0.10
+    ).toFixed(1));
 
     return {
       eyeContactPct: eyePct,
       headStabilityPct: headPct,
-      expressionScore: exprScore,
+      eyeScore, headScore, blinkScore, browScore, jawScore,
+      lipScore, nodScore, tiltScore, smileScore, paceScore, exprScore,
+      expressionScore: exprScore, // alias — kept for backward compatibility with older callers
       blinkRate: blinkPerMin,
-      nonverbalComposite: parseFloat(nonverbalComposite.toFixed(1)),
-      eyeScore: parseFloat(eyeScore.toFixed(1)),
-      headScore: parseFloat(headScore.toFixed(1)),
+      nodsPerMin,
+      syllablesPerMin: syllPerMin,
+      eyebrowLabel: avgBrow > 0.6 ? 'Expressive' : avgBrow > 0.35 ? 'Moderate' : 'Flat',
+      jawLabel: avgJaw > 0.65 ? 'Relaxed' : avgJaw > 0.4 ? 'Mild tension' : 'Clenched',
+      lipLabel: avgLip > 0.65 ? 'Natural' : 'Compressed',
+      tiltLabel: avgTiltA < 0.025 ? (avgTiltA < 0.008 ? 'Level' : 'Slight tilt') : 'Strong tilt',
+      smileLabel: avgSmile > 0.65 ? 'Genuine' : avgSmile > 0.35 ? 'Partial' : 'Neutral',
+      paceLabel: syllPerMin < 60 ? 'Too slow' : syllPerMin <= 220 ? 'Good' : 'Too fast',
+      nonverbalComposite,
+      calibrated: this.calibrated,
     };
   },
 
@@ -4420,20 +4696,34 @@ const RealTimeAnalyzer = {
 
     this.active = true;
     this.sessionStart = Date.now();
+
+    // Reset all tracking — including the new calibration/EMA/sample-buffer
+    // state, so a second session in the same page load starts its own fresh
+    // calibration window instead of reusing the previous session's baseline.
     this.frames = 0;
+    this.trackedFrames = 0;
     this.eyeContactFrames = 0;
     this.headStableFrames = 0;
+    this.eyePctRunning = 0;
+    this.headPctRunning = 0;
     this.blinkCount = 0;
-    this.expressionSamples = [];
-    this.prevNose = null;
-    this.movementSamples = [];
+    this.nodCount = 0;
+    this.mouthOpenCount = 0;
+    this.calibrated = false;
+    this.calibrationFrames = 0;
+    this.calibrationData = { noseOffsets:[], noseVertOffsets:[], jawOpenness:[], lipThickness:[], browHeight:[], eyeTilt:[] };
+    this.ema = { eyeContact:0.5, headStable:0.5, brow:0, jaw:0, lip:0, tilt:0, smile:0, mouthOpen:0 };
+    this.eyebrowSamples = []; this.jawSamples = []; this.lipSamples = [];
+    this.tiltSamples = []; this.smileSamples = [];
+    this.nodBuffer = []; this._nodCooldown = 0;
+    this._lastNosePos = null; this._lastMouthOpen = false;
+    this._wasBlinking = false; this._lastTip = 0;
     this.lastFeedbackTips = [];
     this.lastAiTipAt = 0;
     this.userResponses = [];
     this.currentTranscript = '';
     this._lastMPFrame = 0;
     this._lastUIUpdate = 0;
-    this._lastTip = 0;
     this._lastRecordFrame = 0;
   },
 
@@ -5121,8 +5411,15 @@ CRITICAL: Never use asterisks for actions or stage directions.`
         ${[
           ['Eye Contact', metrics.eyeScore, metrics.eyeContactPct+'%'],
           ['Head Stability', metrics.headScore, metrics.headStabilityPct+'%'],
-          ['Expression', metrics.expressionScore, ''],
-          ['Blink Rate', metrics.blinkRate<=25&&metrics.blinkRate>=8?9:5, metrics.blinkRate+'/min']
+          ['Expression', metrics.exprScore, ''],
+          ['Blink Rate', metrics.blinkScore, metrics.blinkRate+'/min'],
+          ['Eyebrows', metrics.browScore, metrics.eyebrowLabel],
+          ['Jaw Tension', metrics.jawScore, metrics.jawLabel],
+          ['Lip Compression', metrics.lipScore, metrics.lipLabel],
+          ['Head Nod', metrics.nodScore, metrics.nodsPerMin+'/min'],
+          ['Head Tilt', metrics.tiltScore, metrics.tiltLabel],
+          ['Smile Authenticity', metrics.smileScore, metrics.smileLabel],
+          ['Speaking Pace', metrics.paceScore, metrics.paceLabel]
         ].map(([l,v,sub]) => `
         <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
           <span style="color:var(--muted2)">${l} ${sub?'('+sub+')':''}</span>
