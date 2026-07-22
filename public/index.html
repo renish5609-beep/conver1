@@ -4756,26 +4756,20 @@ async function loadRTPrompts() {
   const promptEl = document.getElementById('rt-prompt-text');
   RealTimeAnalyzer.promptQueue = [];
   RealTimeAnalyzer.currentPromptIdx = 0;
+  RealTimeAnalyzer.dynamicInterview = false;
 
   if (rtMode === 'interview') {
+    // Interview mode is now a live, adaptive conversation, not a fixed list
+    // of 5 pre-generated questions read out in order. Only the opener is
+    // fixed — every question after that is generated fresh from the
+    // conversation so far (see _rtGenerateNextInterviewQuestion), so the
+    // interviewer can actually follow up on what you said, push back on a
+    // vague answer, or take the conversation somewhere you didn't expect —
+    // real curveballs, not a scripted list.
+    RealTimeAnalyzer.dynamicInterview = true;
+    RealTimeAnalyzer.maxRounds = 5;
     const role = document.getElementById('rt-role')?.value || 'a professional role';
-    const diff = document.getElementById('rt-diff')?.value || 'medium';
-    const diffText = diff==='hard'?'Be skeptical and push back.':diff==='brutal'?'Be aggressive and stress-test.':'Be professional and neutral.';
-    try {
-      const raw = await callAI(
-        [{role:'user',content:`Generate 5 interview questions for: ${role}. ${diffText} Return JSON array of strings only, no other text.`}]
-      );
-      const m = raw.match(/\[[\s\S]*\]/);
-      if (m) RealTimeAnalyzer.promptQueue = JSON.parse(m[0]);
-    } catch(e) {
-      RealTimeAnalyzer.promptQueue = [
-        'Tell me about yourself and why you want this role.',
-        'Describe a time you faced a significant challenge at work.',
-        'What is your biggest professional weakness?',
-        'Why should we hire you over other candidates?',
-        'Where do you see yourself in 5 years?'
-      ];
-    }
+    RealTimeAnalyzer.promptQueue = [`Tell me about yourself and why you want the ${role} role.`];
   } else if (rtMode === 'pitch') {
     const idea = document.getElementById('rt-idea')?.value || 'your startup idea';
     RealTimeAnalyzer.promptQueue = [
@@ -4892,14 +4886,50 @@ function _rtStartListening() {
   });
 }
 
+// Generates the NEXT interview question live, reacting to the actual
+// conversation so far — a real interviewer improvising, not a fixed script.
+// Explicitly told to sometimes drill into a weak/vague answer (a curveball)
+// rather than always politely moving on to the next generic topic.
+async function _rtGenerateNextInterviewQuestion() {
+  const role = document.getElementById('rt-role')?.value || 'a professional role';
+  const diff = document.getElementById('rt-diff')?.value || 'medium';
+  const diffText = diff === 'hard' ? 'Be skeptical — push back and probe for specifics.'
+    : diff === 'brutal' ? 'Be aggressive — stress-test their answers hard, don\'t let vague claims slide.'
+    : 'Be professional but genuinely curious.';
+  const history = RealTimeAnalyzer.userResponses.map((r,i) => `Q${i+1}: "${r.prompt}"\nA: "${r.response}"`).join('\n\n');
+  const roundsLeft = (RealTimeAnalyzer.maxRounds || 5) - RealTimeAnalyzer.currentPromptIdx;
+
+  try {
+    const next = await callAI([{role:'user', content:
+      `You are a live interviewer for a ${role} role, mid-interview. ${diffText}\n\nConversation so far:\n${history}\n\n${roundsLeft <= 1 ? 'This is the FINAL question — make it count.' : ''}Ask ONE next question. Actually react to their last answer specifically:\n- If it was vague, generic, or dodged something, call it out and drill into it — a real follow-up, not a scripted next topic.\n- If it was strong and complete, pivot to a genuinely different angle (a curveball), not the next item on a checklist.\n- Never repeat a question already asked.\nSound like a real person improvising, not reading from a list. Return ONLY the question itself — no preamble, no labels, no quotation marks.`
+    }]);
+    const cleaned = next.trim().replace(/^["']|["']$/g, '').replace(/^(Question:|Next question:)\s*/i, '');
+    return cleaned || 'Tell me about a time you had to adapt quickly to an unexpected change.';
+  } catch(e) {
+    return 'Tell me about a time you had to adapt quickly to an unexpected change.';
+  }
+}
+
 // Advances to the next prompt after a response comes in, or ends the session
-// once the queue is exhausted.
-function _rtHandleResponse(fullText) {
+// once the queue/rounds are exhausted.
+async function _rtHandleResponse(fullText) {
   RealTimeAnalyzer.userResponses.push({
     prompt: RealTimeAnalyzer.promptQueue[RealTimeAnalyzer.currentPromptIdx] || '',
     response: fullText
   });
   RealTimeAnalyzer.currentPromptIdx++;
+
+  if (RealTimeAnalyzer.dynamicInterview) {
+    if (RealTimeAnalyzer.currentPromptIdx < RealTimeAnalyzer.maxRounds) {
+      _rtSetMicStatus('🤔 Thinking of a follow-up...', 'var(--accent2)');
+      const nextQuestion = await _rtGenerateNextInterviewQuestion();
+      RealTimeAnalyzer.promptQueue.push(nextQuestion);
+      _rtSpeakThenListen(nextQuestion);
+    } else {
+      endRealTimeSession();
+    }
+    return;
+  }
 
   if (RealTimeAnalyzer.currentPromptIdx < RealTimeAnalyzer.promptQueue.length) {
     _rtSpeakThenListen(RealTimeAnalyzer.promptQueue[RealTimeAnalyzer.currentPromptIdx]);
