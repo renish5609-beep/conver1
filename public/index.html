@@ -850,11 +850,13 @@ input:focus, select:focus, textarea:focus {
 .user-menu:hover{background:var(--bg3)}
 .user-avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent3));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;font-family:'Space Grotesk',sans-serif}
 .user-email{font-size:11px;color:var(--muted2);font-family:'DM Mono',monospace;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.user-dropdown{position:absolute;top:100%;right:0;background:var(--bg1);border:1px solid var(--border2);border-radius:10px;padding:8px;min-width:160px;z-index:100;margin-top:6px;display:none}
-.user-dropdown.open{display:block}
-.user-dropdown-item{padding:8px 12px;border-radius:7px;font-size:13px;cursor:pointer;color:var(--muted2);transition:all 0.15s}
-.user-dropdown-item:hover{background:var(--bg2);color:var(--text)}
 .topbar-right{display:flex;align-items:center;gap:10px;position:relative}
+
+/* ── SETTINGS SLIDE-IN PANEL ───────────────────────────── */
+.settings-panel{position:fixed;top:0;right:-420px;width:400px;max-width:95vw;height:100vh;background:var(--bg1);border-left:1px solid var(--border2);z-index:2000;display:flex;flex-direction:column;transition:right 0.3s cubic-bezier(0.4,0,0.2,1);box-shadow:-8px 0 32px rgba(0,0,0,0.4)}
+.settings-panel.open{right:0}
+.settings-panel-header{display:flex;align-items:center;justify-content:space-between;padding:20px 20px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.settings-panel-body{flex:1;overflow-y:auto;padding:0 20px 20px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
 
 
 /* FILLER WORD DETECTOR */
@@ -2594,9 +2596,317 @@ h1, h2, h3 {
         <div class="user-avatar" id="user-avatar">?</div>
         <div class="user-email" id="user-email-display" style="font-size:12px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Not signed in</div>
       </div>
-      <div class="user-dropdown" id="user-dropdown">
-        <div class="user-dropdown-item" onclick="signOut()">🚪 Sign out</div>
+      <!-- Settings panel — opens when user clicks profile avatar -->
+      <div class="settings-panel" id="settings-panel">
+        <div class="settings-panel-header">
+          <div>
+            <div style="font-family:'Italiana',serif;font-size:22px;color:var(--text)">Settings</div>
+            <div style="font-size:11px;color:var(--muted2);font-family:'DM Mono',monospace" id="sp-email-display">Not signed in</div>
+          </div>
+          <button onclick="closeSettingsPanel()" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:20px;padding:4px 8px;line-height:1">×</button>
+        </div>
+        <div class="settings-panel-body">
+            <div class="panel">
+              <div class="settings-section-title">Personal</div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Your Name</h4><p>Coaches will address you by name</p></div>
+                <div class="setting-control"><input type="text" id="set-name" placeholder="e.g. Alex" onchange="saveSettings()"/></div>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Primary Goal</h4><p>What you're mainly practicing for</p></div>
+                <div class="setting-control">
+                  <select id="set-goal" onchange="saveSettings()">
+                    <option value="interview">Job Interviews</option>
+                    <option value="pitch">Pitching & Fundraising</option>
+                    <option value="networking">Networking</option>
+                    <option value="leadership">Leadership & Management</option>
+                    <option value="public">Public Speaking</option>
+                    <option value="social">Social Confidence</option>
+                    <option value="sales">Sales & Persuasion</option>
+                    <option value="negotiation">Negotiation</option>
+                    <option value="debate">Debate & Argumentation</option>
+                  </select>
+                </div>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Experience Level</h4><p>How coaches explain things to you</p></div>
+                <div class="setting-control">
+                  <select id="set-level" onchange="saveSettings()">
+                    <option value="beginner">Beginner — teach me everything</option>
+                    <option value="intermediate" selected>Intermediate — I know the basics</option>
+                    <option value="advanced">Advanced — just the gaps</option>
+                  </select>
+                </div>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Industry / Context</h4><p>Helps coaches use relevant examples</p></div>
+                <div class="setting-control">
+                  <select id="set-industry" onchange="saveSettings()">
+                    <option value="">General</option>
+                    <option value="tech">Technology & Software</option>
+                    <option value="finance">Finance & Banking</option>
+                    <option value="healthcare">Healthcare & Medicine</option>
+                    <option value="education">Education</option>
+                    <option value="startup">Startups & Entrepreneurship</option>
+                    <option value="consulting">Consulting</option>
+                    <option value="law">Law & Legal</option>
+                    <option value="creative">Creative & Media</option>
+                    <option value="nonprofit">Non-profit & Government</option>
+                  </select>
+                </div>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Time Zone</h4><p>For streak resets and daily challenges</p></div>
+                <div class="setting-control">
+                  <select id="set-timezone" onchange="saveSettings()">
+                    <option value="auto">Auto-detect</option>
+                    <option value="America/New_York">Eastern (ET)</option>
+                    <option value="America/Chicago">Central (CT)</option>
+                    <option value="America/Denver">Mountain (MT)</option>
+                    <option value="America/Los_Angeles">Pacific (PT)</option>
+                    <option value="Europe/London">London (GMT)</option>
+                    <option value="Europe/Paris">Central Europe (CET)</option>
+                    <option value="Asia/Kolkata">India (IST)</option>
+                    <option value="Asia/Singapore">Singapore (SGT)</option>
+                    <option value="Australia/Sydney">Sydney (AEST)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="settings-section-title">Coaching Style</div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Feedback Intensity</h4><p>How direct and harsh your feedback gets</p></div>
+                <div class="setting-control">
+                  <select id="set-intensity" onchange="saveSettings()">
+                    <option value="gentle">Gentle — encourage first</option>
+                    <option value="balanced" selected>Balanced — honest but kind</option>
+                    <option value="brutal">Brutal — no sugarcoating</option>
+                  </select>
+                </div>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Response Detail</h4><p>How long and detailed your analysis is</p></div>
+                <div class="setting-control">
+                  <select id="set-detail" onchange="saveSettings()">
+                    <option value="concise">Concise — bullet points only</option>
+                    <option value="balanced" selected>Balanced — clear and complete</option>
+                    <option value="detailed">Detailed — explain everything</option>
+                  </select>
+                </div>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Coaching Language</h4><p>Tone of language coaches use</p></div>
+                <div class="setting-control">
+                  <select id="set-language-tone" onchange="saveSettings()">
+                    <option value="professional">Professional</option>
+                    <option value="casual" selected>Casual & Conversational</option>
+                    <option value="academic">Academic</option>
+                    <option value="motivational">Motivational</option>
+                  </select>
+                </div>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Coach Memory</h4><p>Coaches reference your past sessions and patterns</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-memory" checked onchange="S.coachMemory=this.checked;saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Motivational Messages</h4><p>Encouragement and milestone celebrations</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-motivation" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Socratic Mode</h4><p>Coach asks questions instead of giving answers</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-socratic" onchange="saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="settings-section-title">Default Scenario</div>
+              <div id="settings-scenario-cards" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"></div>
+            </div>
+
+            <div class="panel">
+              <div class="settings-section-title">Voice & Audio</div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Coach Voice Speed</h4><p>How fast coaches speak</p></div>
+                <div class="setting-control">
+                  <select id="set-voice-speed" onchange="saveSettings()">
+                    <option value="slow">Slow</option>
+                    <option value="normal" selected>Normal</option>
+                    <option value="fast">Fast</option>
+                  </select>
+                </div>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Auto-play Coach Response</h4><p>Play voice automatically after your turn</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-autoplay" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Microphone Auto-start</h4><p>Mic activates automatically after coach speaks</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-mic-auto" onchange="saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Sound Effects</h4><p>UI sounds for toasts and completions</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-sfx" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Debate Rounds</h4><p>How many rounds in Live Debate</p></div>
+                <div class="setting-control">
+                  <select id="set-debate-rounds" onchange="S.debateRounds=parseInt(this.value);saveSettings()">
+                    <option value="2">2 rounds</option>
+                    <option value="3" selected>3 rounds</option>
+                    <option value="5">5 rounds</option>
+                    <option value="7">7 rounds</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="settings-section-title">Analysis & Feedback</div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Rewrite Suggestions</h4><p>Show a stronger version after every analysis</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-rewrite" checked onchange="S.rewrite=this.checked;saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Before/After Diff</h4><p>Side-by-side comparison of your response vs rewrite</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-diff" checked onchange="S.showDiff=this.checked;saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Filler Word Detection</h4><p>Flag um, uh, like, you know in responses</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-filler" checked onchange="S.filler=this.checked;saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Auto-open Report</h4><p>Show full session report after every analysis</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-report" checked onchange="S.autoReport=this.checked;saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Tone Detector</h4><p>Live tone analysis as you type</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-tone" checked onchange="S.toneDetector=this.checked;saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Weak Spot Targeting</h4><p>Focus coaching on your lowest-scoring skills</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-weakspot" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Show Confidence Score</h4><p>Display AI confidence in its scoring</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-confidence-score" onchange="saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Example Responses</h4><p>Show example A+ responses alongside feedback</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-examples" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="settings-section-title">Gamification</div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>XP Notifications</h4><p>Show XP earned after each session</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-xp-notify" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Level Up Celebration</h4><p>Show animation when you level up</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-levelup" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Streak Reminders</h4><p>Warn when you're about to break your streak</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-streak-warn" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Daily Challenge Reminder</h4><p>Nudge to complete today's challenge</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-daily-remind" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="settings-section-title">Appearance</div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Accent Color</h4><p>Primary brand color throughout the app</p></div>
+                <div class="setting-control accent-swatch-row" style="display:flex;gap:8px">
+                  <div class="accent-swatch" data-color="#7c6fff" onclick="setAccentColor('#7c6fff')" style="width:22px;height:22px;border-radius:50%;background:#7c6fff;cursor:pointer;transition:transform 0.2s" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform=''"></div>
+                  <div class="accent-swatch" data-color="#38bdf8" onclick="setAccentColor('#38bdf8')" style="width:22px;height:22px;border-radius:50%;background:#38bdf8;cursor:pointer;transition:transform 0.2s" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform=''"></div>
+                  <div class="accent-swatch" data-color="#2dd4a0" onclick="setAccentColor('#2dd4a0')" style="width:22px;height:22px;border-radius:50%;background:#2dd4a0;cursor:pointer;transition:transform 0.2s" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform=''"></div>
+                  <div class="accent-swatch" data-color="#f472b6" onclick="setAccentColor('#f472b6')" style="width:22px;height:22px;border-radius:50%;background:#f472b6;cursor:pointer;transition:transform 0.2s" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform=''"></div>
+                  <div class="accent-swatch" data-color="#fbbf24" onclick="setAccentColor('#fbbf24')" style="width:22px;height:22px;border-radius:50%;background:#fbbf24;cursor:pointer;transition:transform 0.2s" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform=''"></div>
+                </div>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Reduce Motion</h4><p>Disable animations and transitions</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-reduce-motion" onchange="document.body.classList.toggle('reducemotion',this.checked);saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Compact Mode</h4><p>Reduce spacing for more content on screen</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-compact" onchange="document.body.classList.toggle('compact-mode',this.checked);saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="settings-section-title">Account</div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Email Address</h4><p id="account-email-display" style="color:var(--accent3);font-family:'DM Mono',monospace;font-size:11px">Not signed in</p></div>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Member Since</h4><p id="account-created-display" style="color:var(--muted2);font-size:12px">—</p></div>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Change Password</h4><p>Update your account password</p></div>
+                <button class="btn-ghost" onclick="showChangePasswordModal()" style="width:auto;padding:6px 14px;font-size:12px">Change</button>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Sign Out</h4><p>Sign out of your account</p></div>
+                <button class="btn-ghost" onclick="signOut()" style="width:auto;padding:6px 14px;font-size:12px;color:var(--red);border-color:rgba(248,113,113,0.25)">Sign Out</button>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="settings-section-title">Data & Privacy</div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Auto-save Sessions</h4><p>Save every session to your account</p></div>
+                <label class="toggle"><input type="checkbox" id="tog-autosave" checked onchange="S.autosave=this.checked;saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
+                <button class="btn-ghost" onclick="exportUserData()" style="font-size:12.5px">⬇ Export My Data (JSON)</button>
+                <button class="btn-ghost" onclick="clearHistory()" style="color:var(--red);border-color:rgba(248,113,113,0.2);font-size:12.5px">🗑 Clear All History</button>
+              </div>
+              <div style="margin-top:14px;font-size:11.5px;color:var(--muted);line-height:1.8">
+                <a href="/privacy.html" target="_blank" style="color:var(--accent3);text-decoration:none">Privacy Policy</a> ·
+                <a href="/terms.html" target="_blank" style="color:var(--accent3);text-decoration:none">Terms of Service</a> ·
+                <a href="/cookies.html" target="_blank" style="color:var(--accent3);text-decoration:none">Cookie Policy</a>
+              </div>
+            </div>
+
+            <div class="panel" style="border-color:rgba(248,113,113,0.2)">
+              <div class="settings-section-title" style="color:var(--red)">⚠ Danger Zone</div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Reset All Progress</h4><p>Clear XP, level, and all skill scores. Keeps session history.</p></div>
+                <button class="btn-ghost" onclick="if(confirm('Reset all XP and level progress? This cannot be undone.')){S.xp=0;S.skills={clarity:0,confidence:0,persuasion:0,storytelling:0,conciseness:0};S.scores={clarity:[],confidence:[],persuasion:[]};updateChips();saveUserData();showToast('🔄','Progress reset')}" style="width:auto;padding:6px 14px;font-size:12px;color:var(--red);border-color:rgba(248,113,113,0.25)">Reset</button>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Delete Account</h4><p>Permanently delete your account and all data</p></div>
+                <button class="btn-ghost" onclick="showDeleteAccountModal()" style="width:auto;padding:6px 14px;font-size:12px;color:var(--red);border-color:rgba(248,113,113,0.25)">Delete</button>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="settings-section-title">ℹ About</div>
+              <div style="font-size:13px;color:var(--muted2);line-height:2">
+                <p><strong style="color:var(--text)">Conver v2.0</strong> — AI Conversation Intelligence</p>
+                <p>AI powered by <strong style="color:var(--accent3)">Claude (claude-sonnet-4-5)</strong></p>
+                <p>Voice by <strong style="color:var(--accent2)">ElevenLabs</strong></p>
+                <p>Auth & data by <strong style="color:var(--green)">Supabase</strong></p>
+                <p style="margin-top:8px;font-size:11.5px">Voice works best in Chrome. For support: <a href="mailto:appconver@gmail.com" style="color:var(--accent3)">appconver@gmail.com</a></p>
+                <div style="margin-top:12px;display:flex;gap:10px">
+                  <a href="/privacy.html" target="_blank" style="font-size:11px;color:var(--muted);text-decoration:none;font-family:'DM Mono',monospace">Privacy</a>
+                  <a href="/terms.html" target="_blank" style="font-size:11px;color:var(--muted);text-decoration:none;font-family:'DM Mono',monospace">Terms</a>
+                  <a href="/cookies.html" target="_blank" style="font-size:11px;color:var(--muted);text-decoration:none;font-family:'DM Mono',monospace">Cookies</a>
+                </div>
+              </div>
+            </div>
+
+        </div>
       </div>
+      <div id="settings-panel-backdrop" onclick="closeSettingsPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);backdrop-filter:blur(2px);z-index:1999"></div>
     </div>
   </header>
 
@@ -2622,7 +2932,6 @@ h1, h2, h3 {
       <button class="tab-item" data-page="history" onclick="navTo('history')"><span class="tab-icon">🕐</span>History</button>
       <button class="tab-item" data-page="briefing" onclick="navTo('briefing')"><span class="tab-icon">📋</span>Briefing</button>
       <button class="tab-item" data-page="profiles" onclick="navTo('profiles')"><span class="tab-icon">👤</span>Profiles</button>
-      <button class="tab-item" data-page="settings" onclick="navTo('settings')"><span class="tab-icon">⚙</span>Settings</button>
       <button class="tab-item" data-page="contact" onclick="navTo('contact')"><span class="tab-icon">🆘</span>Help</button>
     </div>
   </nav>
@@ -3438,328 +3747,6 @@ h1, h2, h3 {
       </div>
 
       <!-- SETTINGS -->
-      <div class="page" id="page-settings">
-        <div class="section-head">
-          <h2>Settings</h2>
-          <p>Customize every aspect of how Conver coaches, speaks, analyzes, and remembers you.</p>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;align-items:start">
-
-          <!-- COLUMN 1 -->
-          <div style="display:flex;flex-direction:column;gap:16px">
-
-            <div class="panel">
-              <div class="settings-section-title">Personal</div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Your Name</h4><p>Coaches will address you by name</p></div>
-                <div class="setting-control"><input type="text" id="set-name" placeholder="e.g. Alex" onchange="saveSettings()"/></div>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Primary Goal</h4><p>What you're mainly practicing for</p></div>
-                <div class="setting-control">
-                  <select id="set-goal" onchange="saveSettings()">
-                    <option value="interview">Job Interviews</option>
-                    <option value="pitch">Pitching & Fundraising</option>
-                    <option value="networking">Networking</option>
-                    <option value="leadership">Leadership & Management</option>
-                    <option value="public">Public Speaking</option>
-                    <option value="social">Social Confidence</option>
-                    <option value="sales">Sales & Persuasion</option>
-                    <option value="negotiation">Negotiation</option>
-                    <option value="debate">Debate & Argumentation</option>
-                  </select>
-                </div>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Experience Level</h4><p>How coaches explain things to you</p></div>
-                <div class="setting-control">
-                  <select id="set-level" onchange="saveSettings()">
-                    <option value="beginner">Beginner — teach me everything</option>
-                    <option value="intermediate" selected>Intermediate — I know the basics</option>
-                    <option value="advanced">Advanced — just the gaps</option>
-                  </select>
-                </div>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Industry / Context</h4><p>Helps coaches use relevant examples</p></div>
-                <div class="setting-control">
-                  <select id="set-industry" onchange="saveSettings()">
-                    <option value="">General</option>
-                    <option value="tech">Technology & Software</option>
-                    <option value="finance">Finance & Banking</option>
-                    <option value="healthcare">Healthcare & Medicine</option>
-                    <option value="education">Education</option>
-                    <option value="startup">Startups & Entrepreneurship</option>
-                    <option value="consulting">Consulting</option>
-                    <option value="law">Law & Legal</option>
-                    <option value="creative">Creative & Media</option>
-                    <option value="nonprofit">Non-profit & Government</option>
-                  </select>
-                </div>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Time Zone</h4><p>For streak resets and daily challenges</p></div>
-                <div class="setting-control">
-                  <select id="set-timezone" onchange="saveSettings()">
-                    <option value="auto">Auto-detect</option>
-                    <option value="America/New_York">Eastern (ET)</option>
-                    <option value="America/Chicago">Central (CT)</option>
-                    <option value="America/Denver">Mountain (MT)</option>
-                    <option value="America/Los_Angeles">Pacific (PT)</option>
-                    <option value="Europe/London">London (GMT)</option>
-                    <option value="Europe/Paris">Central Europe (CET)</option>
-                    <option value="Asia/Kolkata">India (IST)</option>
-                    <option value="Asia/Singapore">Singapore (SGT)</option>
-                    <option value="Australia/Sydney">Sydney (AEST)</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div class="panel">
-              <div class="settings-section-title">Coaching Style</div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Feedback Intensity</h4><p>How direct and harsh your feedback gets</p></div>
-                <div class="setting-control">
-                  <select id="set-intensity" onchange="saveSettings()">
-                    <option value="gentle">Gentle — encourage first</option>
-                    <option value="balanced" selected>Balanced — honest but kind</option>
-                    <option value="brutal">Brutal — no sugarcoating</option>
-                  </select>
-                </div>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Response Detail</h4><p>How long and detailed your analysis is</p></div>
-                <div class="setting-control">
-                  <select id="set-detail" onchange="saveSettings()">
-                    <option value="concise">Concise — bullet points only</option>
-                    <option value="balanced" selected>Balanced — clear and complete</option>
-                    <option value="detailed">Detailed — explain everything</option>
-                  </select>
-                </div>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Coaching Language</h4><p>Tone of language coaches use</p></div>
-                <div class="setting-control">
-                  <select id="set-language-tone" onchange="saveSettings()">
-                    <option value="professional">Professional</option>
-                    <option value="casual" selected>Casual & Conversational</option>
-                    <option value="academic">Academic</option>
-                    <option value="motivational">Motivational</option>
-                  </select>
-                </div>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Coach Memory</h4><p>Coaches reference your past sessions and patterns</p></div>
-                <label class="toggle"><input type="checkbox" id="tog-memory" checked onchange="S.coachMemory=this.checked;saveSettings()"><span class="toggle-slider"></span></label>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Motivational Messages</h4><p>Encouragement and milestone celebrations</p></div>
-                <label class="toggle"><input type="checkbox" id="tog-motivation" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Socratic Mode</h4><p>Coach asks questions instead of giving answers</p></div>
-                <label class="toggle"><input type="checkbox" id="tog-socratic" onchange="saveSettings()"><span class="toggle-slider"></span></label>
-              </div>
-            </div>
-
-            <div class="panel">
-              <div class="settings-section-title">Default Scenario</div>
-              <div id="settings-scenario-cards" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"></div>
-            </div>
-
-          </div>
-
-          <!-- COLUMN 2 -->
-          <div style="display:flex;flex-direction:column;gap:16px">
-
-            <div class="panel">
-              <div class="settings-section-title">Voice & Audio</div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Coach Voice Speed</h4><p>How fast coaches speak</p></div>
-                <div class="setting-control">
-                  <select id="set-voice-speed" onchange="saveSettings()">
-                    <option value="slow">Slow</option>
-                    <option value="normal" selected>Normal</option>
-                    <option value="fast">Fast</option>
-                  </select>
-                </div>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Auto-play Coach Response</h4><p>Play voice automatically after your turn</p></div>
-                <label class="toggle"><input type="checkbox" id="tog-autoplay" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Microphone Auto-start</h4><p>Mic activates automatically after coach speaks</p></div>
-                <label class="toggle"><input type="checkbox" id="tog-mic-auto" onchange="saveSettings()"><span class="toggle-slider"></span></label>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Sound Effects</h4><p>UI sounds for toasts and completions</p></div>
-                <label class="toggle"><input type="checkbox" id="tog-sfx" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Debate Rounds</h4><p>How many rounds in Live Debate</p></div>
-                <div class="setting-control">
-                  <select id="set-debate-rounds" onchange="S.debateRounds=parseInt(this.value);saveSettings()">
-                    <option value="2">2 rounds</option>
-                    <option value="3" selected>3 rounds</option>
-                    <option value="5">5 rounds</option>
-                    <option value="7">7 rounds</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div class="panel">
-              <div class="settings-section-title">Analysis & Feedback</div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Rewrite Suggestions</h4><p>Show a stronger version after every analysis</p></div>
-                <label class="toggle"><input type="checkbox" id="tog-rewrite" checked onchange="S.rewrite=this.checked;saveSettings()"><span class="toggle-slider"></span></label>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Before/After Diff</h4><p>Side-by-side comparison of your response vs rewrite</p></div>
-                <label class="toggle"><input type="checkbox" id="tog-diff" checked onchange="S.showDiff=this.checked;saveSettings()"><span class="toggle-slider"></span></label>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Filler Word Detection</h4><p>Flag um, uh, like, you know in responses</p></div>
-                <label class="toggle"><input type="checkbox" id="tog-filler" checked onchange="S.filler=this.checked;saveSettings()"><span class="toggle-slider"></span></label>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Auto-open Report</h4><p>Show full session report after every analysis</p></div>
-                <label class="toggle"><input type="checkbox" id="tog-report" checked onchange="S.autoReport=this.checked;saveSettings()"><span class="toggle-slider"></span></label>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Tone Detector</h4><p>Live tone analysis as you type</p></div>
-                <label class="toggle"><input type="checkbox" id="tog-tone" checked onchange="S.toneDetector=this.checked;saveSettings()"><span class="toggle-slider"></span></label>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Weak Spot Targeting</h4><p>Focus coaching on your lowest-scoring skills</p></div>
-                <label class="toggle"><input type="checkbox" id="tog-weakspot" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Show Confidence Score</h4><p>Display AI confidence in its scoring</p></div>
-                <label class="toggle"><input type="checkbox" id="tog-confidence-score" onchange="saveSettings()"><span class="toggle-slider"></span></label>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Example Responses</h4><p>Show example A+ responses alongside feedback</p></div>
-                <label class="toggle"><input type="checkbox" id="tog-examples" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
-              </div>
-            </div>
-
-            <div class="panel">
-              <div class="settings-section-title">Gamification</div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>XP Notifications</h4><p>Show XP earned after each session</p></div>
-                <label class="toggle"><input type="checkbox" id="tog-xp-notify" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Level Up Celebration</h4><p>Show animation when you level up</p></div>
-                <label class="toggle"><input type="checkbox" id="tog-levelup" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Streak Reminders</h4><p>Warn when you're about to break your streak</p></div>
-                <label class="toggle"><input type="checkbox" id="tog-streak-warn" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Daily Challenge Reminder</h4><p>Nudge to complete today's challenge</p></div>
-                <label class="toggle"><input type="checkbox" id="tog-daily-remind" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
-              </div>
-            </div>
-
-          </div>
-
-          <!-- COLUMN 3 -->
-          <div style="display:flex;flex-direction:column;gap:16px">
-
-            <div class="panel">
-              <div class="settings-section-title">Appearance</div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Accent Color</h4><p>Primary brand color throughout the app</p></div>
-                <div class="setting-control accent-swatch-row" style="display:flex;gap:8px">
-                  <div class="accent-swatch" data-color="#7c6fff" onclick="setAccentColor('#7c6fff')" style="width:22px;height:22px;border-radius:50%;background:#7c6fff;cursor:pointer;transition:transform 0.2s" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform=''"></div>
-                  <div class="accent-swatch" data-color="#38bdf8" onclick="setAccentColor('#38bdf8')" style="width:22px;height:22px;border-radius:50%;background:#38bdf8;cursor:pointer;transition:transform 0.2s" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform=''"></div>
-                  <div class="accent-swatch" data-color="#2dd4a0" onclick="setAccentColor('#2dd4a0')" style="width:22px;height:22px;border-radius:50%;background:#2dd4a0;cursor:pointer;transition:transform 0.2s" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform=''"></div>
-                  <div class="accent-swatch" data-color="#f472b6" onclick="setAccentColor('#f472b6')" style="width:22px;height:22px;border-radius:50%;background:#f472b6;cursor:pointer;transition:transform 0.2s" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform=''"></div>
-                  <div class="accent-swatch" data-color="#fbbf24" onclick="setAccentColor('#fbbf24')" style="width:22px;height:22px;border-radius:50%;background:#fbbf24;cursor:pointer;transition:transform 0.2s" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform=''"></div>
-                </div>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Reduce Motion</h4><p>Disable animations and transitions</p></div>
-                <label class="toggle"><input type="checkbox" id="tog-reduce-motion" onchange="document.body.classList.toggle('reducemotion',this.checked);saveSettings()"><span class="toggle-slider"></span></label>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Compact Mode</h4><p>Reduce spacing for more content on screen</p></div>
-                <label class="toggle"><input type="checkbox" id="tog-compact" onchange="document.body.classList.toggle('compact-mode',this.checked);saveSettings()"><span class="toggle-slider"></span></label>
-              </div>
-            </div>
-
-            <div class="panel">
-              <div class="settings-section-title">Account</div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Email Address</h4><p id="account-email-display" style="color:var(--accent3);font-family:'DM Mono',monospace;font-size:11px">Not signed in</p></div>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Member Since</h4><p id="account-created-display" style="color:var(--muted2);font-size:12px">—</p></div>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Change Password</h4><p>Update your account password</p></div>
-                <button class="btn-ghost" onclick="showChangePasswordModal()" style="width:auto;padding:6px 14px;font-size:12px">Change</button>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Sign Out</h4><p>Sign out of your account</p></div>
-                <button class="btn-ghost" onclick="signOut()" style="width:auto;padding:6px 14px;font-size:12px;color:var(--red);border-color:rgba(248,113,113,0.25)">Sign Out</button>
-              </div>
-            </div>
-
-            <div class="panel">
-              <div class="settings-section-title">Data & Privacy</div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Auto-save Sessions</h4><p>Save every session to your account</p></div>
-                <label class="toggle"><input type="checkbox" id="tog-autosave" checked onchange="S.autosave=this.checked;saveSettings()"><span class="toggle-slider"></span></label>
-              </div>
-              <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
-                <button class="btn-ghost" onclick="exportUserData()" style="font-size:12.5px">⬇ Export My Data (JSON)</button>
-                <button class="btn-ghost" onclick="clearHistory()" style="color:var(--red);border-color:rgba(248,113,113,0.2);font-size:12.5px">🗑 Clear All History</button>
-              </div>
-              <div style="margin-top:14px;font-size:11.5px;color:var(--muted);line-height:1.8">
-                <a href="/privacy.html" target="_blank" style="color:var(--accent3);text-decoration:none">Privacy Policy</a> ·
-                <a href="/terms.html" target="_blank" style="color:var(--accent3);text-decoration:none">Terms of Service</a> ·
-                <a href="/cookies.html" target="_blank" style="color:var(--accent3);text-decoration:none">Cookie Policy</a>
-              </div>
-            </div>
-
-            <div class="panel" style="border-color:rgba(248,113,113,0.2)">
-              <div class="settings-section-title" style="color:var(--red)">⚠ Danger Zone</div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Reset All Progress</h4><p>Clear XP, level, and all skill scores. Keeps session history.</p></div>
-                <button class="btn-ghost" onclick="if(confirm('Reset all XP and level progress? This cannot be undone.')){S.xp=0;S.skills={clarity:0,confidence:0,persuasion:0,storytelling:0,conciseness:0};S.scores={clarity:[],confidence:[],persuasion:[]};updateChips();saveUserData();showToast('🔄','Progress reset')}" style="width:auto;padding:6px 14px;font-size:12px;color:var(--red);border-color:rgba(248,113,113,0.25)">Reset</button>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Delete Account</h4><p>Permanently delete your account and all data</p></div>
-                <button class="btn-ghost" onclick="showDeleteAccountModal()" style="width:auto;padding:6px 14px;font-size:12px;color:var(--red);border-color:rgba(248,113,113,0.25)">Delete</button>
-              </div>
-            </div>
-
-            <div class="panel">
-              <div class="settings-section-title">ℹ About</div>
-              <div style="font-size:13px;color:var(--muted2);line-height:2">
-                <p><strong style="color:var(--text)">Conver v2.0</strong> — AI Conversation Intelligence</p>
-                <p>AI powered by <strong style="color:var(--accent3)">Claude (claude-sonnet-4-5)</strong></p>
-                <p>Voice by <strong style="color:var(--accent2)">ElevenLabs</strong></p>
-                <p>Auth & data by <strong style="color:var(--green)">Supabase</strong></p>
-                <p style="margin-top:8px;font-size:11.5px">Voice works best in Chrome. For support: <a href="mailto:appconver@gmail.com" style="color:var(--accent3)">appconver@gmail.com</a></p>
-                <div style="margin-top:12px;display:flex;gap:10px">
-                  <a href="/privacy.html" target="_blank" style="font-size:11px;color:var(--muted);text-decoration:none;font-family:'DM Mono',monospace">Privacy</a>
-                  <a href="/terms.html" target="_blank" style="font-size:11px;color:var(--muted);text-decoration:none;font-family:'DM Mono',monospace">Terms</a>
-                  <a href="/cookies.html" target="_blank" style="font-size:11px;color:var(--muted);text-decoration:none;font-family:'DM Mono',monospace">Cookies</a>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </div>
 
       <!-- HELP & CONTACT -->
       <div class="page" id="page-contact">
@@ -6332,7 +6319,6 @@ function navTo(page){
   if(page==='debate'){initDebatePage();if(debateRunning)showBackBtn(true,'Debate Setup');}
   if(page==='coldopen'){initColdOpen();if(coState.running)showBackBtn(true,'Cold Open Setup');}
   if(page==='qbank')initQBank();
-  if(page==='settings')applySettingsToUI();
   if(page==='contact')initContactPage();
   if(page==='profiles')renderCoachProfiles();
   if (page === 'companion') {
@@ -10299,18 +10285,30 @@ async function saveSessionToCloud(session) {
 }
 
 function toggleUserMenu() {
-  document.getElementById('user-dropdown').classList.toggle('open');
+  openSettingsPanel();
 }
 
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('#user-menu-btn') && !e.target.closest('#user-dropdown')) {
-    document.getElementById('user-dropdown').classList.remove('open');
-  }
+function openSettingsPanel() {
+  document.getElementById('settings-panel').classList.add('open');
+  document.getElementById('settings-panel-backdrop').style.display = 'block';
+  const emailEl = document.getElementById('sp-email-display');
+  if (emailEl) emailEl.textContent = currentUser?.email || 'Not signed in';
+  applySettingsToUI();
+  updateAccountDisplay();
+}
+
+function closeSettingsPanel() {
+  document.getElementById('settings-panel').classList.remove('open');
+  document.getElementById('settings-panel-backdrop').style.display = 'none';
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeSettingsPanel();
 });
 
 async function signOut() {
   authToken = null; currentUser = null;
-  document.getElementById('user-dropdown').classList.remove('open');
+  closeSettingsPanel();
   document.getElementById('user-email-display').textContent = 'Not signed in';
   document.getElementById('user-avatar').textContent = '?';
   // Reset state
