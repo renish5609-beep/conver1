@@ -9986,6 +9986,13 @@ async function loadUserData() {
       if (stats) {
         S.sessions = stats.total_sessions || 0;
         S.streak = stats.streak || 0;
+        // XP was being updated locally by awardXP() and shown on the Level
+        // Progress ring, but was never included in saveUserData()'s payload
+        // and never restored here — it lived only in memory for the current
+        // page load and got silently wiped back to 0 on every re-login,
+        // emptying the ring even though real progress had been made.
+        S.xp = stats.xp || 0;
+        S.xpLevel = getLevelFromXP(S.xp);
         // Validate streak on load — if last session was more than 1 day ago, reset streak
         const savedLastDate = localStorage.getItem('conver_last_session_date');
         if (savedLastDate) {
@@ -10014,6 +10021,7 @@ async function loadUserData() {
         }
         // Update score display immediately — don't wait for sessions to load
         updateChips();
+        updateConverScore(); // redraws the Level Progress ring with the restored XP
         if (stats.briefing) {
           S.briefing = stats.briefing;
           // Populate briefing fields
@@ -10080,6 +10088,7 @@ async function saveUserData() {
         stats: {
           total_sessions: S.sessions,
           streak: S.streak,
+          xp: S.xp || 0,
           conver_score: calcConverScore(),
           skills: {
             clarity: S.skills.clarity,
