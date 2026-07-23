@@ -9877,7 +9877,36 @@ let sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 let currentUser = null;
 let authToken = null;
 
+// Detects a Supabase email-verification redirect (#access_token=... gets
+// appended to the URL when the user clicks the link in their verification
+// email) and finishes actually logging them in — the spec this was built
+// from only showed a toast and cleaned the URL, which would have left the
+// app sitting on the sign-in screen despite telling the user "Welcome to
+// Conver." sbClient auto-detects and stores the session from that URL hash
+// (detectSessionInUrl defaults to true), so by the time this runs the
+// session is already sitting in sbClient — this just wires it into our own
+// authToken/afterSignIn() flow, the same one every other sign-in path uses.
+async function checkEmailVerification() {
+  const hash = window.location.hash;
+  if (!hash || !hash.includes('access_token')) return false;
+  try {
+    const { data: { session } } = await sbClient.auth.getSession();
+    if (!session) return false;
+    authToken = session.access_token;
+    currentUser = session.user;
+    await afterSignIn();
+    setTimeout(() => {
+      showToast('✓', 'Email verified! Welcome to Conver.');
+    }, 800);
+    history.replaceState(null, '', window.location.pathname);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 async function initAuth() {
+  if (await checkEmailVerification()) return;
   // Try to get token from localStorage (set by OAuth callback)
   const storedToken = localStorage.getItem('conver_token');
   if (storedToken) {
@@ -9950,7 +9979,28 @@ async function signIn() {
       body: JSON.stringify({ email, password })
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
+    if (!res.ok) {
+      // Unverified accounts hit this — show a resend link instead of a
+      // generic error so the user has an actual next step, not a dead end.
+      const msg = (data.error || '').toLowerCase();
+      if (msg.includes('email not confirmed') || msg.includes('email_not_confirmed')) {
+        setAuthError('signin', '');
+        const errEl = document.getElementById('signin-error');
+        if (errEl) {
+          errEl.innerHTML = `
+            Email not verified yet.
+            <a onclick="resendVerificationEmail('${email}')" style="color:var(--accent3);cursor:pointer;margin-left:6px">
+              Resend verification email →
+            </a>
+          `;
+          errEl.classList.remove('hidden');
+        }
+      } else {
+        setAuthError('signin', data.error);
+      }
+      btn.disabled = false; btn.textContent = 'Sign In';
+      return;
+    }
     authToken = data.session.access_token;
     currentUser = data.user;
     await afterSignIn();
@@ -9961,31 +10011,100 @@ async function signIn() {
 }
 
 async function signUp() {
-  const email = document.getElementById('signup-email').value.trim();
-  const password = document.getElementById('signup-password').value;
-  if (!email || !password) { setAuthError('signup', 'Please fill in all fields.'); return; }
-  if (password.length < 6) { setAuthError('signup', 'Password must be at least 6 characters.'); return; }
+  const email = document.getElementById('signup-email')?.value?.trim();
+  const password = document.getElementById('signup-password')?.value;
   const btn = document.getElementById('signup-btn');
-  btn.disabled = true; btn.textContent = 'Creating account...';
+
   setAuthError('signup', '');
+  if (!email || !email.includes('@')) { setAuthError('signup', 'Enter a valid email address.'); return; }
+  if (!password || password.length < 6) { setAuthError('signup', 'Password must be at least 6 characters.'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Creating account...';
+
   try {
-    const res = await fetch('/api/auth/signup', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ email, password })
+    // Goes through sbClient (the browser's own Supabase client) directly
+    // rather than our /api/auth/signup route — Supabase's email-confirmation
+    // redirect flow is a client-SDK feature (emailRedirectTo, detectSessionInUrl),
+    // and this is a separate client instance from the server's own admin
+    // client, so it carries none of the shared-session risk that one had.
+    const { data, error } = await sbClient.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: 'https://www.conver.services/app'
+      }
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
+
+    if (error) {
+      setAuthError('signup', error.message);
+      btn.disabled = false;
+      btn.textContent = 'Create Account';
+      return;
+    }
+
     if (data.session) {
+      // Email confirmation is off (or this address was already confirmed) —
+      // a session came back immediately, so log straight in instead of
+      // showing a "check your email" screen that would never resolve.
       authToken = data.session.access_token;
       currentUser = data.user;
       await afterSignIn();
     } else {
-      setAuthSuccess('signup', 'Check your email to verify your account, then sign in.');
-      btn.disabled = false; btn.textContent = 'Create Account';
+      // Show email verification pending screen
+      showVerificationPending(email);
     }
   } catch(e) {
-    setAuthError('signup', e.message);
-    btn.disabled = false; btn.textContent = 'Create Account';
+    setAuthError('signup', 'Something went wrong. Please try again.');
+    btn.disabled = false;
+    btn.textContent = 'Create Account';
+  }
+}
+
+function showVerificationPending(email) {
+  // Replace auth box content with verification pending message
+  const authBox = document.querySelector('.auth-box');
+  if (!authBox) return;
+  authBox.innerHTML = `
+    <div style="text-align:center;padding:20px 0">
+      <div style="font-size:48px;margin-bottom:16px">📧</div>
+      <div style="font-family:'Italiana',serif;font-size:28px;color:var(--text);margin-bottom:8px">Check your email</div>
+      <p style="font-size:14px;color:var(--muted2);line-height:1.75;margin-bottom:24px">
+        We sent a verification link to
+        <strong style="color:var(--accent3)">${email}</strong><br><br>
+        Click the link in the email to activate your account. Check your spam folder if you don't see it.
+      </p>
+      <div style="padding:14px 18px;background:rgba(124,111,255,0.08);border:1px solid var(--border3);border-radius:10px;margin-bottom:20px;font-size:13px;color:var(--muted2)">
+        Link expires in 24 hours.
+      </div>
+      <button class="btn-ghost" onclick="resendVerificationEmail('${email}')" id="resend-btn" style="margin-bottom:12px">
+        Resend verification email
+      </button>
+      <br>
+      <a onclick="showView('signin')" style="font-size:13px;color:var(--muted);cursor:pointer">Back to sign in</a>
+    </div>
+  `;
+}
+
+async function resendVerificationEmail(email) {
+  const btn = document.getElementById('resend-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
+  try {
+    const { error } = await sbClient.auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: 'https://www.conver.services/app' }
+    });
+    if (error) {
+      showToast('❌', error.message);
+      if (btn) { btn.disabled = false; btn.textContent = 'Resend verification email'; }
+    } else {
+      showToast('✓', 'Verification email resent!');
+      if (btn) btn.textContent = 'Email sent ✓';
+    }
+  } catch(e) {
+    showToast('❌', 'Could not resend. Try again.');
+    if (btn) { btn.disabled = false; btn.textContent = 'Resend verification email'; }
   }
 }
 
