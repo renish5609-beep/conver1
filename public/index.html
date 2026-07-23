@@ -8624,6 +8624,27 @@ function resetDebate(){
 
 
 // ── SETTINGS (ENHANCED) ───────────────────────────────────────────────────────
+// Per-account localStorage keys — these used to be flat keys shared by
+// whoever last touched the browser, so a second account signing in on the
+// same device would see (and overwrite) the first account's name, goal,
+// toggles, accent color, and avatar. Namespace by user id instead, and
+// migrate each account's first load from the old flat key so nobody's
+// existing data appears to vanish.
+function userStorageKey(base) {
+  return currentUser?.id ? `${base}_${currentUser.id}` : base;
+}
+function migrateFlatKeyToUser(base) {
+  if (!currentUser?.id) return;
+  const namespaced = userStorageKey(base);
+  if (localStorage.getItem(namespaced) === null) {
+    const flat = localStorage.getItem(base);
+    if (flat !== null) localStorage.setItem(namespaced, flat);
+  }
+}
+function migrateAllSettingsKeysToUser() {
+  ['conver_settings', 'conver_accent', 'conver_avatar'].forEach(migrateFlatKeyToUser);
+}
+
 const DEFAULT_SETTINGS = {
   name: '', goal: 'interview', level: 'intermediate',
   intensity: 'balanced', detail: 'balanced',
@@ -8638,7 +8659,7 @@ const DEFAULT_SETTINGS = {
 };
 
 function loadSettings() {
-  const saved = JSON.parse(localStorage.getItem('conver_settings') || '{}');
+  const saved = JSON.parse(localStorage.getItem(userStorageKey('conver_settings')) || '{}');
   const settings = { ...DEFAULT_SETTINGS, ...saved };
   S.rewrite = settings.rewrite;
   S.filler = settings.filler;
@@ -8677,7 +8698,7 @@ function loadSettings() {
 }
 
 function applySettingsToUI() {
-  const saved = JSON.parse(localStorage.getItem('conver_settings') || '{}');
+  const saved = JSON.parse(localStorage.getItem(userStorageKey('conver_settings')) || '{}');
   const settings = { ...DEFAULT_SETTINGS, ...saved };
   const set = (id, val) => { const el = document.getElementById(id); if(el) el.value = val; };
   const setChk = (id, val) => { const el = document.getElementById(id); if(el) el.checked = val; };
@@ -8713,7 +8734,7 @@ function applySettingsToUI() {
   setChk('tog-reduce-motion', settings.reduceMotion);
   setChk('tog-compact', settings.compactMode);
   document.querySelectorAll('.accent-swatch').forEach(el => {
-    el.classList.toggle('selected', el.dataset.color === (localStorage.getItem('conver_accent') || '#7c6fff'));
+    el.classList.toggle('selected', el.dataset.color === (localStorage.getItem(userStorageKey('conver_accent')) || '#7c6fff'));
   });
   const sc = document.getElementById('settings-scenario-cards');
   if (sc && sc.children.length === 0) {
@@ -8768,7 +8789,7 @@ function saveSettings() {
     reduceMotion: getChk('tog-reduce-motion'),
     compactMode: getChk('tog-compact'),
   };
-  localStorage.setItem('conver_settings', JSON.stringify(settings));
+  localStorage.setItem(userStorageKey('conver_settings'), JSON.stringify(settings));
   loadSettings();
   showToast('✓', 'Settings saved');
 }
@@ -8809,7 +8830,7 @@ function applyAccentPalette(color) {
 
 function setAccentColor(color) {
   applyAccentPalette(color);
-  localStorage.setItem('conver_accent', color);
+  localStorage.setItem(userStorageKey('conver_accent'), color);
   showToast('🎨', 'Accent color updated');
 }
 
@@ -8997,10 +9018,10 @@ function updateAccountDisplay() {
   applyAvatarPhoto();
 }
 
-// Profile photo — stored client-side (per-browser) as a data URL, since
-// there's no Supabase storage bucket wired up for avatars yet.
+// Profile photo — stored client-side as a data URL keyed to the account's
+// user id, since there's no Supabase storage bucket wired up for avatars yet.
 function applyAvatarPhoto() {
-  const photo = localStorage.getItem('conver_avatar');
+  const photo = localStorage.getItem(userStorageKey('conver_avatar'));
   const spAvatar = document.getElementById('sp-avatar');
   const headerAvatar = document.getElementById('user-avatar');
   const removeBtn = document.getElementById('sp-remove-avatar-btn');
@@ -9036,7 +9057,7 @@ function handleAvatarUpload(event) {
       const w = img.width * scale, h = img.height * scale;
       ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
       const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-      localStorage.setItem('conver_avatar', dataUrl);
+      localStorage.setItem(userStorageKey('conver_avatar'), dataUrl);
       applyAvatarPhoto();
       showToast('✓', 'Profile photo updated');
     };
@@ -9047,12 +9068,15 @@ function handleAvatarUpload(event) {
 }
 
 function removeAvatarPhoto() {
-  localStorage.removeItem('conver_avatar');
+  localStorage.removeItem(userStorageKey('conver_avatar'));
   applyAvatarPhoto();
   showToast('✓', 'Profile photo removed');
 }
 
-// Load saved accent color on boot
+// Load saved accent color on boot. currentUser doesn't exist yet this early
+// (its `let` declaration runs later in this same script), so this always
+// reads the flat guest key; afterSignIn() re-applies it against the
+// signed-in account's own namespaced key once currentUser.id is known.
 (function() {
   const saved = localStorage.getItem('conver_accent') || '#7c6fff';
   applyAccentPalette(saved);
@@ -10195,6 +10219,12 @@ async function afterSignIn() {
   await fetch('/api/user/profile', {
     method: 'POST', headers: {'Content-Type':'application/json','Authorization':'Bearer '+authToken}
   });
+  // Now that currentUser.id is known, bring this account's own settings/
+  // accent/avatar in from their namespaced keys (migrating from the old
+  // flat keys on first load) instead of whatever the last account left behind.
+  migrateAllSettingsKeysToUser();
+  loadSettings();
+  applyAccentPalette(localStorage.getItem(userStorageKey('conver_accent')) || '#7c6fff');
   // Update UI
   const email = currentUser.email || 'User';
   document.getElementById('user-email-display').textContent = email;
