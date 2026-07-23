@@ -2447,13 +2447,19 @@ body.reducemotion .coach-orb-wave { animation: none !important; }
 #rt-target-dot { transition: opacity 0.3s; }
 #rt-session:not(.active) #rt-target-dot { opacity: 0; }
 
-/* Times New Roman throughout the app — overrides every other font-family
-   declaration (inline styles, per-element classes, all of it) via
-   !important rather than hunting down and rewriting each one individually,
-   so nothing about layout, spacing, or functionality changes — only how
-   the text itself is rendered. */
+/* Two-font system, matching the pairing already used on the landing page:
+   Italiana (elegant serif) for headings/titles, Space Grotesk (bold
+   geometric sans) for everything else — body text, buttons, labels,
+   numbers, nav. The universal rule sets Space Grotesk as the base for
+   literally everything via !important (same mechanism as before), then
+   the heading rule below wins on actual heading tags because a type
+   selector (h1/h2/h3) is inherently more specific than the universal
+   selector — no ordering tricks needed, both selectors carry !important. */
 *, *::before, *::after {
-  font-family: 'Times New Roman', Times, serif !important;
+  font-family: 'Space Grotesk', sans-serif !important;
+}
+h1, h2, h3 {
+  font-family: 'Italiana', serif !important;
 }
 </style>
 </head>
