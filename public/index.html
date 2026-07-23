@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Conver — AI Conversation Intelligence</title>
+<link rel="icon" type="image/png" href="/favicon.png"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@11labs/client@latest/dist/index.umd.js"></script>
@@ -2536,7 +2537,7 @@ h1, h2, h3 {
 <div class="auth-screen hidden" id="auth-screen">
   <div class="auth-box">
     <div class="auth-logo">
-      <div class="auth-logo-icon">🎤</div>
+      <div class="auth-logo-icon"><img src="/logo.png" alt="Conver" style="width:100%;height:100%;object-fit:contain;border-radius:inherit"/></div>
       <div class="auth-logo-text">Conver</div>
     </div>
 
@@ -2578,7 +2579,7 @@ h1, h2, h3 {
   <header class="app-header">
     <div class="app-header-left">
       <div class="app-logo">
-        <div class="app-logo-icon">🎤</div>
+        <div class="app-logo-icon"><img src="/logo.png" alt="Conver" style="width:100%;height:100%;object-fit:contain;border-radius:inherit"/></div>
         <span class="app-logo-text">Conver</span>
       </div>
       <button class="back-btn" id="back-btn" onclick="handleBackBtn()">← Back</button>
@@ -10044,16 +10045,12 @@ async function signUp() {
     }
 
     if (data.session) {
-      // Email confirmation is off (or this address was already confirmed) —
-      // a session came back immediately, so log straight in instead of
-      // showing a "check your email" screen that would never resolve.
-      authToken = data.session.access_token;
-      currentUser = data.user;
-      await afterSignIn();
-    } else {
-      // Show email verification pending screen
-      showVerificationPending(email);
+      // Supabase's "Confirm email" project setting is off, so a session
+      // came back immediately — sign it back out so an unverified account
+      // can't slip straight into the app, and force the verification screen.
+      await sbClient.auth.signOut();
     }
+    showVerificationPending(email);
   } catch(e) {
     setAuthError('signup', 'Something went wrong. Please try again.');
     btn.disabled = false;
@@ -10081,7 +10078,7 @@ function showVerificationPending(email) {
         Resend verification email
       </button>
       <br>
-      <a onclick="showView('signin')" style="font-size:13px;color:var(--muted);cursor:pointer">Back to sign in</a>
+      <a onclick="location.reload()" style="font-size:13px;color:var(--muted);cursor:pointer">Back to sign in</a>
     </div>
   `;
 }
