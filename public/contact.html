@@ -65,7 +65,8 @@ textarea { resize: vertical; }
       <div id="contact-success" class="hidden success-box">
         <div style="font-size:28px;margin-bottom:8px">✓</div>
         <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:#2dd4a0;margin-bottom:4px">Message sent!</div>
-        <div style="font-size:13px;color:#9099b8">We'll get back to you at the email you provided.</div>
+        <div style="font-size:13px;color:#9099b8;margin-bottom:14px">We'll get back to you at the email you provided.</div>
+        <button class="btn-primary" onclick="resetContactForm()" style="max-width:220px;margin:0 auto">Send Another Message</button>
       </div>
       <div id="contact-error" class="hidden error-box"></div>
 
@@ -189,6 +190,24 @@ async function submitContactForm() {
   }
   btn.disabled = false;
   btn.textContent = 'Send Message →';
+}
+
+// After a successful send, #contact-form gets dimmed and pointer-events:none
+// with no way to undo it — the form just sat there stuck permanently. This
+// clears the fields and restores the form so another message can be sent
+// without reloading the page.
+function resetContactForm() {
+  document.getElementById('cf-name').value = '';
+  document.getElementById('cf-email').value = '';
+  document.getElementById('cf-topic').selectedIndex = 0;
+  document.getElementById('cf-message').value = '';
+  document.getElementById('cf-char-count').textContent = '0';
+
+  const formEl = document.getElementById('contact-form');
+  formEl.style.opacity = '';
+  formEl.style.pointerEvents = '';
+  document.getElementById('contact-success').classList.add('hidden');
+  document.getElementById('contact-error').classList.add('hidden');
 }
 </script>
 </body>
