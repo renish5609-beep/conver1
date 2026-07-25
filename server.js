@@ -72,23 +72,36 @@ const assignedVoices = {
   Luna:  'pjcYQlDFKMbcOUp6F5GD',  // Brittney
 };
 
-// ── Cold Open scenario voices (pool — randomly assigned per session) ──────────
-const coldOpenVoices = [
-  '4O1sYUnmtThcBoSBrri7',
-  '1t1EeRixsJrKbiF1zwM6',
-  '6fZce9LFNG3iEITDfqZZ',
-  'Gubgw9l4dtIoQA9YZHgx',
-  'CICpbs1ZGqlhQNbQmCUP',
-  'tIb1FHpzlwSiTGg6JxF0',
-  'hIreuBly94QFepU63yel',
-  'EitqXD7jgIy0K5Z1zGGp',
-  'hod33eJyEU4TLqiYFttr',
-  'Ib97zM6uFBc71OWgj75I',
+// ── Cold Open scenario voices — split by confirmed gender ──────────────────
+const coldOpenVoicesFemale = [
+  '4O1sYUnmtThcBoSBrri7', // Female 1
+  '6fZce9LFNG3iEITDfqZZ', // Female 2
+  'CICpbs1ZGqlhQNbQmCUP', // Female 3
+  'tIb1FHpzlwSiTGg6JxF0', // Female 4
+  'hod33eJyEU4TLqiYFttr', // Female 5
+  '8DzKSPdgEQPaK5vKG0Rs', // Female 6 (new)
+  'yj30vwTGJxSHezdAGsv9', // Female 7 (new)
 ];
 
-// Pick a random Cold Open voice
+const coldOpenVoicesMale = [
+  '1t1EeRixsJrKbiF1zwM6', // Male 1
+  'Gubgw9l4dtIoQA9YZHgx', // Male 2
+  'hIreuBly94QFepU63yel', // Male 3
+  'EitqXD7jgIy0K5Z1zGGp', // Male 4
+  'Ib97zM6uFBc71OWgj75I', // Male 5
+  'wAGzRVkxKEs8La0lmdrE', // Male 6 (new)
+];
+
+// Combined pool for backward compat
+const coldOpenVoices = [...coldOpenVoicesFemale, ...coldOpenVoicesMale];
+
 function getRandomColdOpenVoice() {
   return coldOpenVoices[Math.floor(Math.random() * coldOpenVoices.length)];
+}
+
+function getColdOpenVoiceForGender(gender) {
+  const pool = gender === 'male' ? coldOpenVoicesMale : coldOpenVoicesFemale;
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
 console.log('Coach voices assigned:', assignedVoices);
@@ -202,9 +215,10 @@ app.get('/api/voices', (req, res) => {
   res.json({ voices: assignedVoices, coldOpenVoices });
 });
 
-// Get a random Cold Open voice
+// Get a Cold Open voice for the requested gender
 app.get('/api/coldopen-voice', (req, res) => {
-  res.json({ voiceId: getRandomColdOpenVoice() });
+  const gender = req.query.gender || 'female';
+  res.json({ voiceId: getColdOpenVoiceForGender(gender), gender });
 });
 
 // ── Claude chat ───────────────────────────────────────────────────────────────

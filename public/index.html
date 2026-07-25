@@ -6319,6 +6319,7 @@ function initUI(){
 // ── Navigation ────────────────────────────────────────────────────────────────
 document.querySelectorAll('.nav-item[data-page]').forEach(btn=>{btn.addEventListener('click',()=>navTo(btn.dataset.page));});
 function navTo(page){
+  try { localStorage.setItem('conver_last_page', page); } catch(e) {}
   if (page !== 'realtime') stopRealTimeIfActive();
   showBackBtn(false);
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -9383,6 +9384,50 @@ const COLD_OPEN_SCENARIOS = {
     {setup:"You're on a customer success call and the customer says they're not getting value.",opener:"We pay a lot for this and honestly I'm struggling to show ROI to my leadership.",person:"Customer Success Contact",role:"Champion who needs to justify the spend internally"},
   ],
 };;
+// ── COLD OPEN GENDER DETECTION ───────────────────────────────
+const FEMALE_NAMES = new Set([
+  'sunny','riley','mila','casey','jamie','alex','taylor','morgan',
+  'jordan','sam','avery','quinn','blake','ashley','emma','sophia',
+  'olivia','ava','isabella','mia','charlotte','amelia','harper',
+  'evelyn','abigail','emily','elizabeth','sofia','ella','grace',
+  'sarah','jessica','anna','natalie','victoria','lily','rebecca',
+  'hannah','marie','claire','nina','diana','elena','lisa','karen',
+  'helen','rachel','amy','jennifer','michelle','stephanie','laura',
+  'shannon','dana','kelly','brittany','amanda','melissa','angela',
+  'carol','ruth','kathleen','patricia','barbara','dorothy','alice',
+  'marilyn','sandra','carol','beverly','virginia','judy','diane',
+  'gloria','rose','evelyn','frances','martha','cheryl','megan','andrea',
+  'sage','luna','nova','echo','aria','aurora','celeste','iris',
+]);
+const MALE_NAMES = new Set([
+  'james','john','robert','michael','william','david','richard','joseph',
+  'thomas','charles','christopher','daniel','matthew','anthony','mark',
+  'donald','steven','paul','andrew','kenneth','joshua','kevin','brian',
+  'george','timothy','ronald','edward','jason','jeffrey','ryan','jacob',
+  'gary','nicholas','eric','jonathan','stephen','larry','justin','scott',
+  'brandon','benjamin','samuel','raymond','gregory','frank','alexander',
+  'patrick','jack','dennis','jerry','tyler','aaron','jose','henry',
+  'adam','douglas','nathan','peter','zachary','kyle','noah','ethan',
+  'liam','mason','logan','lucas','oliver','elijah','aiden','carter',
+  'rex','blaze','cole','derek','marcus','leon','sean','owen','ian',
+  'evan','miles','drew','grant','brent','chad','brad','cliff','bruce',
+]);
+function detectCharacterGender(name, role) {
+  const firstName = (name || '').toLowerCase().split(' ')[0].trim();
+  const roleLower = (role || '').toLowerCase();
+  // Check known name lists first
+  if (FEMALE_NAMES.has(firstName)) return 'female';
+  if (MALE_NAMES.has(firstName)) return 'male';
+  // Check role description for gender keywords
+  const femaleKw = ['woman','female','lady','she ','her ','wife','mother','daughter','sister'];
+  const maleKw = ['man','male','guy','he ','him ','husband','father','son','brother'];
+  for (const kw of femaleKw) { if (roleLower.includes(kw)) return 'female'; }
+  for (const kw of maleKw) { if (roleLower.includes(kw)) return 'male'; }
+  // Generic title — use name hash for consistency (same name = same gender always)
+  const hash = firstName.split('').reduce((a,c) => a + c.charCodeAt(0), 0);
+  return hash % 2 === 0 ? 'female' : 'male';
+}
+
 let coState = { running: false, type: '', scenario: null, history: [], faceAnim: null, personCoach: 'Echo', turns: 0 };
 let isCOListening = false, coFinalTranscript = '';
 
@@ -9413,7 +9458,20 @@ async function startColdOpen() {
   const type = S.coldOpenCategory || 'networking';
   const scenarios = COLD_OPEN_SCENARIOS[type];
   const scenario = scenarios[Math.floor(Math.random() * scenarios.length)];
-  coState = { running:true, type, scenario, history:[], faceAnim:null, personCoach:['Echo','Luna','Sage','Nova'][Math.floor(Math.random()*4)], turns:0, voiceId:null };
+  const charGender = detectCharacterGender(scenario.person, scenario.role);
+  coState = {
+    running: true,
+    type,
+    scenario,
+    history: [],
+    faceAnim: null,
+    charGender,
+    personCoach: charGender === 'male'
+      ? ['Blaze', 'Rex'][Math.floor(Math.random() * 2)]
+      : ['Echo', 'Luna', 'Sage', 'Nova'][Math.floor(Math.random() * 4)],
+    turns: 0,
+    voiceId: null
+  };
   document.getElementById('coldopen-setup').style.display='none';
   document.getElementById('coldopen-live').style.display='block';
   const chatSection=document.getElementById('co-live-chat');
@@ -9428,7 +9486,7 @@ async function startColdOpen() {
   drawCOFace();
   addCOMsg(scenario.person, scenario.opener, false);
   try{
-    const vRes=await fetch('/api/coldopen-voice');
+    const vRes=await fetch(`/api/coldopen-voice?gender=${coState.charGender || 'female'}`);
     if(vRes.ok){const {voiceId}=await vRes.json();coState.voiceId=voiceId;}
   }catch(e){/* fall back to coach voice if this fails */}
   setScenarioCharSpeaking(type, true);
@@ -10250,6 +10308,14 @@ async function afterSignIn() {
   // clobbering real progress (e.g. a real 4-day streak overwritten down to
   // 1, which the next legitimate consecutive day then incremented to 2).
   await loadUserData();
+  const lastPage = (() => {
+    try {
+      const p = localStorage.getItem('conver_last_page');
+      if (p && document.getElementById('page-' + p)) return p;
+    } catch(e) {}
+    return 'home';
+  })();
+  navTo(lastPage);
   hideAuthScreen();
   showToast('', 'Welcome back!');
 }
@@ -10428,6 +10494,7 @@ function toggleUserMenu() {
 }
 
 async function signOut() {
+  try { localStorage.removeItem('conver_last_page'); } catch(e) {}
   authToken = null; currentUser = null;
   document.getElementById('user-email-display').textContent = 'Not signed in';
   document.getElementById('user-avatar').textContent = '?';
