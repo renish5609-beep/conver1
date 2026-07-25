@@ -10071,7 +10071,7 @@ async function checkEmailVerification() {
     if (!session) return false;
     authToken = session.access_token;
     currentUser = session.user;
-    await afterSignIn();
+    await afterSignIn(true);
     setTimeout(() => {
       showToast('✓', 'Email verified! Welcome to Conver.');
     }, 800);
@@ -10195,7 +10195,7 @@ async function signIn() {
     }
     authToken = data.session.access_token;
     currentUser = data.user;
-    await afterSignIn();
+    await afterSignIn(true);
   } catch(e) {
     setAuthError('signin', e.message);
   }
@@ -10296,7 +10296,7 @@ async function resendVerificationEmail(email) {
   }
 }
 
-async function afterSignIn() {
+async function afterSignIn(freshLogin = false) {
   currentUser = currentUser || {};
   // Create profile
   await fetch('/api/user/profile', {
@@ -10322,14 +10322,22 @@ async function afterSignIn() {
   // clobbering real progress (e.g. a real 4-day streak overwritten down to
   // 1, which the next legitimate consecutive day then incremented to 2).
   await loadUserData();
-  const lastPage = (() => {
-    try {
-      const p = localStorage.getItem('conver_last_page');
-      if (p && document.getElementById('page-' + p)) return p;
-    } catch(e) {}
-    return 'home';
-  })();
-  navTo(lastPage);
+  if (freshLogin) {
+    // Fresh manual sign-in — don't restore a previous session's last page,
+    // start clean at home instead (a stale page here could be confusing).
+    try { localStorage.removeItem('conver_last_page'); } catch(e) {}
+    navTo('home');
+  } else {
+    // Session restored on refresh — put the user back where they were.
+    const lastPage = (() => {
+      try {
+        const p = localStorage.getItem('conver_last_page');
+        if (p && document.getElementById('page-' + p)) return p;
+      } catch(e) {}
+      return null; // null = don't override — stay on default home
+    })();
+    if (lastPage && lastPage !== 'home') navTo(lastPage);
+  }
   hideAuthScreen();
   showToast('', 'Welcome back!');
 }
