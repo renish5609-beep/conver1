@@ -146,8 +146,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:16px 60px;display:fl
 .coach-card::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,var(--c,rgba(124,111,255,0.08)) 0%,transparent 60%);opacity:0;transition:opacity 0.3s}
 .coach-card:hover{transform:translateY(-4px) scale(1.02);border-color:rgba(124,111,255,0.3)}
 .coach-card:hover::after{opacity:1}
-.coach-emoji{font-size:28px;margin-bottom:10px;display:block;transition:transform 0.3s}
-.coach-card:hover .coach-emoji{transform:scale(1.2) rotate(5deg)}
+.coach-mono{width:36px;height:36px;border-radius:10px;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:15px;border:1px solid rgba(255,255,255,0.08);transition:transform 0.3s;position:relative;z-index:1}
+.coach-card:hover .coach-mono{transform:scale(1.12) rotate(-3deg)}
 .coach-name{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;margin-bottom:3px;color:#f0f1f8}
 .coach-style{font-size:10.5px;color:#6b7494;font-family:'DM Mono',monospace}
 
@@ -289,12 +289,12 @@ footer{padding:40px 60px;border-top:1px solid rgba(255,255,255,0.05);display:fle
   <div class="section-label reveal">Your coaches</div>
   <h2 class="reveal reveal-delay-1">Six coaches. Six approaches.<br>One goal.</h2>
   <div class="coaches-grid">
-    <div class="coach-card reveal reveal-delay-1" style="--c:rgba(248,113,113,0.08)"><div class="coach-name">Blaze</div><div class="coach-style">Direct & intense</div></div>
-    <div class="coach-card reveal reveal-delay-2" style="--c:rgba(56,189,248,0.08)"><div class="coach-name">Echo</div><div class="coach-style">Empathetic listener</div></div>
-    <div class="coach-card reveal reveal-delay-3" style="--c:rgba(45,212,160,0.08)"><div class="coach-name">Sage</div><div class="coach-style">Calm & strategic</div></div>
-    <div class="coach-card reveal reveal-delay-4" style="--c:rgba(251,191,36,0.08)"><div class="coach-name">Nova</div><div class="coach-style">Energetic & bold</div></div>
-    <div class="coach-card reveal reveal-delay-5" style="--c:rgba(180,140,255,0.08)"><div class="coach-name">Rex</div><div class="coach-style">No-nonsense drill</div></div>
-    <div class="coach-card reveal reveal-delay-6" style="--c:rgba(124,111,255,0.08)"><div class="coach-name">Luna</div><div class="coach-style">Gentle & nurturing</div></div>
+    <div class="coach-card reveal reveal-delay-1" style="--c:rgba(248,113,113,0.08)"><div class="coach-mono" style="background:rgba(248,113,113,0.15);color:#f87171">B</div><div class="coach-name">Blaze</div><div class="coach-style">Direct & intense</div></div>
+    <div class="coach-card reveal reveal-delay-2" style="--c:rgba(56,189,248,0.08)"><div class="coach-mono" style="background:rgba(56,189,248,0.15);color:#38bdf8">E</div><div class="coach-name">Echo</div><div class="coach-style">Empathetic listener</div></div>
+    <div class="coach-card reveal reveal-delay-3" style="--c:rgba(45,212,160,0.08)"><div class="coach-mono" style="background:rgba(45,212,160,0.15);color:#2dd4a0">S</div><div class="coach-name">Sage</div><div class="coach-style">Calm & strategic</div></div>
+    <div class="coach-card reveal reveal-delay-4" style="--c:rgba(251,191,36,0.08)"><div class="coach-mono" style="background:rgba(251,191,36,0.15);color:#fbbf24">N</div><div class="coach-name">Nova</div><div class="coach-style">Energetic & bold</div></div>
+    <div class="coach-card reveal reveal-delay-5" style="--c:rgba(180,140,255,0.08)"><div class="coach-mono" style="background:rgba(192,132,252,0.15);color:#c084fc">R</div><div class="coach-name">Rex</div><div class="coach-style">No-nonsense drill</div></div>
+    <div class="coach-card reveal reveal-delay-6" style="--c:rgba(124,111,255,0.08)"><div class="coach-mono" style="background:rgba(244,114,182,0.15);color:#f472b6">L</div><div class="coach-name">Luna</div><div class="coach-style">Gentle & nurturing</div></div>
   </div>
 </section>
 
