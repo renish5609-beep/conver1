@@ -756,6 +756,7 @@ input:focus, select:focus, textarea:focus {
 .toast.show #toast-icon{animation:toastIconPop 0.5s cubic-bezier(0.34,1.56,0.64,1)}
 @keyframes toastIconPop{0%{transform:scale(0.4) rotate(-15deg)}60%{transform:scale(1.25) rotate(8deg)}100%{transform:scale(1) rotate(0)}}
 .toast-icon{font-size:18px}
+.toast-icon:empty{display:none}
 
 /* AUTH SCREEN */
 .auth-screen {
@@ -2482,7 +2483,7 @@ h1, h2, h3 {
       </div>
     </div>
     <div class="share-actions">
-      <button class="share-btn share-btn-ghost" onclick="copyShareText()">📋 Copy Text</button>
+      <button class="share-btn share-btn-ghost" onclick="copyShareText()">Copy Text</button>
       <button class="share-btn share-btn-primary" onclick="downloadScoreCard()">⬇ Download Card</button>
     </div>
   </div>
@@ -2490,7 +2491,7 @@ h1, h2, h3 {
 
 <!-- FILLER OVERLAY -->
 <div class="filler-overlay" id="filler-overlay" style="display:none">
-  <div class="filler-badge-live" id="filler-badge">🚨 <span id="filler-word-display">um</span></div>
+  <div class="filler-badge-live" id="filler-badge"><span id="filler-word-display">um</span></div>
   <div class="filler-count-display">Fillers: <strong id="filler-total">0</strong></div>
 </div>
 
@@ -2583,7 +2584,7 @@ h1, h2, h3 {
     <div class="app-header-center">
       <span id="chip-scenario" class="chip hi">Interview</span>
       <span id="chip-coach" class="chip">Coach: Blaze</span>
-      <span id="streak-chip" class="chip streak-chip">🔥 0 day streak</span>
+      <span id="streak-chip" class="chip streak-chip">0 day streak</span>
     </div>
     <div class="app-header-right">
       <div class="user-menu user-btn" id="user-menu-btn" onclick="toggleUserMenu()">
@@ -2596,26 +2597,26 @@ h1, h2, h3 {
   <div class="app-tabs-wrap" id="app-tabs-wrap">
   <nav class="app-tabs" id="app-tabs">
     <div class="tabs-group">
-      <button class="tab-item active" data-page="home" onclick="navTo('home')"><span class="tab-icon">🏠</span>Overview</button>
-      <button class="tab-item" data-page="warmup" onclick="navTo('warmup')"><span class="tab-icon">⚡</span>Warmup</button>
-      <button class="tab-item" data-page="practice" onclick="navTo('practice')"><span class="tab-icon">✍</span>Practice Lab</button>
-      <button class="tab-item" data-page="voice" onclick="navTo('voice')"><span class="tab-icon">🎙️</span>Voice Session</button>
-      <button class="tab-item" data-page="debate" onclick="navTo('debate')"><span class="tab-icon">🗣️</span>Live Debate</button>
-      <button class="tab-item" data-page="coldopen" onclick="navTo('coldopen')"><span class="tab-icon">❄️</span>Cold Open</button>
-      <button class="tab-item" data-page="qbank" onclick="navTo('qbank')"><span class="tab-icon">❓</span>Questions</button>
-      <button class="tab-item" data-page="companion" onclick="navTo('companion')"><span class="tab-icon">💬</span>AI Companion</button>
-      <button class="tab-item" data-page="realtime" onclick="navTo('realtime')"><span class="tab-icon">📹</span>Real-Time<span style="margin-left:6px;font-size:9px;font-weight:800;letter-spacing:0.5px;color:#fbbf24;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.3);border-radius:20px;padding:2px 7px;vertical-align:middle;font-family:'DM Mono',monospace">BETA</span></button>
+      <button class="tab-item active" data-page="home" onclick="navTo('home')">Overview</button>
+      <button class="tab-item" data-page="warmup" onclick="navTo('warmup')">Warmup</button>
+      <button class="tab-item" data-page="practice" onclick="navTo('practice')">Practice Lab</button>
+      <button class="tab-item" data-page="voice" onclick="navTo('voice')">Voice Session</button>
+      <button class="tab-item" data-page="debate" onclick="navTo('debate')">Live Debate</button>
+      <button class="tab-item" data-page="coldopen" onclick="navTo('coldopen')">Cold Open</button>
+      <button class="tab-item" data-page="qbank" onclick="navTo('qbank')">Questions</button>
+      <button class="tab-item" data-page="companion" onclick="navTo('companion')">AI Companion</button>
+      <button class="tab-item" data-page="realtime" onclick="navTo('realtime')">Real-Time<span style="margin-left:6px;font-size:9px;font-weight:800;letter-spacing:0.5px;color:#fbbf24;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.3);border-radius:20px;padding:2px 7px;vertical-align:middle;font-family:'DM Mono',monospace">BETA</span></button>
     </div>
     <div class="tabs-divider"></div>
     <div class="tabs-group tabs-group-right">
-      <button class="tab-item" data-page="skills" onclick="navTo('skills')"><span class="tab-icon">📈</span>Skills</button>
-      <button class="tab-item" data-page="daily" onclick="navTo('daily')"><span class="tab-icon">🎯</span>Daily</button>
-      <button class="tab-item" data-page="coachnotes" onclick="navTo('coachnotes')"><span class="tab-icon">📝</span>Coach Notes</button>
-      <button class="tab-item" data-page="insights" onclick="navTo('insights')"><span class="tab-icon">📊</span>Insights</button>
-      <button class="tab-item" data-page="history" onclick="navTo('history')"><span class="tab-icon">🕐</span>History</button>
-      <button class="tab-item" data-page="briefing" onclick="navTo('briefing')"><span class="tab-icon">📋</span>Briefing</button>
-      <button class="tab-item" data-page="profiles" onclick="navTo('profiles')"><span class="tab-icon">👤</span>Profiles</button>
-      <button class="tab-item" data-page="contact" onclick="navTo('contact')"><span class="tab-icon">🆘</span>Help</button>
+      <button class="tab-item" data-page="skills" onclick="navTo('skills')">Skills</button>
+      <button class="tab-item" data-page="daily" onclick="navTo('daily')">Daily</button>
+      <button class="tab-item" data-page="coachnotes" onclick="navTo('coachnotes')">Coach Notes</button>
+      <button class="tab-item" data-page="insights" onclick="navTo('insights')">Insights</button>
+      <button class="tab-item" data-page="history" onclick="navTo('history')">History</button>
+      <button class="tab-item" data-page="briefing" onclick="navTo('briefing')">Briefing</button>
+      <button class="tab-item" data-page="profiles" onclick="navTo('profiles')">Profiles</button>
+      <button class="tab-item" data-page="contact" onclick="navTo('contact')">Help</button>
     </div>
   </nav>
   </div>
@@ -2693,14 +2694,14 @@ h1, h2, h3 {
             </div>
             <div id="home-grade" class="csc-grade">Not yet rated</div>
             <div id="home-grade-sub" class="csc-sub">Complete a session to begin</div>
-            <button onclick="openShareModal()" class="csc-share-btn">✨ Share Progress</button>
+            <button onclick="openShareModal()" class="csc-share-btn">Share Progress</button>
           </div>
         </div>
         <div class="home-grid">
-          <div class="hg-card" onclick="navTo('warmup')"><div class="mode-icon-wrap" style="--mode-color:rgba(251,191,36,0.15)">⚡</div><div class="hg-title">Warmup</div><div class="hg-desc">AI generates targeted questions from your briefing.</div><span class="hg-link">Get warmed up →</span></div>
-          <div class="hg-card" onclick="navTo('practice')"><div class="mode-icon-wrap" style="--mode-color:rgba(var(--accent-rgb),0.15)">✍️</div><div class="hg-title">Practice Lab</div><div class="hg-desc">Submit a draft, get scored + a rewrite.</div><span class="hg-link">Open Lab →</span></div>
-          <div class="hg-card" onclick="navTo('voice')"><div class="mode-icon-wrap" style="--mode-color:rgba(45,212,160,0.15)">🎙️</div><div class="hg-title">Voice Session</div><div class="hg-desc">Speak with your coach. They listen and talk back.</div><span class="hg-link">Go live →</span></div>
-          <div class="hg-card" onclick="navTo('skills')"><div class="mode-icon-wrap" style="--mode-color:rgba(56,189,248,0.15)">📊</div><div class="hg-title">Skills & Progress</div><div class="hg-desc">Radar chart of your communication skills.</div><span class="hg-link">View progress →</span></div>
+          <div class="hg-card" onclick="navTo('warmup')"><div class="mode-icon-wrap" style="--mode-color:rgba(251,191,36,0.15)"></div><div class="hg-title">Warmup</div><div class="hg-desc">AI generates targeted questions from your briefing.</div><span class="hg-link">Get warmed up →</span></div>
+          <div class="hg-card" onclick="navTo('practice')"><div class="mode-icon-wrap" style="--mode-color:rgba(var(--accent-rgb),0.15)"></div><div class="hg-title">Practice Lab</div><div class="hg-desc">Submit a draft, get scored + a rewrite.</div><span class="hg-link">Open Lab →</span></div>
+          <div class="hg-card" onclick="navTo('voice')"><div class="mode-icon-wrap" style="--mode-color:rgba(45,212,160,0.15)"></div><div class="hg-title">Voice Session</div><div class="hg-desc">Speak with your coach. They listen and talk back.</div><span class="hg-link">Go live →</span></div>
+          <div class="hg-card" onclick="navTo('skills')"><div class="mode-icon-wrap" style="--mode-color:rgba(56,189,248,0.15)"></div><div class="hg-title">Skills & Progress</div><div class="hg-desc">Radar chart of your communication skills.</div><span class="hg-link">View progress →</span></div>
         </div>
         <div class="home-bottom">
           <div class="hb-card"><div class="hb-label">Sessions</div><div class="hb-value" id="home-sessions">0</div><div class="hb-sub">Analyzed this session</div></div>
@@ -2721,7 +2722,7 @@ h1, h2, h3 {
               <label>Difficulty</label>
               <select id="wu-difficulty"><option value="warm">Warm — build confidence</option><option value="standard" selected>Standard — realistic</option><option value="hard">Hard — pressure test</option></select>
             </div>
-            <button class="btn-primary" id="warmup-btn" onclick="generateVoiceWarmup()">⚡ Get My Question</button>
+            <button class="btn-primary" id="warmup-btn" onclick="generateVoiceWarmup()">Get My Question</button>
           </div>
 
           <!-- Question card - hidden until generated -->
@@ -2737,7 +2738,7 @@ h1, h2, h3 {
               <div id="wu-status" style="font-size:12px;color:var(--muted2);font-family:'DM Mono',monospace;min-height:16px">Click the mic and speak your answer</div>
               <div id="wu-transcript" style="font-size:14px;color:var(--muted2);font-style:italic;min-height:40px;text-align:center;line-height:1.65;max-width:480px;width:100%">Your answer will appear here...</div>
               <div style="display:flex;align-items:center;gap:16px">
-                <button class="hold-btn idle" id="wu-mic-btn" style="width:64px;height:64px;font-size:22px" onclick="toggleWarmupListening()">🎙️</button>
+                <button class="hold-btn idle" id="wu-mic-btn" style="width:64px;height:64px;font-size:22px" onclick="toggleWarmupListening()">○</button>
               </div>
               <div style="font-size:10.5px;color:var(--muted);font-family:'DM Mono',monospace">Click to speak · Click again to submit</div>
               <button id="wu-submit-btn" onclick="submitWarmupAnswer()" style="display:none;background:var(--accent);border:none;border-radius:9px;color:#fff;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;padding:11px 28px;cursor:pointer;transition:all 0.2s">Submit Answer</button>
@@ -2800,11 +2801,11 @@ h1, h2, h3 {
         <div class="section-head"><h2>Voice Session</h2><p>Pick your coach, then go live — the full conversation happens on screen, hands-free.</p></div>
         <div class="voice-layout">
           <div class="voice-controls-side">
-            <button class="btn-primary" onclick="startVoiceSession()" style="margin-bottom:4px">🎙️ Go Live</button>
+            <button class="btn-primary" onclick="startVoiceSession()" style="margin-bottom:4px">Go Live</button>
             <div id="voice-coach-avatar" class="coach-session-card"></div>
             <div class="vc-card"><div class="vc-title">Switch Coach</div><div class="coach-picker" id="voice-coach-picker"></div></div>
             <div class="vc-card"><div class="vc-title">Conversation Log</div><div class="voice-log" id="voice-log"><div style="font-size:13px;color:var(--muted);text-align:center;padding:16px 0">Conversation will appear here</div></div></div>
-            <div class="vc-card"><div class="vc-title">Tips</div><div style="font-size:12.5px;color:var(--muted2);line-height:1.9"><div>🎙️ Go Live to start talking</div><div>🔊 Coach speaks back to you</div><div>📋 Set a briefing for better context</div><div>🔄 Switch coaches any time</div></div></div>
+            <div class="vc-card"><div class="vc-title">Tips</div><div style="font-size:12.5px;color:var(--muted2);line-height:1.9"><div>Go Live to start talking</div><div>Coach speaks back to you</div><div>Set a briefing for better context</div><div>Switch coaches any time</div></div></div>
           </div>
         </div>
         <div id="voice-score-panel" style="display:none;margin-top:16px;max-width:380px;margin-left:auto;margin-right:auto;background:var(--bg1);border:1px solid var(--border);border-radius:14px;padding:24px">
@@ -2827,11 +2828,11 @@ h1, h2, h3 {
             <div class="panel" style="margin-bottom:14px"><div class="panel-title">Session Context</div><div id="companion-ctx" style="font-size:13px;color:var(--muted2);line-height:1.7">No briefing. <span style="color:var(--accent3);cursor:pointer;text-decoration:underline" onclick="navTo('briefing')">Add one →</span></div></div>
             <div class="panel"><div class="panel-title">Quick Prompts</div>
               <div class="quick-prompts">
-                <button class="btn-ghost" onclick="injectPrompt('Give me a tough question to practice right now.')">🎤 Throw me a tough question</button>
-                <button class="btn-ghost" onclick="injectPrompt('What are my biggest communication weaknesses?')">⚡ What are my weak spots?</button>
-                <button class="btn-ghost" onclick="injectPrompt('Help me craft a punchy 30-second elevator pitch.')">🚀 Drill my elevator pitch</button>
-                <button class="btn-ghost" onclick="injectPrompt('Push back hard on my last answer and challenge me.')">🔥 Challenge me harder</button>
-                <button class="btn-ghost" onclick="injectPrompt('Give me one concrete thing to focus on to improve fast.')">🎯 One key focus area</button>
+                <button class="btn-ghost" onclick="injectPrompt('Give me a tough question to practice right now.')">Throw me a tough question</button>
+                <button class="btn-ghost" onclick="injectPrompt('What are my biggest communication weaknesses?')">What are my weak spots?</button>
+                <button class="btn-ghost" onclick="injectPrompt('Help me craft a punchy 30-second elevator pitch.')">Drill my elevator pitch</button>
+                <button class="btn-ghost" onclick="injectPrompt('Push back hard on my last answer and challenge me.')">Challenge me harder</button>
+                <button class="btn-ghost" onclick="injectPrompt('Give me one concrete thing to focus on to improve fast.')">One key focus area</button>
               </div>
             </div>
           </div>
@@ -2851,22 +2852,22 @@ h1, h2, h3 {
             <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px">Choose Mode</div>
             <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;max-width:700px">
               <div class="hg-card" onclick="selectRTMode('interview')" id="rt-mode-interview">
-                <div class="hg-icon">💼</div>
+                <div class="hg-icon"></div>
                 <div class="hg-title">Interview</div>
                 <div class="hg-desc">Answer interview questions on camera like a real video interview.</div>
               </div>
               <div class="hg-card" onclick="selectRTMode('pitch')" id="rt-mode-pitch">
-                <div class="hg-icon">🚀</div>
+                <div class="hg-icon"></div>
                 <div class="hg-title">Pitch</div>
                 <div class="hg-desc">Deliver your pitch to camera. Investor pushback included.</div>
               </div>
               <div class="hg-card" onclick="selectRTMode('speech')" id="rt-mode-speech">
-                <div class="hg-icon">🎤</div>
+                <div class="hg-icon"></div>
                 <div class="hg-title">Speech</div>
                 <div class="hg-desc">Deliver a prepared or impromptu speech. Full presence analysis.</div>
               </div>
               <div class="hg-card" onclick="selectRTMode('freeform')" id="rt-mode-freeform">
-                <div class="hg-icon">🗣️</div>
+                <div class="hg-icon"></div>
                 <div class="hg-title">Free Practice</div>
                 <div class="hg-desc">Just talk. Get nonverbal analysis on anything you say.</div>
               </div>
@@ -2876,7 +2877,7 @@ h1, h2, h3 {
           <div id="rt-config" class="hidden" style="max-width:480px;margin-bottom:20px">
             <div class="panel">
               <div id="rt-config-content"></div>
-              <button class="btn-primary" onclick="startRealTimeSession()" style="margin-top:16px" id="rt-start-btn">📹 Start Camera & Begin</button>
+              <button class="btn-primary" onclick="startRealTimeSession()" style="margin-top:16px" id="rt-start-btn">Start Camera & Begin</button>
             </div>
           </div>
         </div>
@@ -2911,8 +2912,8 @@ h1, h2, h3 {
 
                 <!-- Live metric overlays on camera -->
                 <div style="position:absolute;top:12px;left:12px;display:flex;gap:8px;flex-wrap:wrap">
-                  <div id="rt-eye-badge" style="background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:4px 12px;font-size:11px;font-family:'DM Mono',monospace;color:#2dd4a0">👁️ Eye Contact: —</div>
-                  <div id="rt-pose-badge" style="background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:4px 12px;font-size:11px;font-family:'DM Mono',monospace;color:#38bdf8">🧍 Pose: —</div>
+                  <div id="rt-eye-badge" style="background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:4px 12px;font-size:11px;font-family:'DM Mono',monospace;color:#2dd4a0">Eye Contact: —</div>
+                  <div id="rt-pose-badge" style="background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:4px 12px;font-size:11px;font-family:'DM Mono',monospace;color:#38bdf8">Pose: —</div>
                 </div>
 
                 <!-- Recording indicator -->
@@ -2935,7 +2936,7 @@ h1, h2, h3 {
                     <div style="font-size:10px;color:var(--accent);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px">Current Prompt</div>
                     <div id="rt-voice-coach" style="font-size:10px;color:var(--accent3);font-family:'DM Mono',monospace"></div>
                   </div>
-                  <div id="rt-mic-status" onclick="_rtStartListening()" style="font-size:10.5px;font-family:'DM Mono',monospace;color:var(--muted);cursor:pointer" title="Click to retry mic">🔇 Mic idle</div>
+                  <div id="rt-mic-status" onclick="_rtStartListening()" style="font-size:10.5px;font-family:'DM Mono',monospace;color:var(--muted);cursor:pointer" title="Click to retry mic">Mic idle</div>
                 </div>
                 <div id="rt-prompt-text" style="font-size:15px;color:var(--text);line-height:1.65">Starting...</div>
               </div>
@@ -2946,7 +2947,7 @@ h1, h2, h3 {
               <!-- Explicit end-and-save control, separate from the emergency
                    End & Score button on the camera overlay itself, so it's
                    obvious there IS a normal way to finish and save the session -->
-              <button class="btn-primary" onclick="endRealTimeSession()" style="margin-top:14px">✅ End Session & Save</button>
+              <button class="btn-primary" onclick="endRealTimeSession()" style="margin-top:14px">✓ End Session & Save</button>
             </div>
 
             <!-- Right: live metrics panel -->
@@ -3144,7 +3145,7 @@ h1, h2, h3 {
             <div class="panel-title" style="font-size:10px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;font-family:'DM Mono',monospace;margin-bottom:14px">Observations</div>
             <div id="coach-notes-list">
               <div style="text-align:center;padding:48px 24px">
-                <div style="font-size:40px;margin-bottom:12px;opacity:0.4">📝</div>
+                <div style="font-size:40px;margin-bottom:12px;opacity:0.4"></div>
                 <div style="font-family:'Italiana',serif;font-size:22px;color:var(--text);margin-bottom:6px">No notes yet.</div>
                 <p style="font-size:13px;color:var(--muted2);line-height:1.7">After 2+ sessions your coach will start building a picture of your patterns, habits, and growth areas.</p>
               </div>
@@ -3154,12 +3155,12 @@ h1, h2, h3 {
             <div class="panel" style="margin-bottom:14px">
               <div class="panel-title">Generate Notes</div>
               <p style="font-size:13px;color:var(--muted2);line-height:1.7;margin-bottom:16px">Ask your coach to analyze your patterns and leave observations about your communication style.</p>
-              <button class="btn-primary" onclick="generateCoachNotes()" id="gen-notes-btn">🧠 Generate Coach Notes</button>
+              <button class="btn-primary" onclick="generateCoachNotes()" id="gen-notes-btn">Generate Coach Notes</button>
             </div>
             <div class="panel">
               <div class="panel-title">Share Your Score</div>
               <p style="font-size:13px;color:var(--muted2);line-height:1.7;margin-bottom:16px">Share your Conver Score with the world — show people how you communicate.</p>
-              <button class="btn-primary" onclick="openShareModal()" style="background:linear-gradient(135deg,var(--accent),var(--accent3))">✨ Share My Score</button>
+              <button class="btn-primary" onclick="openShareModal()" style="background:linear-gradient(135deg,var(--accent),var(--accent3))">Share My Score</button>
             </div>
           </div>
         </div>
@@ -3173,7 +3174,7 @@ h1, h2, h3 {
 
           <!-- Setup screen -->
           <div id="debate-setup-screen" style="background:var(--bg1);border:1px solid var(--border);border-radius:16px;padding:40px;text-align:center">
-            <div style="font-size:44px;margin-bottom:16px">⚔️</div>
+            <div style="font-size:44px;margin-bottom:16px"></div>
             <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:800;margin-bottom:8px;letter-spacing:-0.3px">Voice Debate</div>
             <p style="font-size:14px;color:var(--muted2);max-width:440px;margin:0 auto 28px;line-height:1.7">Pick a topic, choose your side, and your coach will back you up. The opposition coach will challenge you hard. After 3 rounds you get scored on how well you argued.</p>
 
@@ -3183,12 +3184,12 @@ h1, h2, h3 {
 
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
                 <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:14px;cursor:pointer;transition:all 0.15s;text-align:center" id="side-for-btn" onclick="selectDebateSide('for')">
-                  <div style="font-size:20px;margin-bottom:6px">✅</div>
+                  <div style="font-size:20px;margin-bottom:6px">✓</div>
                   <div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--accent2)">I'm FOR it</div>
                   <div style="font-size:12px;color:var(--muted2);margin-top:4px">Defend the topic</div>
                 </div>
                 <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:14px;cursor:pointer;transition:all 0.15s;text-align:center" id="side-against-btn" onclick="selectDebateSide('against')">
-                  <div style="font-size:20px;margin-bottom:6px">❌</div>
+                  <div style="font-size:20px;margin-bottom:6px">✕</div>
                   <div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--red)">I'm AGAINST it</div>
                   <div style="font-size:12px;color:var(--muted2);margin-top:4px">Oppose the topic</div>
                 </div>
@@ -3209,7 +3210,7 @@ h1, h2, h3 {
                 </div>
               </div>
 
-              <button class="btn-primary" onclick="startDebate()" style="margin-top:4px">⚔️ Start Debate</button>
+              <button class="btn-primary" onclick="startDebate()" style="margin-top:4px">Start Debate</button>
             </div>
           </div>
 
@@ -3230,7 +3231,7 @@ h1, h2, h3 {
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
                 <!-- Your coach -->
                 <div style="background:var(--bg1);border:1px solid rgba(var(--accent-rgb),0.2);border-radius:14px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:10px">
-                  <div style="font-size:10px;color:var(--accent3);font-family:'DM Mono',monospace;letter-spacing:1.5px;text-transform:uppercase">Your Coach 🤝</div>
+                  <div style="font-size:10px;color:var(--accent3);font-family:'DM Mono',monospace;letter-spacing:1.5px;text-transform:uppercase">Your Coach</div>
                   <canvas id="debate-face-a" width="100" height="100" style="width:100px;height:100px;border-radius:50%"></canvas>
                   <div id="debate-name-a" style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700"></div>
                   <div id="debate-status-a" style="font-size:10.5px;color:var(--muted2);font-family:'DM Mono',monospace;min-height:14px;text-align:center"></div>
@@ -3238,7 +3239,7 @@ h1, h2, h3 {
                 </div>
                 <!-- Opposition -->
                 <div style="background:var(--bg1);border:1px solid rgba(248,113,113,0.2);border-radius:14px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:10px">
-                  <div style="font-size:10px;color:var(--red);font-family:'DM Mono',monospace;letter-spacing:1.5px;text-transform:uppercase">Opposition ⚔️</div>
+                  <div style="font-size:10px;color:var(--red);font-family:'DM Mono',monospace;letter-spacing:1.5px;text-transform:uppercase">Opposition</div>
                   <canvas id="debate-face-b" width="100" height="100" style="width:100px;height:100px;border-radius:50%"></canvas>
                   <div id="debate-name-b" style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700"></div>
                   <div id="debate-status-b" style="font-size:10.5px;color:var(--muted2);font-family:'DM Mono',monospace;min-height:14px;text-align:center"></div>
@@ -3258,7 +3259,7 @@ h1, h2, h3 {
                     <div class="wave-bar" id="dwb8" style="height:4px"></div>
                   </div>
                   <button class="hold-btn idle" id="debate-mic-btn" style="width:64px;height:64px;font-size:22px"
-                    onclick="toggleDebateListening()">🎙️</button>
+                    onclick="toggleDebateListening()">○</button>
                   <div style="width:65px"></div>
                 </div>
                 <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace">Hold to speak · Release to send</div>
@@ -3282,55 +3283,55 @@ h1, h2, h3 {
         <div class="section-head"><h2>Cold Open</h2><p>Get dropped into a real-world scenario with no warning. Handle it live via voice. Scored on naturalness, warmth, and impact.</p></div>
         <div id="coldopen-container">
           <div id="coldopen-setup" style="background:var(--bg1);border:1px solid var(--border);border-radius:16px;padding:40px;text-align:center;max-width:640px;margin:0 auto">
-            <div style="font-size:44px;margin-bottom:16px">🎲</div>
+            <div style="font-size:44px;margin-bottom:16px"></div>
             <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:800;margin-bottom:10px;letter-spacing:-0.3px">Cold Open Trainer</div>
             <p style="font-size:14px;color:var(--muted2);line-height:1.75;margin-bottom:28px">You get dropped into a real situation — no prep, no context. Just handle it. The AI plays the other person and responds naturally. At the end you get scored.</p>
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">
               <div class="scenario-cat-btn" onclick="selectColdOpenCategory('networking')" data-cat="networking"
                    style="--char-color:#38bdf8;background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.2);
                    border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;transition:all 0.22s">
-                <div style="font-size:28px;margin-bottom:6px;filter:drop-shadow(0 0 8px #38bdf8)">🤝</div>
+                <div style="font-size:28px;margin-bottom:6px;filter:drop-shadow(0 0 8px #38bdf8)"></div>
                 <div style="font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#f0f1f8">Networking</div>
                 <div style="font-size:10.5px;color:#6b7494;font-family:'DM Mono',monospace;margin-top:2px">Mixers & events</div>
               </div>
               <div class="scenario-cat-btn" onclick="selectColdOpenCategory('elevator')" data-cat="elevator"
                    style="--char-color:#fbbf24;background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.2);
                    border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;transition:all 0.22s">
-                <div style="font-size:28px;margin-bottom:6px;filter:drop-shadow(0 0 8px #fbbf24)">💼</div>
+                <div style="font-size:28px;margin-bottom:6px;filter:drop-shadow(0 0 8px #fbbf24)"></div>
                 <div style="font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#f0f1f8">Elevator Pitch</div>
                 <div style="font-size:10.5px;color:#6b7494;font-family:'DM Mono',monospace;margin-top:2px">60 seconds</div>
               </div>
               <div class="scenario-cat-btn" onclick="selectColdOpenCategory('interview')" data-cat="interview"
                    style="--char-color:#c084fc;background:rgba(192,132,252,0.06);border:1px solid rgba(192,132,252,0.2);
                    border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;transition:all 0.22s">
-                <div style="font-size:28px;margin-bottom:6px;filter:drop-shadow(0 0 8px #c084fc)">👔</div>
+                <div style="font-size:28px;margin-bottom:6px;filter:drop-shadow(0 0 8px #c084fc)"></div>
                 <div style="font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#f0f1f8">Interview</div>
                 <div style="font-size:10.5px;color:#6b7494;font-family:'DM Mono',monospace;margin-top:2px">First impression</div>
               </div>
               <div class="scenario-cat-btn" onclick="selectColdOpenCategory('social')" data-cat="social"
                    style="--char-color:#f472b6;background:rgba(244,114,182,0.06);border:1px solid rgba(244,114,182,0.2);
                    border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;transition:all 0.22s">
-                <div style="font-size:28px;margin-bottom:6px;filter:drop-shadow(0 0 8px #f472b6)">👋</div>
+                <div style="font-size:28px;margin-bottom:6px;filter:drop-shadow(0 0 8px #f472b6)"></div>
                 <div style="font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#f0f1f8">Social</div>
                 <div style="font-size:10.5px;color:#6b7494;font-family:'DM Mono',monospace;margin-top:2px">Party & casual</div>
               </div>
               <div class="scenario-cat-btn" onclick="selectColdOpenCategory('leadership')" data-cat="leadership"
                    style="--char-color:#2dd4a0;background:rgba(45,212,160,0.06);border:1px solid rgba(45,212,160,0.2);
                    border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;transition:all 0.22s">
-                <div style="font-size:28px;margin-bottom:6px;filter:drop-shadow(0 0 8px #2dd4a0)">⚡</div>
+                <div style="font-size:28px;margin-bottom:6px;filter:drop-shadow(0 0 8px #2dd4a0)"></div>
                 <div style="font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#f0f1f8">Leadership</div>
                 <div style="font-size:10.5px;color:#6b7494;font-family:'DM Mono',monospace;margin-top:2px">Team moment</div>
               </div>
               <div class="scenario-cat-btn" onclick="selectColdOpenCategory('sales')" data-cat="sales"
                    style="--char-color:#fb923c;background:rgba(251,146,60,0.06);border:1px solid rgba(251,146,60,0.2);
                    border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;transition:all 0.22s">
-                <div style="font-size:28px;margin-bottom:6px;filter:drop-shadow(0 0 8px #fb923c)">💰</div>
+                <div style="font-size:28px;margin-bottom:6px;filter:drop-shadow(0 0 8px #fb923c)"></div>
                 <div style="font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#f0f1f8">Sales</div>
                 <div style="font-size:10.5px;color:#6b7494;font-family:'DM Mono',monospace;margin-top:2px">Cold outreach</div>
               </div>
             </div>
             <div id="coldopen-character-display" style="margin-bottom:20px"></div>
-            <button class="btn-primary" onclick="startColdOpen()" style="max-width:200px">🎲 Drop Me In</button>
+            <button class="btn-primary" onclick="startColdOpen()" style="max-width:200px">Drop Me In</button>
           </div>
           <div id="coldopen-live" style="display:none">
             <div id="co-live-chat" style="display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:start">
@@ -3345,7 +3346,7 @@ h1, h2, h3 {
                     <div id="co-transcript" style="font-size:13px;color:var(--muted2);font-style:italic;min-height:28px;text-align:center">Hold the button to respond...</div>
                     <div style="display:flex;align-items:center;gap:12px">
                       <button class="hold-btn idle" id="co-mic-btn" style="width:56px;height:56px;font-size:20px"
-                        onclick="toggleCOListening()">🎙️</button>
+                        onclick="toggleCOListening()">○</button>
                       <button onclick="endColdOpen()" style="background:transparent;border:1px solid var(--border2);border-radius:8px;color:var(--muted2);font-size:12px;padding:7px 14px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">End Session</button>
                     </div>
                   </div>
@@ -3361,10 +3362,10 @@ h1, h2, h3 {
                 <div class="panel">
                   <div class="panel-title">Live Tips</div>
                   <div id="co-tips" style="font-size:13px;color:var(--muted2);line-height:1.9">
-                    <div>😊 Be warm and genuine</div>
-                    <div>🎯 Find common ground fast</div>
-                    <div>❓ Ask about them, not just yourself</div>
-                    <div>⚡ Keep energy up</div>
+                    <div>Be warm and genuine</div>
+                    <div>Find common ground fast</div>
+                    <div>Ask about them, not just yourself</div>
+                    <div>Keep energy up</div>
                   </div>
                 </div>
               </div>
@@ -3398,7 +3399,7 @@ h1, h2, h3 {
           <div>
             <div style="display:flex;gap:10px;margin-bottom:16px">
               <input type="text" id="qb-search" placeholder="Search questions..." oninput="filterQBank()" style="flex:1"/>
-              <button onclick="practiceRandomQ()" class="btn-primary" style="width:auto;padding:10px 18px;white-space:nowrap">🎲 Random</button>
+              <button onclick="practiceRandomQ()" class="btn-primary" style="width:auto;padding:10px 18px;white-space:nowrap">Random</button>
             </div>
             <div id="qb-list" style="display:flex;flex-direction:column;gap:10px"></div>
           </div>
@@ -3442,7 +3443,7 @@ h1, h2, h3 {
         <div class="panel" style="display:flex;align-items:center;gap:18px;padding:22px">
           <div style="position:relative;flex-shrink:0">
             <div id="sp-avatar" style="width:72px;height:72px;border-radius:50%;background:var(--g-brand);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff;font-family:'Space Grotesk',sans-serif;background-size:cover;background-position:center;overflow:hidden">?</div>
-            <button onclick="document.getElementById('avatar-file-input').click()" title="Change photo" style="position:absolute;bottom:-2px;right:-2px;width:26px;height:26px;border-radius:50%;background:var(--s2,#0e1028);border:1px solid var(--border2);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;padding:0">📷</button>
+            <button onclick="document.getElementById('avatar-file-input').click()" title="Change photo" style="position:absolute;bottom:-2px;right:-2px;width:26px;height:26px;border-radius:50%;background:var(--s2,#0e1028);border:1px solid var(--border2);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;padding:0"></button>
             <input type="file" id="avatar-file-input" accept="image/*" style="display:none" onchange="handleAvatarUpload(event)"/>
           </div>
           <div style="flex:1;min-width:0">
@@ -3732,7 +3733,7 @@ h1, h2, h3 {
               </div>
               <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
                 <button class="btn-ghost" onclick="exportUserData()" style="font-size:12.5px">⬇ Export My Data (JSON)</button>
-                <button class="btn-ghost" onclick="clearHistory()" style="color:var(--red);border-color:rgba(248,113,113,0.2);font-size:12.5px">🗑 Clear All History</button>
+                <button class="btn-ghost" onclick="clearHistory()" style="color:var(--red);border-color:rgba(248,113,113,0.2);font-size:12.5px">Clear All History</button>
               </div>
               <div style="margin-top:14px;font-size:11.5px;color:var(--muted);line-height:1.8">
                 <a href="/privacy.html" target="_blank" style="color:var(--accent3);text-decoration:none">Privacy Policy</a> ·
@@ -3742,10 +3743,10 @@ h1, h2, h3 {
             </div>
 
             <div class="panel" style="border-color:rgba(248,113,113,0.2)">
-              <div class="settings-section-title" style="color:var(--red)">⚠ Danger Zone</div>
+              <div class="settings-section-title" style="color:var(--red)">Danger Zone</div>
               <div class="setting-row">
                 <div class="setting-info"><h4>Reset All Progress</h4><p>Clear XP, level, and all skill scores. Keeps session history.</p></div>
-                <button class="btn-ghost" onclick="if(confirm('Reset all XP and level progress? This cannot be undone.')){S.xp=0;S.skills={clarity:0,confidence:0,persuasion:0,storytelling:0,conciseness:0};S.scores={clarity:[],confidence:[],persuasion:[]};updateChips();saveUserData();showToast('🔄','Progress reset')}" style="width:auto;padding:6px 14px;font-size:12px;color:var(--red);border-color:rgba(248,113,113,0.25)">Reset</button>
+                <button class="btn-ghost" onclick="if(confirm('Reset all XP and level progress? This cannot be undone.')){S.xp=0;S.skills={clarity:0,confidence:0,persuasion:0,storytelling:0,conciseness:0};S.scores={clarity:[],confidence:[],persuasion:[]};updateChips();saveUserData();showToast('','Progress reset')}" style="width:auto;padding:6px 14px;font-size:12px;color:var(--red);border-color:rgba(248,113,113,0.25)">Reset</button>
               </div>
               <div class="setting-row">
                 <div class="setting-info"><h4>Delete Account</h4><p>Permanently delete your account and all data</p></div>
@@ -3832,7 +3833,7 @@ h1, h2, h3 {
             <div class="panel">
               <div class="settings-section-title">Contact Info</div>
               <div style="font-size:13px;color:var(--muted2);line-height:2">
-                <div>✉ <a href="mailto:appconver@gmail.com" style="color:var(--accent3)">appconver@gmail.com</a></div>
+                <div><a href="mailto:appconver@gmail.com" style="color:var(--accent3)">appconver@gmail.com</a></div>
                 <div style="font-size:12px;color:var(--muted);margin-top:8px">Response time: typically within 24-48 hours.</div>
                 <div style="margin-top:14px;display:flex;flex-direction:column;gap:6px">
                   <a href="/privacy.html" target="_blank" style="font-size:12px;color:var(--muted2);text-decoration:none;font-family:'DM Mono',monospace" onmouseover="this.style.color='var(--accent3)'" onmouseout="this.style.color='var(--muted2)'">→ Privacy Policy</a>
@@ -4236,8 +4237,8 @@ const RealTimeAnalyzer = {
     if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
       this._ema('eyeContact', 0);
       this._ema('headStable', 0);
-      this.updateBadge('rt-eye-badge', '🚫 No face detected', '#f87171');
-      this.updateBadge('rt-pose-badge', '➡️ Move into frame', '#f87171');
+      this.updateBadge('rt-eye-badge', '✕ No face detected', '#f87171');
+      this.updateBadge('rt-pose-badge', '→ Move into frame', '#f87171');
       return;
     }
 
@@ -4317,7 +4318,7 @@ const RealTimeAnalyzer = {
       }
 
       this.updateBadge('rt-eye-badge', `⏳ Calibrating... ${Math.round((this.calibrationFrames/this.calibrationTarget)*100)}%`, '#fbbf24');
-      this.updateBadge('rt-pose-badge', '🧍 Hold still...', '#fbbf24');
+      this.updateBadge('rt-pose-badge', 'Hold still...', '#fbbf24');
       return;
     }
 
@@ -4539,7 +4540,7 @@ const RealTimeAnalyzer = {
       if (eyePctEl) { eyePctEl.textContent = eyePct + '%'; eyePctEl.style.color = eyeColor; }
       const eyeBarEl = document.getElementById('rt-eye-bar'); if (eyeBarEl) eyeBarEl.style.width = eyePct + '%';
       const eyeNoteEl = document.getElementById('rt-eye-note'); if (eyeNoteEl) eyeNoteEl.textContent = eyeNote;
-      this.updateBadge('rt-eye-badge', `👁️ ${eyePct}% eye contact`, eyePct>=70?'#2dd4a0':eyePct>=45?'#fbbf24':'#f87171');
+      this.updateBadge('rt-eye-badge', `${eyePct}% eye contact`, eyePct>=70?'#2dd4a0':eyePct>=45?'#fbbf24':'#f87171');
 
       // Head stability — movement-delta thresholds (75%+ mostly still,
       // 50-75% noticeable but not excessive, <50% actively moving around)
@@ -4549,7 +4550,7 @@ const RealTimeAnalyzer = {
       if (headPctEl) { headPctEl.textContent = headPct + '%'; headPctEl.style.color = headColor; }
       const headBarEl = document.getElementById('rt-head-bar'); if (headBarEl) headBarEl.style.width = headPct + '%';
       const headNoteEl = document.getElementById('rt-head-note'); if (headNoteEl) headNoteEl.textContent = headNote;
-      this.updateBadge('rt-pose-badge', `🧍 ${headPct>=75?'Steady':headPct>=50?'Moving':'Unstable'}`, headPct>=75?'#38bdf8':headPct>=50?'#fbbf24':'#f87171');
+      this.updateBadge('rt-pose-badge', `${headPct>=75?'Steady':headPct>=50?'Moving':'Unstable'}`, headPct>=75?'#38bdf8':headPct>=50?'#fbbf24':'#f87171');
 
       // ── TARGET DOT UPDATE ────────────────────────────────────
       // Dot turns green + faster pulse when eye contact is on target,
@@ -4588,7 +4589,7 @@ const RealTimeAnalyzer = {
       const blinkNoteEl = document.getElementById('rt-blink-note'); if (blinkNoteEl) blinkNoteEl.textContent = blinkLabel;
 
       // Expression (mouth lift as proxy)
-      const exprLabel = mouthLiftAvg > 0.6 ? 'Warm 😊' : mouthLiftAvg > 0.3 ? 'Neutral 😐' : 'Tense 😬';
+      const exprLabel = mouthLiftAvg > 0.6 ? 'Warm' : mouthLiftAvg > 0.3 ? 'Neutral' : 'Tense';
       const exprEl = document.getElementById('rt-expr-label'); if (exprEl) exprEl.textContent = exprLabel;
       const exprNoteEl = document.getElementById('rt-expr-note');
       if (exprNoteEl) exprNoteEl.textContent = mouthLiftAvg > 0.6 ? 'Warmth comes through' : mouthLiftAvg > 0.3 ? 'Neutral — add some expression' : 'Tension showing — relax your face';
@@ -4688,14 +4689,14 @@ const RealTimeAnalyzer = {
       if (nowUI - (this._lastTip || 0) >= 5000) {
         this._lastTip = nowUI;
         const tips = [];
-        if (eyePct < 45) tips.push('👁️ Look directly at the camera');
-        if (headPct < 50) tips.push('🧍 Keep your head still');
-        if (avgSmile < 0.3) tips.push('😊 Relax and let your expression open up');
-        if (avgJaw < 0.4) tips.push('😬 Unclench your jaw — breathe');
-        if (syllPerMin > 220) tips.push('🏃 Slow down — you are rushing');
-        if (syllPerMin < 60 && syllPerMin > 0) tips.push('🐢 Pick up your pace slightly');
-        if (nodsPerMin > 10) tips.push('🙂‍↕️ Nodding a lot — dial it back');
-        if (avgBrow < 0.3) tips.push('🤨 Let your face move — raise your brows');
+        if (eyePct < 45) tips.push('Look directly at the camera');
+        if (headPct < 50) tips.push('Keep your head still');
+        if (avgSmile < 0.3) tips.push('Relax and let your expression open up');
+        if (avgJaw < 0.4) tips.push('Unclench your jaw — breathe');
+        if (syllPerMin > 220) tips.push('Slow down — you are rushing');
+        if (syllPerMin < 60 && syllPerMin > 0) tips.push('Pick up your pace slightly');
+        if (nodsPerMin > 10) tips.push('↕Nodding a lot — dial it back');
+        if (avgBrow < 0.3) tips.push('Let your face move — raise your brows');
         if (eyePct >= 70 && headPct >= 70 && avgSmile > 0.5) tips.push('✓ Great presence — keep it going');
 
         if (tips.length > 0) {
@@ -4726,7 +4727,7 @@ const RealTimeAnalyzer = {
       const prompt = `You are a blunt, no-nonsense communication coach watching someone live, mid-response, in a ${rtMode || 'practice'} session. Their current nonverbal read: ${eyePct}% eye contact, ${headPct}% head stability, expression is ${exprNote}. What they're saying right now (may be a fragment, they're still talking): "${recentTranscript.slice(-400)}"\n\nGive ONE short, sharp, spoken-style piece of coaching (max 18 words) that reacts to THIS SPECIFIC moment — not a generic template. Rules:\n- If they said something vague, hedge-y, or unsupported, call it out directly and name what's missing (a number, an example, a decision).\n- If they said something genuinely strong, say specifically why it landed — never just "good job" or "keep it up."\n- If they're rambling or repeating themselves, tell them to cut to the point.\n- Quote or paraphrase their actual words when possible — never a comment so generic it could apply to any response.\nNo stage directions, no asterisks, no filler praise, no softening.`;
       const tip = await callAI([{role:'user', content: prompt}]);
       if (!this.active) return; // session ended while this call was in flight
-      if (tip && tip.trim()) this._appendFeedbackLog('💬 ' + tip.trim(), true);
+      if (tip && tip.trim()) this._appendFeedbackLog('' + tip.trim(), true);
     } catch(e) { /* non-fatal — live tips are a bonus, not required */ }
   },
 
@@ -5231,7 +5232,7 @@ function selectRTMode(mode) {
 }
 
 async function startRealTimeSession() {
-  if (!rtMode) { showToast('⚠','Select a mode first'); return; }
+  if (!rtMode) { showToast('','Select a mode first'); return; }
 
   // Unlock audio playback WHILE still inside the synchronous part of this
   // click handler — this is the actual bug behind "voice keeps using the
@@ -5254,7 +5255,7 @@ async function startRealTimeSession() {
   const coachNames = Object.keys(COACHES);
   rtVoiceCoach = coachNames[Math.floor(Math.random() * coachNames.length)];
   const voiceLabelEl = document.getElementById('rt-voice-coach');
-  if (voiceLabelEl) voiceLabelEl.textContent = `🎙️ ${rtVoiceCoach}`;
+  if (voiceLabelEl) voiceLabelEl.textContent = `${rtVoiceCoach}`;
 
   const btn = document.getElementById('rt-start-btn');
   btn.disabled = true; btn.textContent = 'Starting camera...';
@@ -5264,8 +5265,8 @@ async function startRealTimeSession() {
     await RealTimeAnalyzer.startCamera();
     RealTimeAnalyzer.startRecording();
   } catch(e) {
-    btn.disabled = false; btn.textContent = '📹 Start Camera & Begin';
-    showToast('❌', 'Camera error: ' + e.message + '. Make sure Chrome has camera permission.');
+    btn.disabled = false; btn.textContent = 'Start Camera & Begin';
+    showToast('✕', 'Camera error: ' + e.message + '. Make sure Chrome has camera permission.');
     return;
   }
 
@@ -5273,7 +5274,7 @@ async function startRealTimeSession() {
   document.getElementById('rt-session').classList.remove('hidden');
   const feedbackLog = document.getElementById('rt-feedback-log');
   if (feedbackLog) feedbackLog.innerHTML = '<div style="font-size:12px;color:var(--muted2)">Feedback appears here during your session...</div>';
-  _rtSetMicStatus('🔇 Mic idle', 'var(--muted)');
+  _rtSetMicStatus('Mic idle', 'var(--muted)');
   const dlBtn = document.getElementById('rt-download-btn');
   if (dlBtn) dlBtn.style.display = 'none';
 
@@ -5362,7 +5363,7 @@ async function _rtSpeakThenListen(promptText) {
   ScribeSTT.resetAccumulator();
 
   if (promptText && S.autoplay !== false) {
-    _rtSetMicStatus('🔊 Speaking prompt...', 'var(--accent2)');
+    _rtSetMicStatus('Speaking prompt...', 'var(--accent2)');
     await _rtSpeak(promptText);
   }
   if (!RealTimeAnalyzer.active) return; // ended while the TTS was playing
@@ -5421,7 +5422,7 @@ function _rtSpeak(text) {
       if (!RealTimeAnalyzer.active) return resolve();
       if (!_rtTTSFailedOnce) {
         _rtTTSFailedOnce = true;
-        showToast('⚠️', 'Voice service unavailable — using your browser\'s built-in voice instead');
+        showToast('', 'Voice service unavailable — using your browser\'s built-in voice instead');
       }
       if (window.speechSynthesis) {
         const utt = new SpeechSynthesisUtterance(text);
@@ -5440,15 +5441,15 @@ function _rtStartListening() {
   ScribeSTT.autoSubmitDelay = 2000;
   ScribeSTT.resetAccumulator();
   ScribeSTT.start({
-    onStart: () => _rtSetMicStatus('🎤 Listening...', 'var(--green)'),
+    onStart: () => _rtSetMicStatus('Listening...', 'var(--green)'),
     onTranscript: (text) => {
       const el = document.getElementById('rt-transcript');
       if (el) el.textContent = text;
       RealTimeAnalyzer.currentTranscript = text;
     },
     onError: (err) => {
-      _rtSetMicStatus('⚠️ Mic blocked — click to retry', 'var(--red)');
-      showToast('⚠️', 'Mic blocked — allow microphone access, then click the mic status to retry');
+      _rtSetMicStatus('Mic blocked — click to retry', 'var(--red)');
+      showToast('', 'Mic blocked — allow microphone access, then click the mic status to retry');
     },
     onAutoSubmit: (fullText) => _rtHandleResponse(fullText)
   });
@@ -5495,7 +5496,7 @@ async function _rtHandleResponse(fullText) {
 
   if (RealTimeAnalyzer.dynamicInterview) {
     if (RealTimeAnalyzer.currentPromptIdx < RealTimeAnalyzer.maxRounds) {
-      _rtSetMicStatus('🤔 Thinking of a follow-up...', 'var(--accent2)');
+      _rtSetMicStatus('Thinking of a follow-up...', 'var(--accent2)');
       const nextQuestion = await _rtGenerateNextInterviewQuestion();
       // Session may have ended while the AI was generating the follow-up —
       // don't push a new question or speak/relisten into a dead session.
@@ -5728,7 +5729,7 @@ CRITICAL: Never use asterisks for actions or stage directions.`
     ` : ''}
 
     <div style="padding:12px 16px;background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.2);border-radius:10px">
-      ⚡ <strong>+${xpEarned} XP</strong> · Level ${S.xpLevel}
+      <strong>+${xpEarned} XP</strong> · Level ${S.xpLevel}
     </div>
 
     <!-- Account progress summary — the session score in isolation doesn't
@@ -5769,7 +5770,7 @@ CRITICAL: Never use asterisks for actions or stage directions.`
     </div>
   `;
 
-  showToast('📹', `Real-Time session complete! +${xpEarned} XP`);
+  showToast('', `Real-Time session complete! +${xpEarned} XP`);
 }
 
 function resetRealTime() {
@@ -5793,7 +5794,7 @@ function resetRealTime() {
 function downloadRecording() {
   const chunks = RealTimeAnalyzer.recordedChunks;
   if (!chunks || chunks.length === 0) {
-    showToast('❌', 'No recording data — try again');
+    showToast('✕', 'No recording data — try again');
     return;
   }
   const mimeType = RealTimeAnalyzer.recordingMimeType || 'video/webm';
@@ -5829,7 +5830,7 @@ function stopRealTimeIfActive() {
   const dlBtn = document.getElementById('rt-download-btn');
   if (dlBtn) dlBtn.style.display = 'none';
   RealTimeAnalyzer.recordedChunks = [];
-  showToast('📹', 'Real-Time session ended — camera turned off');
+  showToast('', 'Real-Time session ended — camera turned off');
 }
 
 // ── VOICE ENGINE — fully immersive voice conversation loop ────
@@ -5986,18 +5987,18 @@ const S={
 };
 
 const SCENARIOS=[
-  {name:'Interview',icon:'💼',hint:'Focus on structure, specifics, and confidence'},
-  {name:'Pitch',icon:'🚀',hint:'Lead with value, handle objections, be memorable'},
-  {name:'Debate',icon:'⚖️',hint:'Logic, evidence, and staying calm under pressure'},
-  {name:'Casual',icon:'☕',hint:'Warmth, listening, and natural flow'},
-  {name:'Leadership',icon:'🏛️',hint:'Vision, decisiveness, and inspiring language'},
-  {name:'Networking',icon:'🤝',hint:'Authentic, memorable, and leave them curious'},
+  {name:'Interview',icon:'',hint:'Focus on structure, specifics, and confidence'},
+  {name:'Pitch',icon:'',hint:'Lead with value, handle objections, be memorable'},
+  {name:'Debate',icon:'',hint:'Logic, evidence, and staying calm under pressure'},
+  {name:'Casual',icon:'',hint:'Warmth, listening, and natural flow'},
+  {name:'Leadership',icon:'',hint:'Vision, decisiveness, and inspiring language'},
+  {name:'Networking',icon:'',hint:'Authentic, memorable, and leave them curious'},
 ];
 
 // ── COACH AVATAR SYSTEM ──────────────────────────────────────
 const COACH_DATA = {
   Blaze: {
-    emoji: '🔥',
+    emoji: '',
     color: '#f87171',
     cssClass: 'coach-blaze',
     title: 'Blaze',
@@ -6007,7 +6008,7 @@ const COACH_DATA = {
     voice: 'Young Jamal'
   },
   Echo: {
-    emoji: '🌊',
+    emoji: '',
     color: '#38bdf8',
     cssClass: 'coach-echo',
     title: 'Echo',
@@ -6017,7 +6018,7 @@ const COACH_DATA = {
     voice: 'Ciara'
   },
   Sage: {
-    emoji: '🌿',
+    emoji: '',
     color: '#2dd4a0',
     cssClass: 'coach-sage',
     title: 'Sage',
@@ -6037,7 +6038,7 @@ const COACH_DATA = {
     voice: 'Eve'
   },
   Rex: {
-    emoji: '🥊',
+    emoji: '',
     color: '#c084fc',
     cssClass: 'coach-rex',
     title: 'Rex',
@@ -6047,7 +6048,7 @@ const COACH_DATA = {
     voice: 'Anton'
   },
   Luna: {
-    emoji: '🌙',
+    emoji: '',
     color: '#f472b6',
     cssClass: 'coach-luna',
     title: 'Luna',
@@ -6142,7 +6143,7 @@ function createCoachAvatar(coachName, size, showName) {
 
 const SCENARIO_CHARACTERS = {
   networking: {
-    emoji: '🤝',
+    emoji: '',
     color: '#38bdf8',
     name: 'The Connector',
     role: 'Networking Event',
@@ -6152,7 +6153,7 @@ const SCENARIO_CHARACTERS = {
     border: 'rgba(56,189,248,0.3)'
   },
   elevator: {
-    emoji: '💼',
+    emoji: '',
     color: '#fbbf24',
     name: 'The Decision Maker',
     role: 'Elevator Encounter',
@@ -6162,7 +6163,7 @@ const SCENARIO_CHARACTERS = {
     border: 'rgba(251,191,36,0.3)'
   },
   interview: {
-    emoji: '👔',
+    emoji: '',
     color: '#c084fc',
     name: 'The Interviewer',
     role: 'Job Interview',
@@ -6172,7 +6173,7 @@ const SCENARIO_CHARACTERS = {
     border: 'rgba(192,132,252,0.3)'
   },
   social: {
-    emoji: '👋',
+    emoji: '',
     color: '#f472b6',
     name: 'The Stranger',
     role: 'Social Setting',
@@ -6182,7 +6183,7 @@ const SCENARIO_CHARACTERS = {
     border: 'rgba(244,114,182,0.3)'
   },
   leadership: {
-    emoji: '⚡',
+    emoji: '',
     color: '#2dd4a0',
     name: 'The Team Member',
     role: 'Leadership Moment',
@@ -6192,7 +6193,7 @@ const SCENARIO_CHARACTERS = {
     border: 'rgba(45,212,160,0.3)'
   },
   sales: {
-    emoji: '💰',
+    emoji: '',
     color: '#fb923c',
     name: 'The Prospect',
     role: 'Sales Encounter',
@@ -6370,10 +6371,9 @@ function updateChips(){
   document.getElementById('chip-scenario').textContent=S.scenario;
   const coachChip = document.getElementById('chip-coach');
   if (coachChip) {
-    const cd = COACH_DATA[S.coach];
-    coachChip.textContent = (cd ? cd.emoji + ' ' : '') + 'Coach: ' + S.coach;
+    coachChip.textContent = 'Coach: ' + S.coach;
   }
-  document.getElementById('streak-chip').textContent='🔥 '+S.streak+' day streak';
+  document.getElementById('streak-chip').textContent=S.streak+' day streak';
   document.getElementById('home-sessions').textContent=S.sessions;
   document.getElementById('home-coach').textContent=S.coach;
   document.getElementById('home-scenario').textContent=S.scenario;
@@ -6438,7 +6438,7 @@ function updateStreak() {
   } else {
     // Skipped one or more days — streak is broken, reset to 0 then 1
     S.streak = 0; // reset visibly to 0 first
-    if (S.motivation !== false) showToast('🔥', 'Streak reset — but you showed up. Starting fresh 🔥');
+    if (S.motivation !== false) showToast('', 'Streak reset — but you showed up. Starting fresh');
     S.streak = 1; // today counts as day 1 of the new streak
   }
 
@@ -6453,7 +6453,7 @@ const SESSION_MILESTONES = [5, 10, 25, 50, 100, 250, 500];
 function checkSessionMilestone() {
   if (S.motivation === false) return;
   if (SESSION_MILESTONES.includes(S.sessions)) {
-    showToast('🎉', `${S.sessions} sessions completed — you're building a real habit!`);
+    showToast('', `${S.sessions} sessions completed — you're building a real habit!`);
   }
 }
 
@@ -6465,9 +6465,9 @@ function checkDailyReminders() {
   const today = tzDateKey();
   const practicedToday = localStorage.getItem('conver_last_session_date') === today;
   if (S.streakWarn !== false && S.streak > 0 && !practicedToday) {
-    showToast('🔥', `Don't lose your ${S.streak}-day streak — practice today!`);
+    showToast('', `Don't lose your ${S.streak}-day streak — practice today!`);
   } else if (S.dailyRemind !== false && !localStorage.getItem('conver_daily_done_' + today)) {
-    showToast('🎯', "Today's Daily Challenge is ready — head to the Daily tab!");
+    showToast('', "Today's Daily Challenge is ready — head to the Daily tab!");
   }
 }
 
@@ -6669,11 +6669,11 @@ function awardXP(xpEarned, label) {
   const levelBefore = getLevelFromXP(xpBefore);
   S.xp = xpBefore + xpEarned;
   S.xpLevel = getLevelFromXP(S.xp);
-  if (S.xpNotify !== false) showToast('⚡', `+${xpEarned} XP${label ? ' ' + label : ''}`);
+  if (S.xpNotify !== false) showToast('', `+${xpEarned} XP${label ? ' ' + label : ''}`);
   if (S.xpLevel > levelBefore && S.levelup !== false) {
     const tier = getLevelTier(S.xpLevel);
     setTimeout(() => {
-      showToast('🎉', `Level Up! Lv.${S.xpLevel} — ${tier.name}`);
+      showToast('', `Level Up! Lv.${S.xpLevel} — ${tier.name}`);
       const ring = document.getElementById('score-ring');
       if (ring) ring.style.stroke = tier.color;
     }, 1200);
@@ -6762,7 +6762,7 @@ function saveBriefing(){
   S.briefing={preparing:p,role:r,improve:i};
   document.getElementById('briefing-display').innerHTML=`<div class="result-block" style="margin-bottom:0"><h4>Active Briefing</h4>${p?`<div class="bullet"><span><strong style="color:var(--text)">Preparing for:</strong> ${p}</span></div>`:''} ${r?`<div class="bullet"><span><strong style="color:var(--text)">Background:</strong> ${r}</span></div>`:''} ${i?`<div class="bullet"><span><strong style="color:var(--text)">Focus:</strong> ${i}</span></div>`:''}</div>`;
   document.getElementById('companion-ctx').innerHTML=`<strong style="color:var(--text)">${p||'Session briefed'}</strong><br>${r?`<span style="color:var(--muted2)">Role: ${r}</span><br>`:''}${i?`<span style="color:var(--muted2)">Focus: ${i}</span>`:''}`;
-  showToast('📋','Briefing saved');saveUserData();
+  showToast('','Briefing saved');saveUserData();
 }
 
 // ── API ───────────────────────────────────────────────────────────────────────
@@ -6804,7 +6804,7 @@ async function analyzeResponse(){
     awardXP(xpEarned, '');
     updateStreak(); updateChips(); updateConverScore(); saveUserData();
     renderResults(emptyAnalysis, text);
-    showToast('⚠', 'Too short to score properly. Try again with a real response.');
+    showToast('', 'Too short to score properly. Try again with a real response.');
     btn.disabled = false; btn.textContent = 'Analyze Response';
     return; // stop here, don't call API
   }
@@ -6887,7 +6887,7 @@ CRITICAL: Never use asterisks for actions or stage directions. Never write thing
     if(S.autosave !== false) saveSessionToCloud(newSession);
     saveUserData();
     updateChips();updateConverScore();renderResults(a,text);
-    if(fillerData.count>0){showToast('🚨',`${fillerData.count} filler word${fillerData.count>1?'s':''} detected: ${fillerData.found.slice(0,3).join(', ')}`);}
+    if(fillerData.count>0){showToast('',`${fillerData.count} filler word${fillerData.count>1?'s':''} detected: ${fillerData.found.slice(0,3).join(', ')}`);}
     if(S.autoReport)setTimeout(()=>openReport(S.history[0]),600);
   }catch(e){document.getElementById('results-area').innerHTML=`<div class="empty-state"><p style="color:var(--red)">Failed: ${e.message}</p></div>`;}
   btn.disabled=false;btn.textContent='Analyze Response';
@@ -7002,7 +7002,7 @@ function renderResults(a, text) {
     ${S.showDiff ? `<div style="margin-top:8px">${renderDiff(text,a.rewrite)}</div>` : ''}
     ` : ''}
 
-    <button onclick="openReport(S.history[0])" style="width:100%;padding:11px;background:transparent;border:1px solid var(--border2);border-radius:10px;color:var(--muted2);cursor:pointer;font-size:13px;margin-top:4px;transition:all 0.2s" onmouseover="this.style.borderColor='var(--border3)';this.style.color='var(--accent3)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted2)'">📄 Full Session Report</button>
+    <button onclick="openReport(S.history[0])" style="width:100%;padding:11px;background:transparent;border:1px solid var(--border2);border-radius:10px;color:var(--muted2);cursor:pointer;font-size:13px;margin-top:4px;transition:all 0.2s" onmouseover="this.style.borderColor='var(--border3)';this.style.color='var(--accent3)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted2)'">Full Session Report</button>
   `;
 }
 
@@ -7223,10 +7223,10 @@ function setVoiceState(state){
   voiceState=state;const btn=document.getElementById('hold-btn');const status=document.getElementById('voice-status');const ring=document.getElementById('face-ring');
   if(btn)btn.className='hold-btn '+state;
   if(ring)ring.className='coach-face-ring '+state;
-  if(state==='idle'){if(btn)btn.textContent='🎙️';if(status){status.textContent='Click to speak';status.className='voice-status';}isListeningVoice=false;setCoachIdle(currentVoiceCoach);}
-  else if(state==='listening'){if(btn)btn.textContent='🔴';if(status){status.textContent='Listening...';status.className='voice-status listening';}showBackBtn(true,'Voice Session');setCoachListening(currentVoiceCoach,true);}
+  if(state==='idle'){if(btn)btn.textContent='○';if(status){status.textContent='Click to speak';status.className='voice-status';}isListeningVoice=false;setCoachIdle(currentVoiceCoach);}
+  else if(state==='listening'){if(btn)btn.textContent='●';if(status){status.textContent='Listening...';status.className='voice-status listening';}showBackBtn(true,'Voice Session');setCoachListening(currentVoiceCoach,true);}
   else if(state==='processing'){if(btn)btn.textContent='⏳';if(status){status.textContent='Processing...';status.className='voice-status';}setCoachIdle(currentVoiceCoach);}
-  else if(state==='speaking'){if(btn)btn.textContent='🔊';if(status){status.textContent=currentVoiceCoach+' is speaking...';status.className='voice-status speaking';}setCoachSpeaking(currentVoiceCoach,true);}
+  else if(state==='speaking'){if(btn)btn.textContent='◐';if(status){status.textContent=currentVoiceCoach+' is speaking...';status.className='voice-status speaking';}setCoachSpeaking(currentVoiceCoach,true);}
 }
 
 function switchVoiceCoach(name,silent=false){
@@ -7322,7 +7322,7 @@ let isListeningVoice = false;
 // ── VOICE-NATIVE: fully immersive Voice Session (VoiceEngine-driven) ──────────
 function startVoiceSession() {
   const coach = currentVoiceCoach || S.coach || 'Blaze';
-  const coachData = COACH_DATA?.[coach] || { emoji:'🎙️', subtitle:'Your Coach', color:'#7c6fff' };
+  const coachData = COACH_DATA?.[coach] || { emoji:'', subtitle:'Your Coach', color:'#7c6fff' };
 
   // Clear any score panel left over from a previous session
   const scorePanel = document.getElementById('voice-score-panel');
@@ -7403,7 +7403,7 @@ function _veAddHistory(who, text, isUser, variant) {
   const div = document.createElement('div');
   const cls = variant === 'tip' ? 've-history-tip' : (isUser ? 've-history-you' : 've-history-coach');
   div.className = 've-history-item ' + cls;
-  const label = variant === 'tip' ? `🤝 ${who}: ` : '';
+  const label = variant === 'tip' ? `${who}: ` : '';
   div.textContent = label + text;
   container.appendChild(div);
   container.scrollTop = container.scrollHeight;
@@ -7416,7 +7416,7 @@ function _veAddHistory(who, text, isUser, variant) {
 // Surfaces the error and reopens the mic so they can just try again.
 function _veHandleError(err) {
   console.error('Voice-native error:', err);
-  if (typeof showToast === 'function') showToast('⚠️', 'Something went wrong — try again');
+  if (typeof showToast === 'function') showToast('', 'Something went wrong — try again');
   if (VoiceEngine.active) VoiceEngine._startListening();
 }
 
@@ -7535,7 +7535,7 @@ async function scoreVoiceSession() {
     S.history.unshift(newSession);
     if (S.autosave !== false) saveSessionToCloud(newSession);
     updateChips(); saveUserData();
-    showToast('📊', 'Session added to your Conver Score!');
+    showToast('', 'Session added to your Conver Score!');
 
     // Voice Session XP — was a flat "turns × 10" formula regardless of what was
     // actually said, so a session of pure filler earned the same XP as a
@@ -7558,7 +7558,7 @@ function renderInsights() {
   if (!S.history || !S.history.length) {
     el.innerHTML = `
       <div style="text-align:center;padding:80px 40px">
-        <div style="font-size:52px;margin-bottom:16px;opacity:0.4">📊</div>
+        <div style="font-size:52px;margin-bottom:16px;opacity:0.4"></div>
         <div style="font-family:'Italiana',serif;font-size:28px;color:var(--text);margin-bottom:8px">No data yet.</div>
         <p style="font-size:14px;color:var(--muted2);margin-bottom:24px">Complete your first session to unlock insights, patterns, and trends.</p>
         <button class="btn-primary" onclick="navTo('practice')" style="max-width:220px">Start First Session →</button>
@@ -7622,7 +7622,7 @@ function renderInsights() {
       </div>
       <div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:18px;text-align:center">
         <div style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:800;color:var(--amber);letter-spacing:-1px">${S.streak}</div>
-        <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-top:4px">Day Streak 🔥</div>
+        <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-top:4px">Day Streak</div>
       </div>
       <div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:18px;text-align:center">
         <div style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:800;color:var(--accent2);letter-spacing:-1px">Lv.${getLevelFromXP(S.xp||0)}</div>
@@ -7689,7 +7689,7 @@ function renderHistory(){
   const el=document.getElementById('history-list');
   if(!S.history.length){el.innerHTML=`
     <div style="text-align:center;padding:80px 40px">
-      <div style="font-size:52px;margin-bottom:16px;opacity:0.4">🕐</div>
+      <div style="font-size:52px;margin-bottom:16px;opacity:0.4"></div>
       <div style="font-family:'Italiana',serif;font-size:28px;color:var(--text);margin-bottom:8px">No sessions yet.</div>
       <p style="font-size:14px;color:var(--muted2);margin-bottom:24px;max-width:320px;margin-left:auto;margin-right:auto">
         Your session history will appear here after your first practice. Each session is saved with full analysis you can revisit.
@@ -7845,7 +7845,7 @@ function displayDailyChallenge() {
   if (dailyCompleted) {
     document.getElementById('daily-practice-btn').textContent = '✓ Completed';
     document.getElementById('daily-practice-btn').disabled = true;
-    document.getElementById('daily-completed-area').innerHTML = `<div class="daily-completed"><div style="font-size:24px;margin-bottom:8px">🔥</div><div style="font-family:'Space Grotesk',sans-serif;font-weight:700;color:var(--green)">Challenge Complete!</div><div style="font-size:13px;color:var(--muted2);margin-top:4px">Come back tomorrow for a new one.</div></div>`;
+    document.getElementById('daily-completed-area').innerHTML = `<div class="daily-completed"><div style="font-size:24px;margin-bottom:8px"></div><div style="font-family:'Space Grotesk',sans-serif;font-weight:700;color:var(--green)">Challenge Complete!</div><div style="font-size:13px;color:var(--muted2);margin-top:4px">Come back tomorrow for a new one.</div></div>`;
   }
   const weakSpots = getWeakSpots();
   renderDailyFocus(weakSpots);
@@ -7875,7 +7875,7 @@ function startDailyChallenge() {
   setTimeout(() => {
     document.getElementById('p-question').value = dailyChallenge.question;
     document.getElementById('p-text').focus();
-    showToast('⚡', 'Daily challenge loaded — go!');
+    showToast('', 'Daily challenge loaded — go!');
     if (S.autoplay !== false) speakText(dailyChallenge.question);
   }, 200);
 }
@@ -7888,7 +7888,7 @@ function renderCoachNotes() {
   if (!coachNotes.length) {
     el.innerHTML = `
       <div style="text-align:center;padding:48px 24px">
-        <div style="font-size:40px;margin-bottom:12px;opacity:0.4">📝</div>
+        <div style="font-size:40px;margin-bottom:12px;opacity:0.4"></div>
         <div style="font-family:'Italiana',serif;font-size:22px;color:var(--text);margin-bottom:6px">No notes yet.</div>
         <p style="font-size:13px;color:var(--muted2);line-height:1.7">After 2+ sessions your coach will start building a picture of your patterns, habits, and growth areas.</p>
       </div>
@@ -7907,7 +7907,7 @@ function renderCoachNotes() {
 }
 
 async function generateCoachNotes() {
-  if (S.history.length < 2) { showToast('⚠️', 'Need at least 2 sessions first'); return; }
+  if (S.history.length < 2) { showToast('', 'Need at least 2 sessions first'); return; }
   const btn = document.getElementById('gen-notes-btn');
   btn.disabled = true; btn.textContent = 'Analyzing patterns...';
   
@@ -7937,11 +7937,11 @@ CRITICAL: Never use asterisks for actions or stage directions. Never write thing
     coachNotes = [...newNotes, ...coachNotes].slice(0, 20);
     localStorage.setItem('conver_coach_notes', JSON.stringify(coachNotes));
     renderCoachNotes();
-    showToast('🧠', 'Coach notes generated');
+    showToast('', 'Coach notes generated');
   } catch(e) {
-    showToast('⚠️', 'Failed: ' + e.message);
+    showToast('', 'Failed: ' + e.message);
   }
-  btn.disabled = false; btn.textContent = '🧠 Generate Coach Notes';
+  btn.disabled = false; btn.textContent = 'Generate Coach Notes';
 }
 
 // ── SHARE SCORE CARD ──────────────────────────────────────────────────────────
@@ -7977,7 +7977,7 @@ function copyShareText() {
   const g = getLevelTier(level);
   const avg = arr => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : 0;
   const text = `My Conver Level: Lv.${level} (${g.name})\n\nClarity: ${avg(S.scores.clarity)}/10\nConfidence: ${avg(S.scores.confidence)}/10\nPersuasion: ${avg(S.scores.persuasion)}/10\n\nPracticed ${S.sessions} sessions with AI coach ${S.coach}.\n\nconver.ai`;
-  navigator.clipboard.writeText(text).then(() => showToast('📋', 'Copied to clipboard'));
+  navigator.clipboard.writeText(text).then(() => showToast('', 'Copied to clipboard'));
 }
 
 function downloadScoreCard() {
@@ -8052,11 +8052,11 @@ function renderDiff(original, rewrite) {
   // Simple word-level diff highlight
   return `<div class="diff-layout">
     <div class="diff-panel">
-      <div class="diff-label">📝 Your original</div>
+      <div class="diff-label">Your original</div>
       <div class="diff-text">${escHtml(original)}</div>
     </div>
     <div class="diff-panel">
-      <div class="diff-label" style="color:var(--green)">✨ Stronger version</div>
+      <div class="diff-label" style="color:var(--green)">Stronger version</div>
       <div class="diff-text" style="color:var(--text)">${escHtml(rewrite)}</div>
     </div>
   </div>`;
@@ -8449,7 +8449,7 @@ function toggleDebateListening(){
 function startDebateListening(){
   window.speechSynthesis?.cancel();
   const btn=document.getElementById('debate-mic-btn');
-  btn.className='hold-btn recording';btn.textContent='🔴';
+  btn.className='hold-btn recording';btn.textContent='●';
   document.getElementById('debate-transcript').textContent='Listening... click again to send';
   document.getElementById('debate-global-status').textContent='';
   debateFinalTranscript='';
@@ -8460,7 +8460,7 @@ function startDebateListening(){
       if(isFinal)debateFinalTranscript=text;
     },
     onError:(err)=>{
-      showToast('⚠️','Mic blocked — allow mic access');isDebateListening=false;
+      showToast('','Mic blocked — allow mic access');isDebateListening=false;
     }
   });
 }
@@ -8471,7 +8471,7 @@ async function stopDebateListening(){
   const btn=document.getElementById('debate-mic-btn');
   let text=(debateFinalTranscript||document.getElementById('debate-transcript').textContent).replace(' ... click to send','').trim();
   debateFinalTranscript='';
-  if(!text||text==='Listening... click again to send'||text.trim().length<2){btn.className='hold-btn idle';btn.textContent='🎙️';return;}
+  if(!text||text==='Listening... click again to send'||text.trim().length<2){btn.className='hold-btn idle';btn.textContent='○';return;}
   btn.className='hold-btn processing';btn.textContent='\u23f3';btn.disabled=true;
   debateRound++;updateDebateRound();
   debateUserArgs.push(text);
@@ -8493,7 +8493,7 @@ async function stopDebateListening(){
     if(isLastRound){await scoreDebate();}
     else{document.getElementById('debate-global-status').textContent=`Round ${debateRound+1} — keep pushing!`;}
   }catch(e){document.getElementById('debate-global-status').textContent='Error: '+e.message;}
-  btn.className='hold-btn idle';btn.textContent='🎙️';
+  btn.className='hold-btn idle';btn.textContent='○';
   if(debateRound>=debateMaxRounds)btn.disabled=true;
   else btn.disabled=false;
 }
@@ -8596,9 +8596,9 @@ async function scoreDebate(){
 
     await speakDebate(r.verdict,'a');
     document.getElementById('debate-global-status').textContent='';
-    showToast('📊','Debate score added to your Conver Score!');
+    showToast('','Debate score added to your Conver Score!');
   }catch(e){
-    document.getElementById('debate-final-scores').innerHTML=`<div style="color:var(--red);font-size:13px;padding:8px 0">Couldn't score this debate: ${e.message}</div><button onclick="resetDebate()" class="btn-primary" style="margin-top:16px">⚔️ Start New Debate</button>`;
+    document.getElementById('debate-final-scores').innerHTML=`<div style="color:var(--red);font-size:13px;padding:8px 0">Couldn't score this debate: ${e.message}</div><button onclick="resetDebate()" class="btn-primary" style="margin-top:16px">Start New Debate</button>`;
   }
 }
 
@@ -8831,7 +8831,7 @@ function applyAccentPalette(color) {
 function setAccentColor(color) {
   applyAccentPalette(color);
   localStorage.setItem(userStorageKey('conver_accent'), color);
-  showToast('🎨', 'Accent color updated');
+  showToast('', 'Accent color updated');
 }
 
 // Export user data as JSON download
@@ -8982,10 +8982,10 @@ function showDeleteAccountModal() {
 // Show change password modal (stub)
 function showChangePasswordModal() {
   const email = currentUser?.email;
-  if (!email) { showToast('⚠', 'You must be signed in to change your password'); return; }
+  if (!email) { showToast('', 'You must be signed in to change your password'); return; }
   sbClient.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/app' })
-    .then(() => showToast('✉', 'Password reset email sent to ' + email))
-    .catch(e => showToast('❌', 'Error: ' + e.message));
+    .then(() => showToast('', 'Password reset email sent to ' + email))
+    .catch(e => showToast('✕', 'Error: ' + e.message));
 }
 
 // Update account display in settings
@@ -9042,8 +9042,8 @@ function applyAvatarPhoto() {
 function handleAvatarUpload(event) {
   const file = event.target.files?.[0];
   if (!file) return;
-  if (!file.type.startsWith('image/')) { showToast('❌', 'Please choose an image file'); return; }
-  if (file.size > 3 * 1024 * 1024) { showToast('❌', 'Image must be under 3MB'); return; }
+  if (!file.type.startsWith('image/')) { showToast('✕', 'Please choose an image file'); return; }
+  if (file.size > 3 * 1024 * 1024) { showToast('✕', 'Image must be under 3MB'); return; }
   const reader = new FileReader();
   reader.onload = () => {
     // Downscale through a canvas so the data URL we persist to localStorage stays small
@@ -9523,7 +9523,7 @@ function toggleCOListening(){
 
 function startCOListening(){
   const btn=document.getElementById('co-mic-btn');
-  btn.className='hold-btn recording';btn.textContent='🔴';
+  btn.className='hold-btn recording';btn.textContent='●';
   document.getElementById('co-transcript').textContent='Listening... click again to send';
   coFinalTranscript='';
   ScribeSTT.start({
@@ -9533,7 +9533,7 @@ function startCOListening(){
       if(isFinal)coFinalTranscript=text;
     },
     onError:(err)=>{
-      showToast('⚠️','Mic blocked');isCOListening=false;
+      showToast('','Mic blocked');isCOListening=false;
     }
   });
 }
@@ -9543,7 +9543,7 @@ async function stopCOListening(){
   const btn=document.getElementById('co-mic-btn');
   let text=(coFinalTranscript||document.getElementById('co-transcript').textContent).replace(' ... click to send','').trim();
   coFinalTranscript='';
-  if(!text||text==='Listening... click again to send'||text.trim().length<2){btn.className='hold-btn idle';btn.textContent='🎙️';return;}
+  if(!text||text==='Listening... click again to send'||text.trim().length<2){btn.className='hold-btn idle';btn.textContent='○';return;}
   btn.className='hold-btn processing';btn.textContent='⏳';btn.disabled=true;
   coState.turns++;
   addCOMsg(S.userName||'You',text,true);
@@ -9557,7 +9557,7 @@ async function stopCOListening(){
     document.getElementById('co-transcript').textContent='Click the mic to respond...';
     if(coState.turns>=4)document.getElementById('co-status').textContent='Good session! Hit End to get your score.';
   }catch(e){document.getElementById('co-status').textContent='Error: '+e.message;}
-  btn.className='hold-btn idle';btn.textContent='🎙️';btn.disabled=false;
+  btn.className='hold-btn idle';btn.textContent='○';btn.disabled=false;
 }
 
 async function endColdOpen(){
@@ -9615,7 +9615,7 @@ async function endColdOpen(){
           <div style="font-size:13px;color:var(--muted2)">${r.missed_opportunity}</div>
         </div>
       </div>
-      <button onclick="resetColdOpen()" class="btn-primary" style="margin-top:16px">🎲 Try Another</button>`;
+      <button onclick="resetColdOpen()" class="btn-primary" style="margin-top:16px">Try Another</button>`;
     animateScoreReveal(document.getElementById('co-scores'));
     S.sessions++;
     checkSessionMilestone();
@@ -9641,7 +9641,7 @@ async function endColdOpen(){
     };
     S.history.unshift(coSession);
     saveSessionToCloud(coSession);
-    updateChips();saveUserData();showToast('📊','Cold Open score added to Conver Score!');
+    updateChips();saveUserData();showToast('','Cold Open score added to Conver Score!');
 
     // Cold Open XP — was "turns × 8" regardless of quality, so a filler-only
     // exchange earned the same XP as an engaged one. Now floored by actual
@@ -9661,7 +9661,7 @@ async function endColdOpen(){
     // auto-scroll was previously pushing the page's scroll position too far,
     // tucking the page title up underneath the tab bar.
   }catch(e){
-    document.getElementById('co-scores').innerHTML=`<div style="color:var(--red);font-size:13px;padding:8px 0">Couldn't score this session: ${e.message}</div><button onclick="resetColdOpen()" class="btn-primary" style="margin-top:16px">🎲 Try Another</button>`;
+    document.getElementById('co-scores').innerHTML=`<div style="color:var(--red);font-size:13px;padding:8px 0">Couldn't score this session: ${e.message}</div><button onclick="resetColdOpen()" class="btn-primary" style="margin-top:16px">Try Another</button>`;
   }
 }
 
@@ -9770,7 +9770,7 @@ function filterQBank() {
     <div class="qb-item" style="animation-delay:${Math.min(i,10)*35}ms" onclick="practiceQBQuestion('${q.q.replace(/'/g,"&#39;")}')">
       <div>
         <div class="qb-question">${q.q}</div>
-        <div style="font-size:11.5px;color:var(--muted2);margin-top:6px;line-height:1.5">💡 ${q.tip}</div>
+        <div style="font-size:11.5px;color:var(--muted2);margin-top:6px;line-height:1.5">${q.tip}</div>
       </div>
       <div class="qb-meta">
         <span class="qb-diff qb-diff-${q.diff}">${q.diff==='easy'?'Warm-up':q.diff==='medium'?'Standard':'Tough'}</span>
@@ -9785,7 +9785,7 @@ function practiceQBQuestion(question) {
   setTimeout(() => {
     document.getElementById('p-question').value = question;
     document.getElementById('p-text').focus();
-    showToast('📚', 'Question loaded — go!');
+    showToast('', 'Question loaded — go!');
     if (S.autoplay !== false) speakText(question);
   }, 200);
 }
@@ -9827,7 +9827,7 @@ CRITICAL: Never use asterisks for actions or stage directions. Never write thing
     const m = raw.match(/\{[\s\S]*\}/); if(!m) throw new Error('No JSON');
     wuCurrentQuestion = JSON.parse(m[0]);
     document.getElementById('wu-question-text').textContent = wuCurrentQuestion.question;
-    document.getElementById('wu-question-tip').textContent = '💡 ' + wuCurrentQuestion.tip;
+    document.getElementById('wu-question-tip').textContent = '' + wuCurrentQuestion.tip;
     document.getElementById('wu-question-card').style.display = 'block';
     showBackBtn(true,'Warmup');
     document.getElementById('wu-score-panel').style.display = 'none';
@@ -9836,8 +9836,8 @@ CRITICAL: Never use asterisks for actions or stage directions. Never write thing
     document.getElementById('wu-status').textContent = 'Click the mic and speak your answer';
     wuTranscript = '';
     startWarmupVoice(wuCurrentQuestion.question);
-  } catch(e) { showToast('⚠️', 'Failed: ' + e.message); }
-  btn.disabled = false; btn.textContent = '⚡ Get My Question';
+  } catch(e) { showToast('', 'Failed: ' + e.message); }
+  btn.disabled = false; btn.textContent = 'Get My Question';
 }
 
 // ── VOICE-NATIVE: fully immersive Daily Warmup (VoiceEngine-driven) ───────────
@@ -9881,7 +9881,7 @@ function startWarmupVoice(question) {
         updateStreak();
         updateChips();
         saveUserData();
-        showToast('⚡', 'Warmup complete!');
+        showToast('', 'Warmup complete!');
       }, 1200);
     } catch(e) { _veHandleError(e); }
   });
@@ -9899,7 +9899,7 @@ function toggleWarmupListening() {
 
 function startWarmupListening() {
   const btn = document.getElementById('wu-mic-btn');
-  btn.className = 'hold-btn recording'; btn.textContent = '🔴';
+  btn.className = 'hold-btn recording'; btn.textContent = '●';
   document.getElementById('wu-status').textContent = 'Listening... click again when done';
   document.getElementById('wu-transcript').textContent = 'Listening...';
   ScribeSTT.start({
@@ -9908,7 +9908,7 @@ function startWarmupListening() {
       if (txt) document.getElementById('wu-transcript').textContent = txt;
       if (isFinal) wuTranscript = text.trim();
     },
-    onError: (err) => { showToast('⚠️','Mic blocked'); wuListening=false; }
+    onError: (err) => { showToast('','Mic blocked'); wuListening=false; }
   });
 }
 
@@ -9916,7 +9916,7 @@ function stopWarmupListening() {
   wuListening = false;
   ScribeSTT.stop();
   const btn = document.getElementById('wu-mic-btn');
-  btn.className = 'hold-btn idle'; btn.textContent = '🎙️';
+  btn.className = 'hold-btn idle'; btn.textContent = '○';
   const text = document.getElementById('wu-transcript').textContent;
   if (!text || text === 'Your answer will appear here...' || text === 'Listening...' || text.trim().length < 3) {
     document.getElementById('wu-status').textContent = 'Click the mic and speak your answer';
@@ -9961,7 +9961,7 @@ CRITICAL: Never use asterisks for actions or stage directions. Never write thing
     document.getElementById('wu-score-panel').style.display = 'block';
     document.getElementById('wu-score-panel').scrollIntoView({behavior:'smooth'});
   } catch(e) {
-    showToast('⚠️','Grading failed: '+e.message);
+    showToast('','Grading failed: '+e.message);
   }
   btn.disabled = false; btn.textContent = 'Submit Answer';
 }
@@ -9974,8 +9974,8 @@ function resetWarmup() {
   showBackBtn(false);
   document.getElementById('wu-submit-btn').style.display = 'none';
   document.getElementById('wu-mic-btn').className = 'hold-btn idle';
-  document.getElementById('wu-mic-btn').textContent = '🎙️';
-  document.getElementById('warmup-btn').textContent = '⚡ Get My Question';
+  document.getElementById('wu-mic-btn').textContent = '○';
+  document.getElementById('warmup-btn').textContent = 'Get My Question';
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -10172,7 +10172,7 @@ function showVerificationPending(email) {
   if (!authBox) return;
   authBox.innerHTML = `
     <div style="text-align:center;padding:20px 0">
-      <div style="font-size:48px;margin-bottom:16px">📧</div>
+      <div style="font-size:48px;margin-bottom:16px"></div>
       <div style="font-family:'Italiana',serif;font-size:28px;color:var(--text);margin-bottom:8px">Check your email</div>
       <p style="font-size:14px;color:var(--muted2);line-height:1.75;margin-bottom:24px">
         We sent a verification link to
@@ -10201,14 +10201,14 @@ async function resendVerificationEmail(email) {
       options: { emailRedirectTo: 'https://www.conver.services/app' }
     });
     if (error) {
-      showToast('❌', error.message);
+      showToast('✕', error.message);
       if (btn) { btn.disabled = false; btn.textContent = 'Resend verification email'; }
     } else {
       showToast('✓', 'Verification email resent!');
       if (btn) btn.textContent = 'Email sent ✓';
     }
   } catch(e) {
-    showToast('❌', 'Could not resend. Try again.');
+    showToast('✕', 'Could not resend. Try again.');
     if (btn) { btn.disabled = false; btn.textContent = 'Resend verification email'; }
   }
 }
@@ -10240,7 +10240,7 @@ async function afterSignIn() {
   // 1, which the next legitimate consecutive day then incremented to 2).
   await loadUserData();
   hideAuthScreen();
-  showToast('👋', 'Welcome back!');
+  showToast('', 'Welcome back!');
 }
 
 async function loadUserData() {
@@ -10483,7 +10483,7 @@ function finishOnboarding() {
   if (el) { el.style.display = 'none'; el.classList.add('hidden'); }
   // Send to Practice Lab for first session
   navTo('practice');
-  showToast('👋', 'Welcome to Conver! Let\'s get your first session in.');
+  showToast('', 'Welcome to Conver! Let\'s get your first session in.');
 }
 function checkOnboarding() {
   // Show onboarding only for first-time signed-in users with no history
@@ -10686,12 +10686,12 @@ document.head.appendChild(rippleStyle);
       <div style="font-family:'Italiana',serif;font-size:32px;color:var(--text);margin-bottom:8px">What are you practicing for?</div>
       <p style="font-size:14px;color:var(--muted2);margin-bottom:28px">This shapes the questions, scenarios, and coaching style you'll get.</p>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:28px">
-        <div class="ob-goal-btn" onclick="selectOnboardingGoal('interview')" data-goal="interview">💼 Job Interviews</div>
-        <div class="ob-goal-btn" onclick="selectOnboardingGoal('pitch')" data-goal="pitch">🚀 Pitching & Sales</div>
-        <div class="ob-goal-btn" onclick="selectOnboardingGoal('networking')" data-goal="networking">🤝 Networking</div>
-        <div class="ob-goal-btn" onclick="selectOnboardingGoal('leadership')" data-goal="leadership">⚡ Leadership</div>
-        <div class="ob-goal-btn" onclick="selectOnboardingGoal('public')" data-goal="public">🎤 Public Speaking</div>
-        <div class="ob-goal-btn" onclick="selectOnboardingGoal('social')" data-goal="social">☕ Social Confidence</div>
+        <div class="ob-goal-btn" onclick="selectOnboardingGoal('interview')" data-goal="interview">Job Interviews</div>
+        <div class="ob-goal-btn" onclick="selectOnboardingGoal('pitch')" data-goal="pitch">Pitching & Sales</div>
+        <div class="ob-goal-btn" onclick="selectOnboardingGoal('networking')" data-goal="networking">Networking</div>
+        <div class="ob-goal-btn" onclick="selectOnboardingGoal('leadership')" data-goal="leadership">Leadership</div>
+        <div class="ob-goal-btn" onclick="selectOnboardingGoal('public')" data-goal="public">Public Speaking</div>
+        <div class="ob-goal-btn" onclick="selectOnboardingGoal('social')" data-goal="social">Social Confidence</div>
       </div>
       <button class="btn-primary" onclick="obNext(2)" id="ob-next-1" style="opacity:0.4;pointer-events:none">Continue →</button>
     </div>
@@ -10707,9 +10707,9 @@ document.head.appendChild(rippleStyle);
       <div style="font-family:'Italiana',serif;font-size:38px;color:var(--text);margin-bottom:12px;line-height:1.1">You're all set.<br><em style="background:var(--g-brand);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Let's get to work.</em></div>
       <p style="font-size:14px;color:var(--muted2);margin-bottom:28px;line-height:1.75">Your first session takes about 5 minutes. Submit a response, get scored across 5 dimensions, and see exactly what to improve.</p>
       <div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:24px;font-size:13px;color:var(--muted2);line-height:1.9">
-        <div>🎯 Goal: <strong style="color:var(--text)" id="ob-summary-goal">—</strong></div>
-        <div>🧑‍🏫 Coach: <strong style="color:var(--accent3)" id="ob-summary-coach">—</strong></div>
-        <div>✨ Scoring: Clarity, Confidence, Persuasion, Storytelling, Conciseness</div>
+        <div>Goal: <strong style="color:var(--text)" id="ob-summary-goal">—</strong></div>
+        <div>Coach: <strong style="color:var(--accent3)" id="ob-summary-coach">—</strong></div>
+        <div>Scoring: Clarity, Confidence, Persuasion, Storytelling, Conciseness</div>
       </div>
       <button class="btn-primary" onclick="finishOnboarding()">Start My First Session →</button>
     </div>
@@ -10754,7 +10754,7 @@ document.head.appendChild(rippleStyle);
       </button>
       <button id="ve-tap-to-talk-btn" onclick="VoiceEngine._startListening()"
         style="display:none;background:linear-gradient(135deg,#7c6fff,#c084fc);border:none;border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;padding:11px 28px;cursor:pointer;box-shadow:0 4px 16px rgba(124,111,255,0.35)">
-        🎙️ Tap to Respond
+        Tap to Respond
       </button>
     </div>
   </div>

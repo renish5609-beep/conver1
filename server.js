@@ -17,11 +17,11 @@ const rawUrl = (process.env.SUPABASE_URL || '').trim();
 const rawKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || '').trim();
 
 console.log('\n── Supabase config check ──────────────────────');
-console.log('SUPABASE_URL:', rawUrl ? `"${rawUrl}"` : '❌ MISSING');
-console.log('Using key type:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SERVICE_ROLE' : (process.env.SUPABASE_ANON_KEY ? 'ANON (fallback)' : '❌ MISSING'));
+console.log('SUPABASE_URL:', rawUrl ? `"${rawUrl}"` : 'MISSING');
+console.log('Using key type:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SERVICE_ROLE' : (process.env.SUPABASE_ANON_KEY ? 'ANON (fallback)' : 'MISSING'));
 console.log('Key length:', rawKey.length, rawKey.length > 0 ? `(starts "${rawKey.slice(0,15)}...")` : '');
 if (!rawUrl.startsWith('https://') || !rawUrl.includes('.supabase.co')) {
-  console.log('⚠️  SUPABASE_URL looks malformed! Expected format: https://xxxxx.supabase.co');
+  console.log('WARNING: SUPABASE_URL looks malformed! Expected format: https://xxxxx.supabase.co');
 }
 console.log('────────────────────────────────────────────────\n');
 
@@ -55,10 +55,10 @@ function freshAuthClient() {
 (async () => {
   try {
     const { error } = await supabase.from('profiles').select('id').limit(1);
-    if (error) console.log('⚠️  Supabase test query failed:', JSON.stringify(error, null, 2));
-    else console.log('✓ Supabase connection OK\n');
+    if (error) console.log('WARNING: Supabase test query failed:', JSON.stringify(error, null, 2));
+    else console.log('Supabase connection OK\n');
   } catch (e) {
-    console.log('⚠️  Supabase connection failed at boot:', e.message, '\n');
+    console.log('WARNING: Supabase connection failed at boot:', e.message, '\n');
   }
 })();
 
@@ -91,8 +91,8 @@ function getRandomColdOpenVoice() {
   return coldOpenVoices[Math.floor(Math.random() * coldOpenVoices.length)];
 }
 
-console.log('🎙️ Coach voices assigned:', assignedVoices);
-console.log('🎭 Cold Open voice pool:', coldOpenVoices.length, 'voices\n');
+console.log('Coach voices assigned:', assignedVoices);
+console.log('Cold Open voice pool:', coldOpenVoices.length, 'voices\n');
 
 // ── Text cleaning for TTS ─────────────────────────────────────────────────────
 // Strips markdown, stage directions, and action text so TTS sounds natural
@@ -351,6 +351,6 @@ app.get('*', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`\n🎤 Conver running at http://localhost:${PORT}\n`);
-  console.log('✓ ElevenLabs voices loaded\n');
+  console.log(`\nConver running at http://localhost:${PORT}\n`);
+  console.log('ElevenLabs voices loaded\n');
 });
