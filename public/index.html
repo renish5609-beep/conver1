@@ -10102,6 +10102,20 @@ async function initAuth() {
     });
     await loadUserData();
     applyAvatarPhoto();
+    return;
+  }
+  // Neither an email-verification link nor an OAuth callback token — check
+  // whether Supabase already has a valid session persisted from a previous
+  // visit (it stores this in localStorage by default) before giving up and
+  // showing the sign-in screen. Without this, every plain page refresh
+  // looked like a fresh visitor even though the session was sitting right
+  // there, which also meant afterSignIn() (and its last-page restore) never
+  // ran on refresh.
+  const { data: { session } } = await sbClient.auth.getSession();
+  if (session) {
+    authToken = session.access_token;
+    currentUser = session.user;
+    await afterSignIn();
   } else {
     showAuthScreen();
   }
