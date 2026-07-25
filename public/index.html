@@ -160,6 +160,7 @@ body::before {
   display: flex; align-items: center; justify-content: center;
   font-size: 11px; font-weight: 700; color: #fff;
   flex-shrink: 0;
+  background-size: cover; background-position: center; overflow: hidden;
 }
 
 /* ── TAB NAVIGATION ────────────────────────────────────────── */
@@ -604,6 +605,8 @@ input:focus, select:focus, textarea:focus {
 .sc-icon svg{width:20px;height:20px}
 .sc-mini-icon{width:16px;height:16px}
 .sc-mini-icon svg{width:16px;height:16px}
+.cat-icon{width:28px;height:28px}
+.cat-icon svg{width:28px;height:28px}
 .sc-card:hover .sc-icon{transform:scale(1.15)}
 .sc-name{font-size:12.5px;font-weight:600;font-family:'Space Grotesk',sans-serif;margin-bottom:3px}
 .sc-hint{font-size:11px;color:var(--muted2);line-height:1.5}
@@ -1232,6 +1235,7 @@ body::before{
   background:var(--g-brand);border-radius:50%;
   display:flex;align-items:center;justify-content:center;
   font-size:11px;font-weight:700;color:#fff;flex-shrink:0;
+  background-size:cover;background-position:center;overflow:hidden;
 }
 
 /* ── TAB NAVIGATION ─────────────────────────────────────────── */
@@ -2033,7 +2037,9 @@ body.compact-mode .page { padding: 20px 24px; }
   filter: drop-shadow(0 0 16px var(--char-color, #38bdf8));
   animation: charFloat 4s ease-in-out infinite;
   position: relative; z-index: 1;
+  display: inline-flex;
 }
+.scenario-char-emoji svg { width: 52px; height: 52px; }
 @keyframes charFloat {
   0%, 100% { transform: translateY(0) rotate(-2deg); }
   50% { transform: translateY(-8px) rotate(2deg); }
@@ -3304,42 +3310,42 @@ h1, h2, h3 {
               <div class="scenario-cat-btn" onclick="selectColdOpenCategory('networking')" data-cat="networking"
                    style="--char-color:#38bdf8;background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.2);
                    border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;transition:all 0.22s">
-                <div style="font-size:28px;margin-bottom:6px;filter:drop-shadow(0 0 8px #38bdf8)"></div>
+                <div class="cat-icon" style="color:#38bdf8;margin:0 auto 6px;filter:drop-shadow(0 0 8px #38bdf8)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98"/><path d="M15.41 6.51l-6.82 3.98"/></svg></div>
                 <div style="font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#f0f1f8">Networking</div>
                 <div style="font-size:10.5px;color:#6b7494;font-family:'DM Mono',monospace;margin-top:2px">Mixers & events</div>
               </div>
               <div class="scenario-cat-btn" onclick="selectColdOpenCategory('elevator')" data-cat="elevator"
                    style="--char-color:#fbbf24;background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.2);
                    border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;transition:all 0.22s">
-                <div style="font-size:28px;margin-bottom:6px;filter:drop-shadow(0 0 8px #fbbf24)"></div>
+                <div class="cat-icon" style="color:#fbbf24;margin:0 auto 6px;filter:drop-shadow(0 0 8px #fbbf24)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2"/><path d="M9 2h6"/></svg></div>
                 <div style="font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#f0f1f8">Elevator Pitch</div>
                 <div style="font-size:10.5px;color:#6b7494;font-family:'DM Mono',monospace;margin-top:2px">60 seconds</div>
               </div>
               <div class="scenario-cat-btn" onclick="selectColdOpenCategory('interview')" data-cat="interview"
                    style="--char-color:#c084fc;background:rgba(192,132,252,0.06);border:1px solid rgba(192,132,252,0.2);
                    border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;transition:all 0.22s">
-                <div style="font-size:28px;margin-bottom:6px;filter:drop-shadow(0 0 8px #c084fc)"></div>
+                <div class="cat-icon" style="color:#c084fc;margin:0 auto 6px;filter:drop-shadow(0 0 8px #c084fc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg></div>
                 <div style="font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#f0f1f8">Interview</div>
                 <div style="font-size:10.5px;color:#6b7494;font-family:'DM Mono',monospace;margin-top:2px">First impression</div>
               </div>
               <div class="scenario-cat-btn" onclick="selectColdOpenCategory('social')" data-cat="social"
                    style="--char-color:#f472b6;background:rgba(244,114,182,0.06);border:1px solid rgba(244,114,182,0.2);
                    border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;transition:all 0.22s">
-                <div style="font-size:28px;margin-bottom:6px;filter:drop-shadow(0 0 8px #f472b6)"></div>
+                <div class="cat-icon" style="color:#f472b6;margin:0 auto 6px;filter:drop-shadow(0 0 8px #f472b6)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>
                 <div style="font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#f0f1f8">Social</div>
                 <div style="font-size:10.5px;color:#6b7494;font-family:'DM Mono',monospace;margin-top:2px">Party & casual</div>
               </div>
               <div class="scenario-cat-btn" onclick="selectColdOpenCategory('leadership')" data-cat="leadership"
                    style="--char-color:#2dd4a0;background:rgba(45,212,160,0.06);border:1px solid rgba(45,212,160,0.2);
                    border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;transition:all 0.22s">
-                <div style="font-size:28px;margin-bottom:6px;filter:drop-shadow(0 0 8px #2dd4a0)"></div>
+                <div class="cat-icon" style="color:#2dd4a0;margin:0 auto 6px;filter:drop-shadow(0 0 8px #2dd4a0)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16.24 7.76l-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z"/></svg></div>
                 <div style="font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#f0f1f8">Leadership</div>
                 <div style="font-size:10.5px;color:#6b7494;font-family:'DM Mono',monospace;margin-top:2px">Team moment</div>
               </div>
               <div class="scenario-cat-btn" onclick="selectColdOpenCategory('sales')" data-cat="sales"
                    style="--char-color:#fb923c;background:rgba(251,146,60,0.06);border:1px solid rgba(251,146,60,0.2);
                    border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;transition:all 0.22s">
-                <div style="font-size:28px;margin-bottom:6px;filter:drop-shadow(0 0 8px #fb923c)"></div>
+                <div class="cat-icon" style="color:#fb923c;margin:0 auto 6px;filter:drop-shadow(0 0 8px #fb923c)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg></div>
                 <div style="font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#f0f1f8">Sales</div>
                 <div style="font-size:10.5px;color:#6b7494;font-family:'DM Mono',monospace;margin-top:2px">Cold outreach</div>
               </div>
@@ -3457,7 +3463,7 @@ h1, h2, h3 {
         <div class="panel" style="display:flex;align-items:center;gap:18px;padding:22px">
           <div style="position:relative;flex-shrink:0">
             <div id="sp-avatar" style="width:72px;height:72px;border-radius:50%;background:var(--g-brand);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff;font-family:'Space Grotesk',sans-serif;background-size:cover;background-position:center;overflow:hidden">?</div>
-            <button onclick="document.getElementById('avatar-file-input').click()" title="Change photo" style="position:absolute;bottom:-2px;right:-2px;width:26px;height:26px;border-radius:50%;background:var(--s2,#0e1028);border:1px solid var(--border2);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;padding:0"></button>
+            <button onclick="document.getElementById('avatar-file-input').click()" title="Change photo" style="position:absolute;bottom:-2px;right:-2px;width:26px;height:26px;border-radius:50%;background:var(--s2,#0e1028);border:1px solid var(--border2);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
             <input type="file" id="avatar-file-input" accept="image/*" style="display:none" onchange="handleAvatarUpload(event)"/>
           </div>
           <div style="flex:1;min-width:0">
@@ -6157,7 +6163,7 @@ function createCoachAvatar(coachName, size, showName) {
 
 const SCENARIO_CHARACTERS = {
   networking: {
-    emoji: 'C',
+    emoji: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98"/><path d="M15.41 6.51l-6.82 3.98"/></svg>',
     color: '#38bdf8',
     name: 'The Connector',
     role: 'Networking Event',
@@ -6167,7 +6173,7 @@ const SCENARIO_CHARACTERS = {
     border: 'rgba(56,189,248,0.3)'
   },
   elevator: {
-    emoji: 'D',
+    emoji: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2"/><path d="M9 2h6"/></svg>',
     color: '#fbbf24',
     name: 'The Decision Maker',
     role: 'Elevator Encounter',
@@ -6177,7 +6183,7 @@ const SCENARIO_CHARACTERS = {
     border: 'rgba(251,191,36,0.3)'
   },
   interview: {
-    emoji: 'I',
+    emoji: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>',
     color: '#c084fc',
     name: 'The Interviewer',
     role: 'Job Interview',
@@ -6187,7 +6193,7 @@ const SCENARIO_CHARACTERS = {
     border: 'rgba(192,132,252,0.3)'
   },
   social: {
-    emoji: 'S',
+    emoji: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>',
     color: '#f472b6',
     name: 'The Stranger',
     role: 'Social Setting',
@@ -6197,7 +6203,7 @@ const SCENARIO_CHARACTERS = {
     border: 'rgba(244,114,182,0.3)'
   },
   leadership: {
-    emoji: 'T',
+    emoji: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16.24 7.76l-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z"/></svg>',
     color: '#2dd4a0',
     name: 'The Team Member',
     role: 'Leadership Moment',
@@ -6207,7 +6213,7 @@ const SCENARIO_CHARACTERS = {
     border: 'rgba(45,212,160,0.3)'
   },
   sales: {
-    emoji: 'P',
+    emoji: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg>',
     color: '#fb923c',
     name: 'The Prospect',
     role: 'Sales Encounter',
