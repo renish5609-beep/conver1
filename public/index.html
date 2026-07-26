@@ -10537,15 +10537,28 @@ function toggleUserMenu() {
 }
 
 async function signOut() {
-  try { localStorage.removeItem('conver_last_page'); } catch(e) {}
-  authToken = null; currentUser = null;
-  document.getElementById('user-email-display').textContent = 'Not signed in';
-  document.getElementById('user-avatar').textContent = '?';
-  // Reset state
-  S.history = []; S.sessions = 0; S.scores = {clarity:[],confidence:[],persuasion:[]};
-  S.skills = {clarity:0,confidence:0,persuasion:0,storytelling:0,conciseness:0};
-  S.streak = 0; S.briefing = null;
-  updateChips();
+  // Clear ALL localStorage keys — including Supabase's own session token.
+  // Without this, Supabase auto-restores the old session on next load,
+  // so switching accounts silently signs the new sign-in back out as the
+  // previous account.
+  const keysToClear = [
+    'conver_last_page',
+    'conver_token',
+    'conver_email',
+    'conver_settings',
+    'conver_coach_notes',
+    'conver_onboarded',
+    'conver_last_daily',
+    // Supabase stores its session under this key — must be cleared explicitly
+    'sb-cxvxiljzaldufonioiyt-auth-token',
+  ];
+  keysToClear.forEach(k => { try { localStorage.removeItem(k); } catch(e) {} });
+
+  // Sign out from Supabase
+  try { await sbClient.auth.signOut(); } catch(e) {}
+
+  // Force full page reload to wipe all in-memory state
+  // This ensures no cached user data, no stale auth tokens, nothing
   window.location.href = '/';
 }
 
