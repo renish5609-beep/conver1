@@ -2109,26 +2109,129 @@ body.compact-mode .page { padding: 20px 24px; }
 }
 
 /* ── ONBOARDING ────────────────────────────────────────────── */
-.ob-step-dot {
-  width: 28px; height: 4px; border-radius: 2px;
-  background: var(--border2); transition: all 0.3s;
+.ob-overlay {
+  position: fixed; inset: 0; z-index: 9998;
+  background: var(--s0, #08090d);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  overflow: hidden;
 }
-.ob-step-dot.active { background: var(--accent); width: 40px; }
-.ob-goal-btn {
-  padding: 14px 16px; border-radius: 12px;
-  border: 1px solid var(--border); background: var(--s2);
-  font-size: 14px; font-weight: 600; color: var(--muted2);
-  cursor: pointer; transition: all 0.2s; font-family: 'Plus Jakarta Sans', sans-serif;
+.ob-overlay.hidden { display: none; }
+.ob-dots {
+  position: absolute; top: 28px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 8px; z-index: 2;
 }
-.ob-goal-btn:hover { border-color: var(--border3); color: var(--text); background: var(--s3); }
-.ob-goal-btn.selected { border-color: var(--accent); background: rgba(var(--accent-rgb),0.12); color: var(--text); box-shadow: 0 0 16px rgba(var(--accent-rgb),0.15); }
-.ob-coach-btn {
+.ob-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  transition: all 0.3s;
+}
+.ob-dot.active {
+  background: var(--accent);
+  width: 20px; border-radius: 3px;
+}
+.ob-skip {
+  position: absolute; top: 20px; right: 28px;
+  background: transparent; border: none;
+  color: rgba(255,255,255,0.3); font-size: 13px;
+  cursor: pointer; font-family: 'DM Mono', monospace;
+  letter-spacing: 0.5px; transition: color 0.2s; z-index: 2;
+}
+.ob-skip:hover { color: rgba(255,255,255,0.6); }
+.ob-steps { width: 100%; max-width: 640px; padding: 0 24px; position: relative; }
+.ob-step {
+  display: none; flex-direction: column;
+  align-items: center; text-align: center;
+  animation: obSlideIn 0.4s cubic-bezier(0.25,0.46,0.45,0.94) both;
+}
+.ob-step.active { display: flex; }
+@keyframes obSlideIn {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.ob-anim-container { margin-bottom: 36px; display: flex; align-items: center; justify-content: center; }
+.ob-logo-orb { position: relative; width: 120px; height: 120px; display: flex; align-items: center; justify-content: center; }
+.ob-orb-ring {
+  position: absolute; border-radius: 50%;
+  border: 1px solid rgba(var(--accent-rgb),0.3);
+  animation: obOrbitPulse 3s ease-in-out infinite;
+}
+.ob-orb-ring-1 { width: 120px; height: 120px; animation-delay: 0s; }
+.ob-orb-ring-2 { width: 90px; height: 90px; animation-delay: 0.5s; border-color: rgba(167,139,250,0.3); }
+.ob-orb-ring-3 { width: 60px; height: 60px; animation-delay: 1s; border-color: rgba(79,195,247,0.3); }
+.ob-orb-core {
+  width: 56px; height: 56px; border-radius: 14px;
+  background: var(--g-brand); display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 40px rgba(var(--accent-rgb),0.4);
+  animation: obCorePulse 2s ease-in-out infinite;
+}
+@keyframes obOrbitPulse { 0%,100% { transform: scale(1); opacity: 0.5; } 50% { transform: scale(1.08); opacity: 1; } }
+@keyframes obCorePulse { 0%,100% { box-shadow: 0 0 40px rgba(var(--accent-rgb),0.4); } 50% { box-shadow: 0 0 60px rgba(var(--accent-rgb),0.7); } }
+.ob-eyebrow { font-size: 11px; color: var(--accent3); font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
+.ob-title { font-family: 'Space Grotesk', sans-serif; font-size: 34px; font-weight: 800; letter-spacing: -1px; color: #fff; margin-bottom: 12px; line-height: 1.1; }
+.ob-sub { font-size: 15px; color: rgba(255,255,255,0.5); line-height: 1.75; max-width: 420px; margin: 0 auto 28px; }
+.ob-content { width: 100%; }
+.ob-content-wide { max-width: 600px; text-align: left; }
+.ob-content-wide .ob-title, .ob-content-wide .ob-eyebrow { text-align: left; }
+.ob-content-wide .ob-sub { text-align: left; margin-left: 0; }
+.ob-btn-primary {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--g-brand); color: #fff; border: none; border-radius: 12px;
+  padding: 14px 32px; font-size: 15px; font-weight: 700;
+  font-family: 'Space Grotesk', sans-serif; cursor: pointer;
+  transition: all 0.2s; letter-spacing: -0.2px; margin-top: 8px;
+}
+.ob-btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(var(--accent-rgb),0.4); }
+.ob-btn-primary:disabled { opacity: 0.35; cursor: not-allowed; transform: none; box-shadow: none; }
+.ob-btn-glow { box-shadow: 0 0 40px rgba(var(--accent-rgb),0.3); animation: obBtnGlow 2s ease-in-out infinite; }
+@keyframes obBtnGlow { 0%,100% { box-shadow: 0 0 40px rgba(var(--accent-rgb),0.3); } 50% { box-shadow: 0 0 60px rgba(var(--accent-rgb),0.6); } }
+.ob-goal-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin: 20px 0 24px; }
+.ob-goal-card {
   padding: 16px 12px; border-radius: 12px;
-  border: 1px solid var(--border); background: var(--s2);
-  text-align: center; cursor: pointer; transition: all 0.2s;
+  border: 1.5px solid var(--border); background: rgba(255,255,255,0.03);
+  cursor: pointer; transition: all 0.2s; text-align: center;
 }
-.ob-coach-btn:hover { border-color: var(--border2); transform: translateY(-2px); }
-.ob-coach-btn.selected { border-color: var(--accent); background: rgba(var(--accent-rgb),0.1); box-shadow: 0 0 16px rgba(var(--accent-rgb),0.15); }
+.ob-goal-card:hover { border-color: rgba(var(--accent-rgb),0.4); background: rgba(var(--accent-rgb),0.06); }
+.ob-goal-card.selected { border-color: var(--accent); background: rgba(var(--accent-rgb),0.12); }
+.ob-goal-icon { width: 22px; height: 22px; margin: 0 auto 8px; color: var(--accent3); }
+.ob-goal-icon svg { width: 22px; height: 22px; }
+.ob-goal-label { font-size: 12.5px; font-weight: 700; color: #fff; margin-bottom: 4px; font-family: 'Space Grotesk', sans-serif; }
+.ob-goal-desc { font-size: 10.5px; color: rgba(255,255,255,0.35); line-height: 1.4; }
+.ob-coach-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin: 20px 0 24px; }
+.ob-coach-card {
+  padding: 18px 14px; border-radius: 14px;
+  border: 1.5px solid var(--border); background: rgba(255,255,255,0.03);
+  cursor: pointer; transition: all 0.2s; text-align: center;
+}
+.ob-coach-card:hover { border-color: var(--coach-color); background: rgba(255,255,255,0.05); }
+.ob-coach-card.selected { border-color: var(--coach-color); background: color-mix(in srgb, var(--coach-color) 10%, transparent); }
+.ob-coach-orb {
+  width: 48px; height: 48px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 10px;
+}
+.ob-coach-orb svg { width: 22px; height: 22px; }
+.ob-coach-name { font-size: 14px; font-weight: 800; color: #fff; font-family: 'Space Grotesk', sans-serif; margin-bottom: 2px; }
+.ob-coach-tagline { font-size: 10px; color: var(--coach-color); font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+.ob-coach-desc { font-size: 11px; color: rgba(255,255,255,0.4); line-height: 1.5; }
+.ob-how-list { display: flex; flex-direction: column; gap: 16px; margin: 24px 0 0; }
+.ob-how-item {
+  display: flex; gap: 16px; align-items: flex-start;
+  padding: 16px 18px; border-radius: 12px;
+  background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+  animation: obSlideIn 0.4s both;
+}
+.ob-how-num {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: var(--g-brand); display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 800; color: #fff;
+  font-family: 'Space Grotesk', sans-serif; flex-shrink: 0;
+}
+.ob-how-title { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 3px; font-family: 'Space Grotesk', sans-serif; }
+.ob-how-desc { font-size: 12.5px; color: rgba(255,255,255,0.4); line-height: 1.5; }
+.ob-ready-anim { margin-bottom: 28px; }
+@keyframes obCircle { to { stroke-dashoffset: 0; } }
+@keyframes obCheck { to { stroke-dashoffset: 0; } }
 
 /* ── VOICE IMMERSIVE OVERLAY ─────────────────────────────────── */
 #voice-immersive-overlay { display: none; }
@@ -10563,65 +10666,134 @@ async function signOut() {
 }
 
 // ── ONBOARDING ────────────────────────────────────────────────
-let obGoal = '', obCoach = '';
-function showOnboarding() {
-  const el = document.getElementById('onboarding-overlay');
-  if (el) { el.classList.remove('hidden'); el.style.display = 'flex'; }
-  // Populate coach grid
-  const grid = document.getElementById('ob-coach-grid');
-  if (grid && typeof COACH_DATA !== 'undefined') {
-    grid.innerHTML = Object.entries(COACH_DATA).map(([name, c]) => `
-      <div class="ob-coach-btn" onclick="selectOnboardingCoach('${name}')" data-coach="${name}">
-        <div style="font-size:28px;margin-bottom:6px;filter:drop-shadow(0 0 8px ${c.color})">${c.emoji}</div>
-        <div style="font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px">${name}</div>
-        <div style="font-size:10.5px;color:var(--muted);font-family:'DM Mono',monospace">${c.subtitle}</div>
+const OB_GOAL_ICONS = {
+  interview: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>',
+  pitch: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>',
+  public: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 19v3"/></svg>',
+  leadership: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16.24 7.76l-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z"/></svg>',
+  networking: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98"/><path d="M15.41 6.51l-6.82 3.98"/></svg>',
+  sales: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg>',
+  social: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>',
+  debate: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M5 7l-3 6a3 3 0 0 0 6 0Z"/><path d="M19 7l-3 6a3 3 0 0 0 6 0Z"/><path d="M5 7h14"/><path d="M9 21h6"/></svg>',
+};
+const OB_GOALS = [
+  {val:'interview', label:'Job Interviews', desc:'Nail behavioral questions and think on your feet'},
+  {val:'pitch', label:'Pitching', desc:'Convince investors, clients, and decision makers'},
+  {val:'public', label:'Public Speaking', desc:'Own the room, command attention'},
+  {val:'leadership', label:'Leadership', desc:'Communicate authority and inspire your team'},
+  {val:'networking', label:'Networking', desc:'Make memorable first impressions'},
+  {val:'sales', label:'Sales', desc:'Close deals and handle objections'},
+  {val:'social', label:'Social Confidence', desc:'Be comfortable in any conversation'},
+  {val:'debate', label:'Debates & Arguments', desc:'Argue clearly and defend your position'},
+];
+const OB_COACHES = [
+  {name:'Blaze', color:'#f87171', tagline:'The Challenger', desc:'Pushes you hard. No sugarcoating. Built for people who want rapid growth.',
+   icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>'},
+  {name:'Echo', color:'#38bdf8', tagline:'The Strategist', desc:'Calm, analytical, precise. Breaks everything down into clear frameworks.',
+   icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.4" fill="currentColor" stroke="none"/><path d="M9 8a5 5 0 0 1 0 8"/><path d="M13 5a9 9 0 0 1 0 14"/></svg>'},
+  {name:'Sage', color:'#2dd4a0', tagline:'The Mentor', desc:'Warm, wise, patient. Teaches you to think, not just answer.',
+   icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><path d="M16 8L2 22"/><path d="M17.5 15H9"/></svg>'},
+  {name:'Nova', color:'#fbbf24', tagline:'The Energizer', desc:'High energy, enthusiastic, infectious confidence. Hypes you up.',
+   icon:'<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2l1.8 7.2L21 11l-7.2 1.8L12 20l-1.8-7.2L3 11l7.2-1.8Z"/></svg>'},
+  {name:'Rex', color:'#c084fc', tagline:'The Enforcer', desc:'Intense, adversarial, stress-tests everything. Prepares you for the worst.',
+   icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>'},
+  {name:'Luna', color:'#f472b6', tagline:'The Empath', desc:'Emotionally intelligent, reads the room, helps you connect deeply.',
+   icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>'},
+];
+let obCurrentStep = 0;
+const OB_TOTAL = 5;
+const obData = { goal: null, coach: null };
+
+function renderOnboardingGrids() {
+  const goalGrid = document.getElementById('ob-goal-grid');
+  if (goalGrid && !goalGrid.children.length) {
+    goalGrid.innerHTML = OB_GOALS.map(g => `
+      <div class="ob-goal-card" onclick="selectObGoal('${g.val}', this)" data-val="${g.val}">
+        <div class="ob-goal-icon">${OB_GOAL_ICONS[g.val]}</div>
+        <div class="ob-goal-label">${g.label}</div>
+        <div class="ob-goal-desc">${g.desc}</div>
+      </div>
+    `).join('');
+  }
+  const coachGrid = document.getElementById('ob-coach-grid');
+  if (coachGrid && !coachGrid.children.length) {
+    coachGrid.innerHTML = OB_COACHES.map(c => `
+      <div class="ob-coach-card" onclick="selectObCoach('${c.name}', this)" data-coach="${c.name}" style="--coach-color:${c.color}">
+        <div class="ob-coach-orb" style="background:radial-gradient(circle at 35% 35%, ${c.color}, ${c.color}44); color:${c.color}">${c.icon}</div>
+        <div class="ob-coach-name">${c.name}</div>
+        <div class="ob-coach-tagline">${c.tagline}</div>
+        <div class="ob-coach-desc">${c.desc}</div>
       </div>
     `).join('');
   }
 }
-function selectOnboardingGoal(goal) {
-  obGoal = goal;
-  document.querySelectorAll('.ob-goal-btn').forEach(b => b.classList.toggle('selected', b.dataset.goal === goal));
-  const btn = document.getElementById('ob-next-1');
-  if (btn) { btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; }
+
+function showOnboarding() {
+  renderOnboardingGrids();
+  obCurrentStep = 0;
+  document.getElementById('onboarding-overlay').classList.remove('hidden');
+  obGoToStep(0);
 }
-function selectOnboardingCoach(coach) {
-  obCoach = coach;
-  document.querySelectorAll('.ob-coach-btn').forEach(b => b.classList.toggle('selected', b.dataset.coach === coach));
-  const btn = document.getElementById('ob-next-2');
-  if (btn) { btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; }
-}
-function obNext(step) {
-  [1,2,3].forEach(i => {
-    const s = document.getElementById('ob-step-'+i);
-    const d = document.getElementById('ob-dot-'+i);
-    if (s) s.classList.toggle('hidden', i !== step);
-    if (d) d.classList.toggle('active', i === step);
-  });
-  if (step === 3) {
-    const sg = document.getElementById('ob-summary-goal');
-    const sc = document.getElementById('ob-summary-coach');
-    if (sg) sg.textContent = obGoal.charAt(0).toUpperCase() + obGoal.slice(1);
-    if (sc) sc.textContent = obCoach;
+
+function obGoToStep(step) {
+  document.querySelectorAll('.ob-dot').forEach((d, i) => d.classList.toggle('active', i === step));
+  document.querySelectorAll('.ob-step').forEach(s => { s.classList.remove('active'); s.style.display = 'none'; });
+  const el = document.getElementById('ob-step-' + step);
+  if (el) {
+    el.style.display = 'flex';
+    el.getBoundingClientRect(); // force reflow so the slide-in animation replays
+    el.classList.add('active');
+  }
+  obCurrentStep = step;
+  if (step === 4) {
+    const circle = document.getElementById('ob-circle');
+    if (circle) { circle.style.animation = 'none'; circle.getBoundingClientRect(); circle.style.animation = ''; }
+    const sub = document.getElementById('ob-ready-sub');
+    if (sub && obData.coach) sub.textContent = `${obData.coach} is ready for you. Let's see what you've got.`;
   }
 }
+
+function obNext() {
+  if (obCurrentStep < OB_TOTAL - 1) obGoToStep(obCurrentStep + 1);
+  else finishOnboarding();
+}
+
+function selectObGoal(val, el) {
+  document.querySelectorAll('.ob-goal-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  obData.goal = val;
+  S.scenario = val;
+  const btn = document.getElementById('ob-goal-btn');
+  if (btn) btn.disabled = false;
+}
+
+function selectObCoach(name, el) {
+  document.querySelectorAll('.ob-coach-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  obData.coach = name;
+  selectProfile(name, true);
+  const btn = document.getElementById('ob-coach-btn');
+  if (btn) btn.disabled = false;
+}
+
 function finishOnboarding() {
-  // Save selections
-  if (obGoal) S.scenario = obGoal.charAt(0).toUpperCase() + obGoal.slice(1);
-  if (obCoach) S.coach = obCoach;
-  localStorage.setItem('conver_onboarded', '1');
+  try { localStorage.setItem('conver_onboarded', '1'); } catch(e) {}
+  if (obData.goal) S.scenario = obData.goal;
+  if (obData.coach) selectProfile(obData.coach, true);
   saveSettings();
   updateChips();
-  // Hide onboarding
-  const el = document.getElementById('onboarding-overlay');
-  if (el) { el.style.display = 'none'; el.classList.add('hidden'); }
-  // Send to Practice Lab for first session
+  document.getElementById('onboarding-overlay').classList.add('hidden');
   navTo('practice');
-  showToast('', 'Welcome to Conver! Let\'s get your first session in.');
+  const name = currentUser?.email?.split('@')[0] || 'there';
+  showToast('', `Let's go, ${name}! Your first session is ready.`);
 }
+
 function checkOnboarding() {
   // Show onboarding only for first-time signed-in users with no history
-  if (!localStorage.getItem('conver_onboarded') && S.sessions === 0) {
+  const hasOnboarded = (() => {
+    try { return localStorage.getItem('conver_onboarded') === '1'; } catch(e) { return true; }
+  })();
+  if (!hasOnboarded && S.sessions === 0) {
     setTimeout(() => showOnboarding(), 600);
   }
 }
@@ -10797,55 +10969,116 @@ rippleStyle.textContent = '@keyframes ripple{to{width:120px;height:120px;opacity
 document.head.appendChild(rippleStyle);
 </script>
 
-<div id="onboarding-overlay" class="hidden" style="
-  position:fixed;inset:0;background:rgba(3,3,10,0.92);
-  backdrop-filter:blur(16px);z-index:8000;
-  display:flex;align-items:center;justify-content:center;
-">
-  <div style="
-    background:var(--s1);border:1px solid var(--border2);
-    border-radius:24px;padding:48px 40px;width:560px;max-width:95vw;
-    position:relative;overflow:hidden;
-    box-shadow:0 32px 80px rgba(0,0,0,0.6);
-  ">
-    <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(var(--accent-rgb),0.6),transparent)"></div>
-    <!-- Step indicator -->
-    <div style="display:flex;gap:6px;margin-bottom:32px">
-      <div class="ob-step-dot active" id="ob-dot-1"></div>
-      <div class="ob-step-dot" id="ob-dot-2"></div>
-      <div class="ob-step-dot" id="ob-dot-3"></div>
-    </div>
-    <!-- Step 1: Goal -->
-    <div id="ob-step-1">
-      <div style="font-family:'Italiana',serif;font-size:32px;color:var(--text);margin-bottom:8px">What are you practicing for?</div>
-      <p style="font-size:14px;color:var(--muted2);margin-bottom:28px">This shapes the questions, scenarios, and coaching style you'll get.</p>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:28px">
-        <div class="ob-goal-btn" onclick="selectOnboardingGoal('interview')" data-goal="interview">Job Interviews</div>
-        <div class="ob-goal-btn" onclick="selectOnboardingGoal('pitch')" data-goal="pitch">Pitching & Sales</div>
-        <div class="ob-goal-btn" onclick="selectOnboardingGoal('networking')" data-goal="networking">Networking</div>
-        <div class="ob-goal-btn" onclick="selectOnboardingGoal('leadership')" data-goal="leadership">Leadership</div>
-        <div class="ob-goal-btn" onclick="selectOnboardingGoal('public')" data-goal="public">Public Speaking</div>
-        <div class="ob-goal-btn" onclick="selectOnboardingGoal('social')" data-goal="social">Social Confidence</div>
+<!-- ── ONBOARDING OVERLAY ─────────────────────────────────── -->
+<div id="onboarding-overlay" class="ob-overlay hidden">
+  <div class="ob-dots">
+    <div class="ob-dot active" id="ob-dot-0"></div>
+    <div class="ob-dot" id="ob-dot-1"></div>
+    <div class="ob-dot" id="ob-dot-2"></div>
+    <div class="ob-dot" id="ob-dot-3"></div>
+    <div class="ob-dot" id="ob-dot-4"></div>
+  </div>
+  <button class="ob-skip" onclick="finishOnboarding()">Skip →</button>
+  <div class="ob-steps" id="ob-steps">
+    <!-- STEP 0: Welcome -->
+    <div class="ob-step active" id="ob-step-0">
+      <div class="ob-anim-container">
+        <div class="ob-logo-orb" id="ob-orb">
+          <div class="ob-orb-ring ob-orb-ring-1"></div>
+          <div class="ob-orb-ring ob-orb-ring-2"></div>
+          <div class="ob-orb-ring ob-orb-ring-3"></div>
+          <div class="ob-orb-core">
+            <img src="/logo.png" style="width:40px;height:40px;object-fit:contain" onerror="this.remove()" />
+          </div>
+        </div>
       </div>
-      <button class="btn-primary" onclick="obNext(2)" id="ob-next-1" style="opacity:0.4;pointer-events:none">Continue →</button>
-    </div>
-    <!-- Step 2: Coach -->
-    <div id="ob-step-2" class="hidden">
-      <div style="font-family:'Italiana',serif;font-size:32px;color:var(--text);margin-bottom:8px">Pick your coach.</div>
-      <p style="font-size:14px;color:var(--muted2);margin-bottom:24px">You can change this any time. Choose whoever matches how you like to be challenged.</p>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:28px" id="ob-coach-grid"></div>
-      <button class="btn-primary" onclick="obNext(3)" id="ob-next-2" style="opacity:0.4;pointer-events:none">Continue →</button>
-    </div>
-    <!-- Step 3: Ready -->
-    <div id="ob-step-3" class="hidden">
-      <div style="font-family:'Italiana',serif;font-size:38px;color:var(--text);margin-bottom:12px;line-height:1.1">You're all set.<br><em style="background:var(--g-brand);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Let's get to work.</em></div>
-      <p style="font-size:14px;color:var(--muted2);margin-bottom:28px;line-height:1.75">Your first session takes about 5 minutes. Submit a response, get scored across 5 dimensions, and see exactly what to improve.</p>
-      <div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:24px;font-size:13px;color:var(--muted2);line-height:1.9">
-        <div>Goal: <strong style="color:var(--text)" id="ob-summary-goal">—</strong></div>
-        <div>Coach: <strong style="color:var(--accent3)" id="ob-summary-coach">—</strong></div>
-        <div>Scoring: Clarity, Confidence, Persuasion, Storytelling, Conciseness</div>
+      <div class="ob-content">
+        <div class="ob-eyebrow">Welcome to</div>
+        <div class="ob-title">Conver</div>
+        <div class="ob-sub">Your AI communication coach. Practice interviews, pitches, debates, and high-stakes conversations — and actually get better.</div>
+        <button class="ob-btn-primary" onclick="obNext()">Get Started →</button>
       </div>
-      <button class="btn-primary" onclick="finishOnboarding()">Start My First Session →</button>
+    </div>
+    <!-- STEP 1: What's your goal? -->
+    <div class="ob-step" id="ob-step-1">
+      <div class="ob-content ob-content-wide">
+        <div class="ob-eyebrow">Step 1 of 4</div>
+        <div class="ob-title">What are you working on?</div>
+        <div class="ob-sub">Your coaches, scenarios, and feedback will be tailored to this.</div>
+        <div class="ob-goal-grid" id="ob-goal-grid"></div>
+        <button class="ob-btn-primary" id="ob-goal-btn" onclick="obNext()" disabled>Continue →</button>
+      </div>
+    </div>
+    <!-- STEP 2: Pick your coach -->
+    <div class="ob-step" id="ob-step-2">
+      <div class="ob-content ob-content-wide">
+        <div class="ob-eyebrow">Step 2 of 4</div>
+        <div class="ob-title">Pick your coach</div>
+        <div class="ob-sub">Each coach has a different style. You can switch anytime.</div>
+        <div class="ob-coach-grid" id="ob-coach-grid"></div>
+        <button class="ob-btn-primary" id="ob-coach-btn" onclick="obNext()" disabled>Continue →</button>
+      </div>
+    </div>
+    <!-- STEP 3: How it works -->
+    <div class="ob-step" id="ob-step-3">
+      <div class="ob-content">
+        <div class="ob-eyebrow">Step 3 of 4</div>
+        <div class="ob-title">Here's how it works</div>
+        <div class="ob-how-list">
+          <div class="ob-how-item" style="animation-delay:0.1s">
+            <div class="ob-how-num">1</div>
+            <div>
+              <div class="ob-how-title">Pick a scenario</div>
+              <div class="ob-how-desc">Interview question, pitch, debate, cold open — whatever you want to practice.</div>
+            </div>
+          </div>
+          <div class="ob-how-item" style="animation-delay:0.2s">
+            <div class="ob-how-num">2</div>
+            <div>
+              <div class="ob-how-title">Respond — type or speak</div>
+              <div class="ob-how-desc">Your coach listens. You can type or use your voice. Real-time analysis is optional.</div>
+            </div>
+          </div>
+          <div class="ob-how-item" style="animation-delay:0.3s">
+            <div class="ob-how-num">3</div>
+            <div>
+              <div class="ob-how-title">Get scored and coached</div>
+              <div class="ob-how-desc">Clarity, confidence, persuasion, storytelling. Your coach tells you exactly what to fix.</div>
+            </div>
+          </div>
+          <div class="ob-how-item" style="animation-delay:0.4s">
+            <div class="ob-how-num">4</div>
+            <div>
+              <div class="ob-how-title">Track your growth</div>
+              <div class="ob-how-desc">XP, levels, streaks, skill radar. Every session makes you measurably better.</div>
+            </div>
+          </div>
+        </div>
+        <button class="ob-btn-primary" onclick="obNext()" style="margin-top:28px">Got It →</button>
+      </div>
+    </div>
+    <!-- STEP 4: You're ready -->
+    <div class="ob-step" id="ob-step-4">
+      <div class="ob-anim-container">
+        <div class="ob-ready-anim" id="ob-ready-anim">
+          <svg viewBox="0 0 120 120" width="120" height="120">
+            <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(var(--accent-rgb),0.15)" stroke-width="4"/>
+            <circle cx="60" cy="60" r="54" fill="none" stroke="var(--accent)" stroke-width="4"
+              stroke-dasharray="339" stroke-dashoffset="339"
+              style="animation:obCircle 0.8s ease forwards 0.3s;transform-origin:center;transform:rotate(-90deg)"
+              id="ob-circle"/>
+            <polyline points="38,62 54,78 82,46" fill="none" stroke="var(--accent)" stroke-width="5"
+              stroke-linecap="round" stroke-linejoin="round"
+              stroke-dasharray="60" stroke-dashoffset="60"
+              style="animation:obCheck 0.4s ease forwards 0.9s"/>
+          </svg>
+        </div>
+      </div>
+      <div class="ob-content">
+        <div class="ob-title">You're all set</div>
+        <div class="ob-sub" id="ob-ready-sub">Your coach is ready. Your first session is waiting. Let's see what you're made of.</div>
+        <button class="ob-btn-primary ob-btn-glow" onclick="finishOnboarding()">Enter Conver →</button>
+      </div>
     </div>
   </div>
 </div>
