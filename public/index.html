@@ -2576,6 +2576,103 @@ body.reducemotion .coach-orb-wave { animation: none !important; }
 h1, h2, h3 {
   font-family: 'Italiana', serif !important;
 }
+
+/* ══════════════════════════════════════════════════
+   MOBILE RESPONSIVE — screens under 768px (phones)
+   iPad (768px+) is already fine — don't touch it
+   ══════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+  /* ── LAYOUT ─────────────────────────────────── */
+  .app { flex-direction: column; }
+
+  /* Hide the desktop horizontal tab bar entirely */
+  .app-tabs-wrap { display: none !important; }
+
+  /* Content area: full width, bottom padding for the nav bar */
+  .app-content { width: 100%; }
+  .page { padding: 14px 14px 20px; padding-bottom: 78px; }
+
+  /* Header — tighten up */
+  .app-header { padding: 0 14px; height: 50px; min-height: 50px; }
+
+  /* Hide the chip row on mobile — too cluttered */
+  .app-header-center { display: none !important; }
+
+  /* ── BOTTOM NAV BAR ─────────────────────────── */
+  .mobile-bottom-nav {
+    display: flex !important;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 64px;
+    background: var(--bg1, #0d0e1a);
+    border-top: 1px solid var(--border, rgba(255,255,255,0.07));
+    z-index: 1000;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 4px;
+    padding-bottom: env(safe-area-inset-bottom); /* iPhone notch support */
+  }
+  .mbn-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    background: none;
+    border: none;
+    color: var(--muted, #6b7494);
+    font-size: 9.5px;
+    font-family: 'DM Mono', monospace;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 10px;
+    transition: color 0.2s;
+    flex: 1;
+    max-width: 72px;
+  }
+  .mbn-item.active { color: var(--accent3, #b48cff); }
+  .mbn-item svg { width: 20px; height: 20px; }
+
+  /* ── HOME PAGE ──────────────────────────────── */
+  .home-hero { grid-template-columns: 1fr !important; }
+  .home-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+  .home-bottom { grid-template-columns: 1fr !important; gap: 10px !important; }
+
+  /* ── PRACTICE LAB ───────────────────────────── */
+  .practice-layout { grid-template-columns: 1fr !important; }
+  .score-row { grid-template-columns: repeat(3, 1fr) !important; }
+  .scenario-cards { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* ── WARMUP ─────────────────────────────────── */
+  .warmup-layout { grid-template-columns: 1fr !important; }
+
+  /* ── REAL-TIME ──────────────────────────────── */
+  /* Stack camera and metrics vertically */
+  #rt-session > div { grid-template-columns: 1fr !important; }
+
+  /* ── ONBOARDING ─────────────────────────────── */
+  .ob-goal-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .ob-coach-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .ob-title { font-size: 26px !important; }
+
+  /* ── PANELS AND MODALS ──────────────────────── */
+  .share-modal { width: 95vw !important; padding: 20px !important; }
+
+  /* ── TYPOGRAPHY ─────────────────────────────── */
+  .section-head h2 { font-size: 20px !important; }
+  .section-head p { font-size: 13px !important; }
+
+  /* ── BUTTONS ─────────────────────────────────── */
+  .btn-primary { width: 100%; justify-content: center; }
+
+  /* ── PANELS ──────────────────────────────────── */
+  .panel { padding: 14px !important; }
+
+  /* ── HOME HERO SCORE CARD ───────────────────── */
+  .conver-score-card { min-height: 120px !important; }
+} /* end @media (max-width: 767px) */
+
+/* Bottom nav hidden on desktop by default */
+.mobile-bottom-nav { display: none; }
 </style>
 </head>
 <body>
@@ -3988,6 +4085,30 @@ h1, h2, h3 {
       </footer>
 
   </main>
+
+  <!-- Mobile bottom navigation — hidden on desktop -->
+  <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+    <button class="mbn-item active" onclick="navTo('home')" id="mbn-home">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>Home</span>
+    </button>
+    <button class="mbn-item" onclick="navTo('practice')" id="mbn-practice">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+      <span>Practice</span>
+    </button>
+    <button class="mbn-item" onclick="navTo('coldopen')" id="mbn-coldopen">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      <span>Cold Open</span>
+    </button>
+    <button class="mbn-item" onclick="navTo('insights')" id="mbn-insights">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span>Insights</span>
+    </button>
+    <button class="mbn-item" onclick="navTo('settings')" id="mbn-settings">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 018 0v2"/></svg>
+      <span>Profile</span>
+    </button>
+  </nav>
 </div>
 
 <script>
@@ -6488,6 +6609,20 @@ function navTo(page){
     if (messages) {
       messages.innerHTML = `<div class="msg msg-ai"><div class="msg-name">${S.coach}</div><span id="coach-greeting">${document.getElementById('coach-greeting')?.textContent}</span></div>`;
     }
+  }
+  // Sync mobile bottom nav active state
+  document.querySelectorAll('.mbn-item').forEach(b => b.classList.remove('active'));
+  const mbnMap = {
+    'home': 'mbn-home',
+    'practice': 'mbn-practice',
+    'coldopen': 'mbn-coldopen',
+    'insights': 'mbn-insights',
+    'settings': 'mbn-settings',
+  };
+  const mbnId = mbnMap[page];
+  if (mbnId) {
+    const mbnEl = document.getElementById(mbnId);
+    if (mbnEl) mbnEl.classList.add('active');
   }
 }
 
