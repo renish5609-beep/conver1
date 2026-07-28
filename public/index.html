@@ -2823,9 +2823,6 @@ h1, h2, h3 {
     </div>
     <div class="tabs-divider"></div>
     <div class="tabs-group tabs-group-right">
-      <button class="tab-item" data-page="skills" onclick="navTo('skills')">Skills</button>
-      <button class="tab-item" data-page="daily" onclick="navTo('daily')">Daily</button>
-      <button class="tab-item" data-page="coachnotes" onclick="navTo('coachnotes')">Coach Notes</button>
       <button class="tab-item" data-page="insights" onclick="navTo('insights')">Insights</button>
       <button class="tab-item" data-page="history" onclick="navTo('history')">History</button>
       <button class="tab-item" data-page="briefing" onclick="navTo('briefing')">Briefing</button>
@@ -2982,6 +2979,38 @@ h1, h2, h3 {
                 <div style="display:flex;gap:10px">
                   <button onclick="resetWarmup()" class="btn-ghost" style="flex:1">↺ New Question</button>
                   <button onclick="navTo('practice')" class="btn-primary" style="flex:1">Go Practice →</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Daily Challenge — merged into Warmup page -->
+        <div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--border)">
+          <div class="section-head" style="margin-bottom:20px">
+            <h2 style="font-size:18px">Daily Challenge</h2>
+            <p>One targeted question every day based on your weak spots. Keep the streak alive.</p>
+          </div>
+          <div class="daily-layout">
+            <div>
+              <div class="daily-card" id="daily-card">
+                <div class="daily-eyebrow" id="daily-eyebrow">Today's Challenge</div>
+                <div class="daily-question" id="daily-question">Loading your challenge...</div>
+                <div class="daily-meta" id="daily-meta"></div>
+                <button class="btn-primary" id="daily-practice-btn" onclick="startDailyChallenge()" style="max-width:220px">Practice This →</button>
+              </div>
+              <div style="margin-top:16px" id="daily-completed-area"></div>
+            </div>
+            <div>
+              <div class="daily-streak-card" style="margin-bottom:14px">
+                <div style="font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;font-family:'DM Mono',monospace;margin-bottom:10px">Challenge Streak</div>
+                <div class="daily-streak-num" id="daily-streak">0</div>
+                <div style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:4px">days in a row</div>
+              </div>
+              <div class="daily-focus-card">
+                <div class="daily-focus-title">Your Focus Areas</div>
+                <div id="daily-focus-list">
+                  <div class="daily-focus-item">Complete a session to unlock personalized focus areas</div>
                 </div>
               </div>
             </div>
@@ -3287,38 +3316,80 @@ h1, h2, h3 {
         </div>
       </div>
 
-      <!-- SKILLS & PROGRESS -->
-      <div class="page" id="page-skills">
-        <div class="section-head"><h2>Skills & Progress</h2><p>Your communication profile — updated after every session.</p></div>
-        <div class="skills-layout">
-          <div class="panel">
-            <div class="panel-title">Communication Radar</div>
-            <div style="display:flex;justify-content:center;margin-bottom:20px"><div class="radar-wrap"><canvas id="radar-canvas" width="200" height="200"></canvas></div></div>
-            <div id="skill-bars"></div>
-          </div>
-          <div>
-            <div class="panel" style="margin-bottom:14px">
-              <div class="panel-title">Practice Streak</div>
-              <div class="streak-display">
-                <div class="streak-num" id="streak-num">0</div>
-                <div class="streak-label">Day Streak</div>
-                <div class="streak-days" id="streak-days"></div>
-              </div>
-            </div>
+      <!-- SKILLS & PROGRESS — merged into Insights, kept as an empty hidden
+           shell (not deleted) so nothing that checks for this page id breaks.
+           Its content now lives inside #insights-tab-skills below. -->
+      <div class="page" id="page-skills" style="display:none"></div>
+
+      <!-- INSIGHTS -->
+      <div class="page" id="page-insights">
+        <div class="section-head">
+          <h2>Insights</h2>
+          <p>Your skills, trends, coach observations, and session patterns — all in one place.</p>
+        </div>
+        <!-- Internal section tabs -->
+        <div style="display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap">
+          <button class="insights-tab-btn active" id="itab-insights" onclick="switchInsightsTab('insights')" style="padding:7px 16px;border-radius:8px;border:1px solid var(--accent);background:rgba(var(--accent-rgb),0.12);color:var(--accent3);font-size:12.5px;font-family:'DM Mono',monospace;cursor:pointer">Insights</button>
+          <button class="insights-tab-btn" id="itab-skills" onclick="switchInsightsTab('skills')" style="padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted2);font-size:12.5px;font-family:'DM Mono',monospace;cursor:pointer">Skills & Progress</button>
+          <button class="insights-tab-btn" id="itab-coachnotes" onclick="switchInsightsTab('coachnotes')" style="padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted2);font-size:12.5px;font-family:'DM Mono',monospace;cursor:pointer">Coach Notes</button>
+        </div>
+        <!-- Insights section -->
+        <div id="insights-tab-insights">
+          <div id="insights-content"><div class="empty-state" style="padding:60px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><p>Complete at least one session to see your insights.</p></div></div>
+        </div>
+        <!-- Skills section -->
+        <div id="insights-tab-skills" style="display:none">
+          <div class="skills-layout">
             <div class="panel">
-              <div class="panel-title">Conver Score Breakdown</div>
-              <div id="score-breakdown">
-                <div class="empty-state" style="padding:28px"><p>Complete sessions to see your score breakdown.</p></div>
+              <div class="panel-title">Communication Radar</div>
+              <div style="display:flex;justify-content:center;margin-bottom:20px"><div class="radar-wrap"><canvas id="radar-canvas" width="200" height="200"></canvas></div></div>
+              <div id="skill-bars"></div>
+            </div>
+            <div>
+              <div class="panel" style="margin-bottom:14px">
+                <div class="panel-title">Practice Streak</div>
+                <div class="streak-display">
+                  <div class="streak-num" id="streak-num">0</div>
+                  <div class="streak-label">Day Streak</div>
+                  <div class="streak-days" id="streak-days"></div>
+                </div>
+              </div>
+              <div class="panel">
+                <div class="panel-title">Conver Score Breakdown</div>
+                <div id="score-breakdown">
+                  <div class="empty-state" style="padding:28px"><p>Complete sessions to see your score breakdown.</p></div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- INSIGHTS -->
-      <div class="page" id="page-insights">
-        <div class="section-head"><h2>Insights</h2><p>Patterns and trends across your practice sessions.</p></div>
-        <div id="insights-content"><div class="empty-state" style="padding:60px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><p>Complete at least one session to see your insights.</p></div></div>
+        <!-- Coach Notes section -->
+        <div id="insights-tab-coachnotes" style="display:none">
+          <div class="coach-notes-layout">
+            <div>
+              <div class="panel-title" style="font-size:10px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;font-family:'DM Mono',monospace;margin-bottom:14px">Observations</div>
+              <div id="coach-notes-list">
+                <div style="text-align:center;padding:48px 24px">
+                  <div style="font-size:40px;margin-bottom:12px;opacity:0.4"></div>
+                  <div style="font-family:'Italiana',serif;font-size:22px;color:var(--text);margin-bottom:6px">No notes yet.</div>
+                  <p style="font-size:13px;color:var(--muted2);line-height:1.7">After 2+ sessions your coach will start building a picture of your patterns, habits, and growth areas.</p>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="panel" style="margin-bottom:14px">
+                <div class="panel-title">Generate Notes</div>
+                <p style="font-size:13px;color:var(--muted2);line-height:1.7;margin-bottom:16px">Ask your coach to analyze your patterns and leave observations about your communication style.</p>
+                <button class="btn-primary" onclick="generateCoachNotes()" id="gen-notes-btn">Generate Coach Notes</button>
+              </div>
+              <div class="panel">
+                <div class="panel-title">Share Your Score</div>
+                <p style="font-size:13px;color:var(--muted2);line-height:1.7;margin-bottom:16px">Share your Conver Score with the world — show people how you communicate.</p>
+                <button class="btn-primary" onclick="openShareModal()" style="background:linear-gradient(135deg,var(--accent),var(--accent3))">Share My Score</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- HISTORY -->
@@ -3327,64 +3398,13 @@ h1, h2, h3 {
         <div class="history-list" id="history-list"><div class="empty-state" style="padding:60px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><p>No sessions yet.</p></div></div>
       </div>
 
+      <!-- DAILY CHALLENGE — merged into Warmup, kept as an empty hidden shell
+           (not deleted). Its content now lives inside #page-warmup below. -->
+      <div class="page" id="page-daily" style="display:none"></div>
 
-      <!-- DAILY CHALLENGE -->
-      <div class="page" id="page-daily">
-        <div class="section-head"><h2>Daily Challenge</h2><p>One targeted question every day based on your weak spots. Keep the streak alive.</p></div>
-        <div class="daily-layout">
-          <div>
-            <div class="daily-card" id="daily-card">
-              <div class="daily-eyebrow" id="daily-eyebrow">Today's Challenge</div>
-              <div class="daily-question" id="daily-question">Loading your challenge...</div>
-              <div class="daily-meta" id="daily-meta"></div>
-              <button class="btn-primary" id="daily-practice-btn" onclick="startDailyChallenge()" style="max-width:220px">Practice This →</button>
-            </div>
-            <div style="margin-top:16px" id="daily-completed-area"></div>
-          </div>
-          <div>
-            <div class="daily-streak-card" style="margin-bottom:14px">
-              <div style="font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;font-family:'DM Mono',monospace;margin-bottom:10px">Challenge Streak</div>
-              <div class="daily-streak-num" id="daily-streak">0</div>
-              <div style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:4px">days in a row</div>
-            </div>
-            <div class="daily-focus-card">
-              <div class="daily-focus-title">Your Focus Areas</div>
-              <div id="daily-focus-list">
-                <div class="daily-focus-item">Complete a session to unlock personalized focus areas</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- COACH NOTES -->
-      <div class="page" id="page-coachnotes">
-        <div class="section-head"><h2>Coach Notes</h2><p>Patterns your coach has noticed across your sessions. Updated automatically.</p></div>
-        <div class="coach-notes-layout">
-          <div>
-            <div class="panel-title" style="font-size:10px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;font-family:'DM Mono',monospace;margin-bottom:14px">Observations</div>
-            <div id="coach-notes-list">
-              <div style="text-align:center;padding:48px 24px">
-                <div style="font-size:40px;margin-bottom:12px;opacity:0.4"></div>
-                <div style="font-family:'Italiana',serif;font-size:22px;color:var(--text);margin-bottom:6px">No notes yet.</div>
-                <p style="font-size:13px;color:var(--muted2);line-height:1.7">After 2+ sessions your coach will start building a picture of your patterns, habits, and growth areas.</p>
-              </div>
-            </div>
-          </div>
-          <div>
-            <div class="panel" style="margin-bottom:14px">
-              <div class="panel-title">Generate Notes</div>
-              <p style="font-size:13px;color:var(--muted2);line-height:1.7;margin-bottom:16px">Ask your coach to analyze your patterns and leave observations about your communication style.</p>
-              <button class="btn-primary" onclick="generateCoachNotes()" id="gen-notes-btn">Generate Coach Notes</button>
-            </div>
-            <div class="panel">
-              <div class="panel-title">Share Your Score</div>
-              <p style="font-size:13px;color:var(--muted2);line-height:1.7;margin-bottom:16px">Share your Conver Score with the world — show people how you communicate.</p>
-              <button class="btn-primary" onclick="openShareModal()" style="background:linear-gradient(135deg,var(--accent),var(--accent3))">Share My Score</button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <!-- COACH NOTES — merged into Insights, kept as an empty hidden shell
+           (not deleted). Its content now lives inside #insights-tab-coachnotes above. -->
+      <div class="page" id="page-coachnotes" style="display:none"></div>
 
 
       <!-- LIVE DEBATE -->
@@ -6552,6 +6572,10 @@ function initUI(){
 // ── Navigation ────────────────────────────────────────────────────────────────
 document.querySelectorAll('.nav-item[data-page]').forEach(btn=>{btn.addEventListener('click',()=>navTo(btn.dataset.page));});
 function navTo(page){
+  // Redirect old merged-away page ids to their new home
+  if (page === 'skills') { navTo('insights'); switchInsightsTab('skills'); return; }
+  if (page === 'coachnotes') { navTo('insights'); switchInsightsTab('coachnotes'); return; }
+  if (page === 'daily') { navTo('warmup'); return; }
   try { localStorage.setItem('conver_last_page', page); } catch(e) {}
   if (page !== 'realtime') stopRealTimeIfActive();
   showBackBtn(false);
@@ -6570,9 +6594,8 @@ function navTo(page){
       ? titleText + ' <span style="margin-left:6px;font-size:9px;font-weight:800;letter-spacing:0.5px;color:#fbbf24;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.3);border-radius:20px;padding:2px 7px;vertical-align:middle;font-family:\'DM Mono\',monospace">BETA</span>'
       : titleText;
   }
-  if(page==='insights')renderInsights();
+  if(page==='insights'){renderInsights();renderSkills();drawRadar();renderCoachNotes();}
   if(page==='history')renderHistory();
-  if(page==='skills'){renderSkills();drawRadar();}
   if(page==='voice'){
     const voiceAvatarEl = document.getElementById('voice-coach-avatar');
     if (voiceAvatarEl) {
@@ -6580,9 +6603,10 @@ function navTo(page){
       voiceAvatarEl.className = 'coach-session-card ' + (COACH_DATA[currentVoiceCoach||S.coach]?.cssClass || '');
     }
   }
-  if(page==='warmup'&&wuCurrentQuestion)showBackBtn(true,'Warmup');
-  if(page==='daily')renderDailyChallenge();
-  if(page==='coachnotes')renderCoachNotes();
+  if(page==='warmup'){
+    if(wuCurrentQuestion)showBackBtn(true,'Warmup');
+    renderDailyChallenge();
+  }
   if(page==='debate'){initDebatePage();if(debateRunning)showBackBtn(true,'Debate Setup');}
   if(page==='coldopen'){initColdOpen();if(coState.running)showBackBtn(true,'Cold Open Setup');}
   if(page==='qbank')initQBank();
@@ -8137,6 +8161,33 @@ function startDailyChallenge() {
     showToast('', 'Daily challenge loaded — go!');
     if (S.autoplay !== false) speakText(dailyChallenge.question);
   }, 200);
+}
+
+// ── INSIGHTS INTERNAL TABS (Skills + Coach Notes merged in) ────────────────────
+function switchInsightsTab(tab) {
+  ['insights','skills','coachnotes'].forEach(t => {
+    const el = document.getElementById('insights-tab-' + t);
+    if (el) el.style.display = 'none';
+    const btn = document.getElementById('itab-' + t);
+    if (btn) {
+      btn.style.background = 'transparent';
+      btn.style.borderColor = 'var(--border)';
+      btn.style.color = 'var(--muted2)';
+    }
+  });
+  const active = document.getElementById('insights-tab-' + tab);
+  if (active) active.style.display = 'block';
+  const activeBtn = document.getElementById('itab-' + tab);
+  if (activeBtn) {
+    activeBtn.style.background = 'rgba(var(--accent-rgb),0.12)';
+    activeBtn.style.borderColor = 'var(--accent)';
+    activeBtn.style.color = 'var(--accent3)';
+  }
+  // Redraw radar when switching to skills tab — canvas sizing can be off
+  // if it was drawn while its container was hidden.
+  if (tab === 'skills' && typeof drawRadar === 'function') {
+    setTimeout(drawRadar, 100);
+  }
 }
 
 // ── COACH NOTES ───────────────────────────────────────────────────────────────
