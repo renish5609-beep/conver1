@@ -168,6 +168,97 @@ footer{padding:40px 60px;border-top:1px solid rgba(255,255,255,0.05);display:fle
 .footer-links a{font-size:12.5px;color:#6b7494;transition:color 0.2s}
 .footer-links a:hover{color:#9099b8}
 .footer-copy{font-size:11.5px;color:#6b7494;font-family:'DM Mono',monospace}
+
+/* NAV TOGGLE — hidden on desktop, shown on mobile */
+.nav-toggle{display:none;background:transparent;border:1px solid rgba(255,255,255,0.12);border-radius:8px;width:36px;height:36px;align-items:center;justify-content:center;color:#f0f1f8;cursor:pointer}
+
+/* ══════════════════════════════════════════════════
+   MOBILE RESPONSIVE — screens under 768px (phones)
+   ══════════════════════════════════════════════════ */
+@media (max-width:767px){
+  /* ── NAV ────────────────────────────────────── */
+  nav{padding:12px 18px}
+  .nav-logo{font-size:19px}
+  .nav-logo-icon{width:26px;height:26px}
+  .nav-toggle{display:flex}
+  .nav-links{
+    position:fixed;top:56px;left:0;right:0;
+    flex-direction:column;align-items:stretch;gap:0;
+    background:rgba(4,4,10,0.98);backdrop-filter:blur(24px);
+    border-bottom:1px solid rgba(255,255,255,0.08);
+    padding:4px 18px 12px;
+    max-height:0;overflow:hidden;opacity:0;
+    transition:max-height 0.3s ease,opacity 0.25s ease;
+    pointer-events:none;
+  }
+  .nav-links.open{max-height:400px;opacity:1;pointer-events:auto}
+  .nav-links a{width:100%;padding:14px 2px;border-bottom:1px solid rgba(255,255,255,0.06);font-size:15px}
+  .nav-links a:last-child{border-bottom:none}
+  .nav-cta{text-align:center;margin-top:10px;padding:12px 20px}
+
+  /* ── HERO ───────────────────────────────────── */
+  .hero{padding:90px 20px 50px;min-height:auto}
+  .hero h1{font-size:38px !important;letter-spacing:0;margin-bottom:18px}
+  .hero-sub{font-size:15px;max-width:100%;margin-bottom:28px}
+  .hero-badge{font-size:10px;padding:6px 12px;margin-bottom:22px;text-align:center}
+  .hero-ctas{flex-direction:column;width:100%;gap:12px}
+  .cta-primary,.cta-secondary{width:100%;text-align:center;box-sizing:border-box;padding:15px 20px}
+  .hero-tags{gap:8px;margin-top:36px}
+  .htag{font-size:10.5px;padding:5px 12px}
+
+  /* Floating preview — stack full width instead of absolutely
+     positioned overlapping cards (the cause of the horizontal
+     overflow / overlap on narrow screens) */
+  .floating-preview{
+    position:static;height:auto;
+    display:flex;flex-direction:column;gap:14px;
+    max-width:100%;margin-top:48px;
+  }
+  .float-card,
+  .float-card-1,.float-card-2,.float-card-3{
+    position:static !important;
+    width:100% !important;
+    max-width:100%;
+    left:auto;right:auto;top:auto;
+    transform:none !important;
+    animation:none !important;
+    box-sizing:border-box;
+  }
+
+  /* Stats — single column so labels never wrap/cramp */
+  .stats-container{margin-top:40px}
+  .stats-bar{flex-direction:column;max-width:100%}
+  .stat{border-right:none;border-bottom:1px solid rgba(255,255,255,0.06);padding:14px 16px}
+  .stat:last-child{border-bottom:none}
+
+  /* ── SECTIONS ───────────────────────────────── */
+  .section{padding:56px 20px}
+  .section h2{font-size:26px !important;margin-bottom:36px;letter-spacing:0}
+  .section-label{font-size:10px}
+
+  /* Feature cards — already collapse via auto-fit, forced for safety */
+  .features-grid{grid-template-columns:1fr;gap:14px}
+  .feature-card{padding:22px}
+
+  /* How it works — stack, hide the horizontal connector beam
+     (it only makes sense across a horizontal row) */
+  .steps{grid-template-columns:1fr;gap:28px}
+  .steps::before{display:none}
+
+  /* Coaches — single column */
+  .coaches-grid{grid-template-columns:1fr;gap:10px}
+  .coach-card{padding:18px}
+
+  /* ── CTA SECTION ────────────────────────────── */
+  .cta-section{padding:64px 20px}
+  .cta-section h2{font-size:28px !important;letter-spacing:-1px}
+  .cta-section p{font-size:14px}
+
+  /* ── FOOTER ─────────────────────────────────── */
+  footer{padding:28px 20px;flex-direction:column;align-items:flex-start;gap:18px}
+  .footer-links{flex-direction:column;gap:10px}
+  .footer-copy{font-size:10.5px;line-height:1.6}
+}
 </style>
 </head>
 <body>
@@ -181,7 +272,10 @@ footer{padding:40px 60px;border-top:1px solid rgba(255,255,255,0.05);display:fle
     <div class="nav-logo-icon"><img src="/logo.png" alt="Conver" style="width:100%;height:100%;object-fit:contain;border-radius:inherit"/></div>
     Conver
   </div>
-  <div class="nav-links">
+  <button class="nav-toggle" id="nav-toggle" onclick="toggleMobileNav()" aria-label="Menu" aria-expanded="false">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <div class="nav-links" id="nav-links">
     <a href="#features">Features</a>
     <a href="#how">How It Works</a>
     <a href="#coaches">Coaches</a>
@@ -449,6 +543,18 @@ setInterval(() => {
     scoreEl.style.transform = 'translateY(0)';
   }, 300);
 }, 2500);
+
+// ── MOBILE NAV TOGGLE ─────────────────────────────────────────
+function toggleMobileNav() {
+  const links = document.getElementById('nav-links');
+  const toggle = document.getElementById('nav-toggle');
+  const isOpen = links.classList.toggle('open');
+  toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+}
+document.querySelectorAll('.nav-links a').forEach(a => a.addEventListener('click', () => {
+  document.getElementById('nav-links').classList.remove('open');
+  document.getElementById('nav-toggle').setAttribute('aria-expanded', 'false');
+}));
 </script>
 </body>
 </html>
