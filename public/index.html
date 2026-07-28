@@ -6516,6 +6516,7 @@ function selectCoach(name) {
   switchVoiceCoach(name);
   renderCoachProfiles(); // re-render to show selected state
   showToast('✓', `${name} is now your active coach`);
+  saveUserData(); // sync to Supabase so other devices pick it up
 }
 
 const COACHES={
@@ -9102,6 +9103,7 @@ function saveSettings() {
   localStorage.setItem(userStorageKey('conver_settings'), JSON.stringify(settings));
   loadSettings();
   showToast('✓', 'Settings saved');
+  saveUserData(); // sync all settings to Supabase immediately
 }
 
 // Accent color switcher — each swatch drives a full coordinated palette
@@ -9142,6 +9144,7 @@ function setAccentColor(color) {
   applyAccentPalette(color);
   localStorage.setItem(userStorageKey('conver_accent'), color);
   showToast('', 'Accent color updated');
+  saveUserData(); // sync to Supabase so other devices pick it up
 }
 
 // Export user data as JSON download
@@ -9370,6 +9373,7 @@ function handleAvatarUpload(event) {
       localStorage.setItem(userStorageKey('conver_avatar'), dataUrl);
       applyAvatarPhoto();
       showToast('✓', 'Profile photo updated');
+      saveUserData(); // sync to Supabase so other devices pick it up
     };
     img.src = reader.result;
   };
@@ -9381,6 +9385,7 @@ function removeAvatarPhoto() {
   localStorage.removeItem(userStorageKey('conver_avatar'));
   applyAvatarPhoto();
   showToast('✓', 'Profile photo removed');
+  saveUserData(); // sync removal to Supabase so other devices clear it too
 }
 
 // Load saved accent color on boot. currentUser doesn't exist yet this early
@@ -10618,6 +10623,7 @@ async function afterSignIn(freshLogin = false) {
   migrateAllSettingsKeysToUser();
   loadSettings();
   applyAccentPalette(localStorage.getItem(userStorageKey('conver_accent')) || '#7c6fff');
+  applyAvatarPhoto();
   // Update UI
   const email = currentUser.email || 'User';
   document.getElementById('user-email-display').textContent = email;
@@ -10709,6 +10715,55 @@ async function loadUserData() {
           saveBriefing();
         }
         if (stats.selected_coach) selectProfile(stats.selected_coach, true);
+
+        // Restore settings (preferences/toggles/appearance) from the cloud
+        // so a fresh sign-in on another device gets the exact same setup,
+        // instead of starting every device from DEFAULT_SETTINGS.
+        if (stats.settings) {
+          const incoming = { ...stats.settings };
+          const accentColor = incoming.accentColor; delete incoming.accentColor;
+          const photoURL = incoming.photoURL; delete incoming.photoURL;
+          const onboarded = incoming.onboarded; delete incoming.onboarded;
+
+          const currentSettings = JSON.parse(localStorage.getItem(userStorageKey('conver_settings')) || '{}');
+          localStorage.setItem(userStorageKey('conver_settings'), JSON.stringify({ ...currentSettings, ...incoming }));
+          loadSettings();
+          applySettingsToUI();
+
+          if (accentColor) {
+            localStorage.setItem(userStorageKey('conver_accent'), accentColor);
+            applyAccentPalette(accentColor);
+          }
+          // Sync photo both ways — an empty photoURL means it was removed
+          // on another device, so clear the local copy too instead of only
+          // ever applying a non-empty one.
+          if (photoURL) {
+            localStorage.setItem(userStorageKey('conver_avatar'), photoURL);
+          } else {
+            localStorage.removeItem(userStorageKey('conver_avatar'));
+          }
+          applyAvatarPhoto();
+          if (onboarded) {
+            try { localStorage.setItem('conver_onboarded', '1'); } catch(e) {}
+          }
+        }
+
+        // Coach notes — synced as one array under coach_notes (jsonb)
+        if (stats.coach_notes && Array.isArray(stats.coach_notes) && stats.coach_notes.length) {
+          coachNotes = stats.coach_notes;
+          try { localStorage.setItem('conver_coach_notes', JSON.stringify(coachNotes)); } catch(e) {}
+        }
+
+        // Daily Challenge — only meaningful if it's still the same day;
+        // otherwise renderDailyChallenge() will generate a fresh one anyway.
+        if (stats.daily_data && stats.daily_data.date === tzDateKey()) {
+          if (stats.daily_data.challenge) {
+            try { localStorage.setItem('conver_daily_' + stats.daily_data.date, JSON.stringify(stats.daily_data.challenge)); } catch(e) {}
+          }
+          if (stats.daily_data.completed) {
+            try { localStorage.setItem('conver_daily_done_' + stats.daily_data.date, 'true'); } catch(e) {}
+          }
+        }
       }
     }
     // Load sessions
@@ -10759,6 +10814,25 @@ async function loadUserData() {
 async function saveUserData() {
   if (!authToken) return;
   try {
+    // Settings live as a single namespaced-localStorage blob (not on S), so
+    // pull the real thing rather than a parallel set of fields nothing else
+    // reads. Accent/avatar/onboarded are stored under their own separate
+    // keys locally — folded into the same settings jsonb column here so one
+    // fetch on another device restores all of them together.
+    const settingsPayload = {
+      ...DEFAULT_SETTINGS,
+      ...JSON.parse(localStorage.getItem(userStorageKey('conver_settings')) || '{}'),
+    };
+    settingsPayload.accentColor = localStorage.getItem(userStorageKey('conver_accent')) || '#7c6fff';
+    settingsPayload.photoURL = localStorage.getItem(userStorageKey('conver_avatar')) || '';
+    settingsPayload.onboarded = localStorage.getItem('conver_onboarded') === '1';
+
+    // Daily Challenge is generated fresh per day per browser (see
+    // renderDailyChallenge()) — sync today's snapshot so a second device
+    // doesn't regenerate a different question or lose "completed" state.
+    const todayKey = tzDateKey();
+    const dailyPayload = { date: todayKey, challenge: dailyChallenge || null, completed: !!dailyCompleted };
+
     const res = await fetch('/api/user/stats', {
       method: 'POST',
       headers: {'Content-Type':'application/json','Authorization':'Bearer '+authToken},
@@ -10779,7 +10853,10 @@ async function saveUserData() {
           scores_confidence: S.scores.confidence,
           scores_persuasion: S.scores.persuasion,
           briefing: S.briefing,
-          selected_coach: S.coach
+          selected_coach: S.coach,
+          coach_notes: coachNotes,
+          daily_data: dailyPayload,
+          settings: settingsPayload
         }
       })
     });
@@ -10964,7 +11041,14 @@ function selectObCoach(name, el) {
 
 function finishOnboarding() {
   try { localStorage.setItem('conver_onboarded', '1'); } catch(e) {}
-  if (obData.goal) S.scenario = obData.goal;
+  if (obData.goal) {
+    S.scenario = obData.goal;
+    // saveSettings() reads the goal from this select's value, not from
+    // S.scenario directly — without this the onboarding goal choice would
+    // silently never make it into the synced settings.
+    const goalEl = document.getElementById('set-goal');
+    if (goalEl) goalEl.value = obData.goal;
+  }
   if (obData.coach) selectProfile(obData.coach, true);
   saveSettings();
   updateChips();
