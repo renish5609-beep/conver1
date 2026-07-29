@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <title>Conver — AI Conversation Intelligence</title>
 <link rel="icon" type="image/png" href="/favicon.png"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -2577,102 +2577,169 @@ h1, h2, h3 {
   font-family: 'Italiana', serif !important;
 }
 
-/* ══════════════════════════════════════════════════
-   MOBILE RESPONSIVE — screens under 768px (phones)
-   iPad (768px+) is already fine — don't touch it
-   ══════════════════════════════════════════════════ */
-@media (max-width: 767px) {
-  /* ── LAYOUT ─────────────────────────────────── */
-  .app { flex-direction: column; }
+/* ════════════════════════════════════════════════════════
+   MOBILE — phones under 768px only. iPad+ unchanged.
+   Bottom nav hidden on desktop by default.
+   ════════════════════════════════════════════════════════ */
+.mobile-nav { display: none; }
 
-  /* Hide the desktop horizontal tab bar entirely */
+@media (max-width: 767px) {
+  /* ── GLOBAL ─────────────────────────────────────────── */
+  html, body { overflow-x: hidden; }
+
+  /* ── APP LAYOUT ─────────────────────────────────────── */
+  .app { flex-direction: column; height: 100vh; overflow: hidden; }
+
+  /* Hide the desktop horizontal tab bar entirely (this app's real
+     desktop nav — .sidebar/.topbar are legacy classes, already
+     display:none and unused in markup) */
   .app-tabs-wrap { display: none !important; }
 
-  /* Content area: full width, bottom padding for the nav bar */
-  .app-content { width: 100%; }
-  .page { padding: 14px 14px 20px; padding-bottom: 78px; }
+  /* ── HEADER ─────────────────────────────────────────── */
+  .app-header { padding: 0 14px; height: 50px; min-height: 50px; flex-shrink: 0; }
 
-  /* Header — tighten up */
-  .app-header { padding: 0 14px; height: 50px; min-height: 50px; }
-
-  /* Hide the chip row on mobile — too cluttered */
+  /* Hide the chip row — too cluttered on phone */
   .app-header-center { display: none !important; }
 
-  /* ── BOTTOM NAV BAR ─────────────────────────── */
-  .mobile-bottom-nav {
-    display: flex !important;
+  .user-avatar { width: 26px !important; height: 26px !important; }
+
+  /* ── CONTENT SCROLL AREA ────────────────────────────── */
+  .app-content { width: 100%; flex: 1; min-height: 0; }
+  .page {
+    padding: 14px 14px 80px; /* bottom padding clears the nav bar */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── MOBILE BOTTOM NAV — scrollable, shows every page ── */
+  .mobile-nav {
+    display: block !important;
     position: fixed;
     bottom: 0; left: 0; right: 0;
-    height: 64px;
+    height: 60px;
     background: var(--bg1, #0d0e1a);
     border-top: 1px solid var(--border, rgba(255,255,255,0.07));
     z-index: 1000;
-    align-items: center;
-    justify-content: space-around;
-    padding: 0 4px;
-    padding-bottom: env(safe-area-inset-bottom); /* iPhone notch support */
+    padding-bottom: env(safe-area-inset-bottom);
   }
-  .mbn-item {
+  .mobile-nav-scroll {
+    display: flex;
+    align-items: center;
+    overflow-x: auto;
+    overflow-y: hidden;
+    height: 100%;
+    padding: 0 4px;
+    gap: 2px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .mobile-nav-scroll::-webkit-scrollbar { display: none; }
+  .mnav-btn {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 3px;
+    justify-content: center;
+    gap: 2px;
+    flex-shrink: 0;
+    min-width: 60px;
+    height: 52px;
     background: none;
     border: none;
     color: var(--muted, #6b7494);
-    font-size: 9.5px;
+    font-size: 9px;
     font-family: 'DM Mono', monospace;
     cursor: pointer;
-    padding: 6px 10px;
     border-radius: 10px;
-    transition: color 0.2s;
-    flex: 1;
-    max-width: 72px;
+    transition: color 0.2s, background 0.2s;
+    padding: 4px 6px;
   }
-  .mbn-item.active { color: var(--accent3, #b48cff); }
-  .mbn-item svg { width: 20px; height: 20px; }
+  .mnav-btn.active { color: var(--accent3); background: rgba(var(--accent-rgb),0.1); }
+  .mnav-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
 
-  /* ── HOME PAGE ──────────────────────────────── */
-  .home-hero { grid-template-columns: 1fr !important; }
-  .home-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+  /* ── HOME PAGE ──────────────────────────────────────── */
+  .home-hero { grid-template-columns: 1fr !important; gap: 12px !important; }
+  .hero-h1 { font-size: 32px !important; }
+  .hero-desc, .hero-sub { font-size: 13px !important; }
+  /* Stat ticker (Sessions/Streak/XP/Level) is width:fit-content with
+     overflow:hidden on desktop, so on a narrow phone the 4th stat gets
+     silently clipped instead of wrapping — let it size to the container. */
+  .hero-stats { width: 100% !important; }
+  .hero-stat { padding: 10px 4px !important; flex: 1; }
+  .hero-stat-num { font-size: 19px !important; }
+  .hero-stat-label { font-size: 8.5px !important; }
+  .home-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+  .hg-card { padding: 14px 10px !important; }
+  .hg-title { font-size: 12px !important; }
+  .hg-desc { font-size: 11px !important; }
   .home-bottom { grid-template-columns: 1fr !important; gap: 10px !important; }
+  .conver-score-card { min-height: 100px !important; }
 
-  /* ── PRACTICE LAB ───────────────────────────── */
+  /* ── PRACTICE LAB ───────────────────────────────────── */
   .practice-layout { grid-template-columns: 1fr !important; }
-  .score-row { grid-template-columns: repeat(3, 1fr) !important; }
-  .scenario-cards { grid-template-columns: repeat(2, 1fr) !important; }
+  .score-row { grid-template-columns: repeat(3, 1fr) !important; gap: 6px !important; }
+  .scenario-cards { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
 
-  /* ── WARMUP ─────────────────────────────────── */
+  /* ── WARMUP ─────────────────────────────────────────── */
   .warmup-layout { grid-template-columns: 1fr !important; }
 
-  /* ── REAL-TIME ──────────────────────────────── */
-  /* Stack camera and metrics vertically */
-  #rt-session > div { grid-template-columns: 1fr !important; }
+  /* ── SKILLS / COACH NOTES (merged into Insights) ─────── */
+  .skills-layout { grid-template-columns: 1fr !important; }
+  .coach-notes-layout { grid-template-columns: 1fr !important; }
 
-  /* ── ONBOARDING ─────────────────────────────── */
-  .ob-goal-grid { grid-template-columns: repeat(2, 1fr) !important; }
-  .ob-coach-grid { grid-template-columns: repeat(2, 1fr) !important; }
-  .ob-title { font-size: 26px !important; }
+  /* ── DAILY CHALLENGE (merged into Warmup) ────────────── */
+  .daily-layout { grid-template-columns: 1fr !important; }
 
-  /* ── PANELS AND MODALS ──────────────────────── */
-  .share-modal { width: 95vw !important; padding: 20px !important; }
+  /* ── SECTION HEADS ──────────────────────────────────── */
+  .section-head h2 { font-size: 18px !important; letter-spacing: -0.2px !important; }
+  .section-head p { font-size: 12.5px !important; }
+  .section-head { margin-bottom: 14px !important; }
 
-  /* ── TYPOGRAPHY ─────────────────────────────── */
-  .section-head h2 { font-size: 20px !important; }
-  .section-head p { font-size: 13px !important; }
+  /* ── PANELS ─────────────────────────────────────────── */
+  .panel { padding: 14px !important; border-radius: 12px !important; }
 
-  /* ── BUTTONS ─────────────────────────────────── */
-  .btn-primary { width: 100%; justify-content: center; }
+  /* ── TYPOGRAPHY — prevent cutoff ────────────────────── */
+  .page, .page * { max-width: 100%; overflow-wrap: break-word; }
 
-  /* ── PANELS ──────────────────────────────────── */
-  .panel { padding: 14px !important; }
+  /* ── BUTTONS ─────────────────────────────────────────── */
+  .btn-primary { font-size: 13px !important; }
+  .btn-ghost { font-size: 12px !important; padding: 8px 12px !important; }
 
-  /* ── HOME HERO SCORE CARD ───────────────────── */
-  .conver-score-card { min-height: 120px !important; }
+  /* ── INPUTS — prevent iOS auto-zoom on focus ─────────── */
+  input[type=text], input[type=email], input[type=password], select, textarea {
+    font-size: 16px !important;
+  }
+
+  /* ── MODALS ─────────────────────────────────────────── */
+  .share-modal { width: 95vw !important; padding: 20px !important; max-height: 85vh; overflow-y: auto; }
+
+  /* ── REAL-TIME ───────────────────────────────────────── */
+  #rt-session > div { grid-template-columns: 1fr !important; gap: 14px !important; }
+  #rt-video { max-height: 240px; }
+
+  /* ── ONBOARDING ─────────────────────────────────────── */
+  .ob-goal-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+  .ob-coach-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+  .ob-title { font-size: 24px !important; }
+  .ob-sub { font-size: 13px !important; }
+  .ob-steps { padding: 0 16px !important; }
+
+  /* ── TAG ROW ─────────────────────────────────────────── */
+  .tag-row { flex-wrap: wrap !important; gap: 5px !important; }
+
+  /* ── VOICE / DEBATE / COLD OPEN IMMERSIVE OVERLAY ────── */
+  .voice-stage { padding: 20px 14px !important; min-height: 300px !important; }
+  #voice-immersive-overlay { overflow-y: auto !important; }
+
+  /* ── HOME STAT NUMBERS ──────────────────────────────── */
+  .hb-value { font-size: 18px !important; }
+
+  /* ── CHIPS INSIDE PAGES (e.g. tag badges, not the header row) ── */
+  .chip { font-size: 9.5px !important; padding: 2px 8px !important; }
+
+  /* ── REAL-TIME: DESKTOP & TABLET ONLY GATE ───────────── */
+  .rt-desktop-gate { display: flex !important; }
+  .rt-session-content { display: none !important; }
 } /* end @media (max-width: 767px) */
-
-/* Bottom nav hidden on desktop by default */
-.mobile-bottom-nav { display: none; }
 </style>
 </head>
 <body>
@@ -3091,6 +3158,29 @@ h1, h2, h3 {
           <p>Camera on. Live nonverbal analysis. Full debrief on your verbal AND physical presence.</p>
         </div>
 
+        <!-- Desktop gate — shown on mobile, hidden on desktop -->
+        <div class="rt-desktop-gate" style="display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:48px 24px;min-height:60vh">
+          <div style="width:56px;height:56px;border-radius:14px;background:rgba(var(--accent-rgb),0.12);border:1px solid rgba(var(--accent-rgb),0.25);display:flex;align-items:center;justify-content:center;margin-bottom:20px;color:var(--accent3)">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M2 20h20"/></svg>
+          </div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:800;color:var(--text);margin-bottom:10px;letter-spacing:-0.5px">
+            Available on Desktop &amp; Tablet
+          </div>
+          <p style="font-size:14px;color:var(--muted2);line-height:1.75;max-width:340px;margin:0 auto 28px">
+            Real-Time Analysis uses your camera for live facial tracking and nonverbal coaching. For the best experience, open Conver on a laptop or desktop browser.
+          </p>
+          <div style="padding:14px 20px;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.2);border-radius:12px;font-size:13px;color:var(--accent3);font-family:'DM Mono',monospace;margin-bottom:20px">
+            conver.services
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+            <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;padding:4px 10px;border:1px solid var(--border);border-radius:20px">✓ Chrome</span>
+            <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;padding:4px 10px;border:1px solid var(--border);border-radius:20px">✓ Firefox</span>
+            <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;padding:4px 10px;border:1px solid var(--border);border-radius:20px">✓ Safari</span>
+            <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;padding:4px 10px;border:1px solid var(--border);border-radius:20px">✓ Edge</span>
+          </div>
+        </div>
+
+        <div class="rt-session-content">
         <!-- Mode selector -->
         <div id="rt-setup">
           <div style="margin-bottom:20px">
@@ -3314,6 +3404,7 @@ h1, h2, h3 {
           </button>
           <button class="btn-primary" onclick="resetRealTime()" style="margin-top:16px;max-width:220px">New Session</button>
         </div>
+        </div><!-- end rt-session-content -->
       </div>
 
       <!-- SKILLS & PROGRESS — merged into Insights, kept as an empty hidden
@@ -4106,28 +4197,70 @@ h1, h2, h3 {
 
   </main>
 
-  <!-- Mobile bottom navigation — hidden on desktop -->
-  <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
-    <button class="mbn-item active" onclick="navTo('home')" id="mbn-home">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-      <span>Home</span>
-    </button>
-    <button class="mbn-item" onclick="navTo('practice')" id="mbn-practice">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
-      <span>Practice</span>
-    </button>
-    <button class="mbn-item" onclick="navTo('coldopen')" id="mbn-coldopen">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-      <span>Cold Open</span>
-    </button>
-    <button class="mbn-item" onclick="navTo('insights')" id="mbn-insights">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-      <span>Insights</span>
-    </button>
-    <button class="mbn-item" onclick="navTo('settings')" id="mbn-settings">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 018 0v2"/></svg>
-      <span>Profile</span>
-    </button>
+  <!-- MOBILE BOTTOM NAV — scrollable, shows all pages -->
+  <nav class="mobile-nav" id="mobile-nav">
+    <div class="mobile-nav-scroll">
+      <button class="mnav-btn active" data-page="home" onclick="navTo('home')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/></svg>
+        <span>Home</span>
+      </button>
+      <button class="mnav-btn" data-page="warmup" onclick="navTo('warmup')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        <span>Warmup</span>
+      </button>
+      <button class="mnav-btn" data-page="practice" onclick="navTo('practice')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        <span>Practice</span>
+      </button>
+      <button class="mnav-btn" data-page="voice" onclick="navTo('voice')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        <span>Voice</span>
+      </button>
+      <button class="mnav-btn" data-page="debate" onclick="navTo('debate')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        <span>Debate</span>
+      </button>
+      <button class="mnav-btn" data-page="coldopen" onclick="navTo('coldopen')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        <span>Cold Open</span>
+      </button>
+      <button class="mnav-btn" data-page="qbank" onclick="navTo('qbank')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 2-3 4"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span>Questions</span>
+      </button>
+      <button class="mnav-btn" data-page="companion" onclick="navTo('companion')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+        <span>AI Chat</span>
+      </button>
+      <button class="mnav-btn" data-page="realtime" onclick="navTo('realtime')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 10l4.553-2.069A1 1 0 0121 8.87v6.26a1 1 0 01-1.447.894L15 14"/><rect x="1" y="6" width="15" height="12" rx="2"/></svg>
+        <span>Real-Time</span>
+      </button>
+      <button class="mnav-btn" data-page="insights" onclick="navTo('insights')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <span>Insights</span>
+      </button>
+      <button class="mnav-btn" data-page="history" onclick="navTo('history')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span>History</span>
+      </button>
+      <button class="mnav-btn" data-page="briefing" onclick="navTo('briefing')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        <span>Briefing</span>
+      </button>
+      <button class="mnav-btn" data-page="profiles" onclick="navTo('profiles')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 10-16 0"/></svg>
+        <span>Coaches</span>
+      </button>
+      <button class="mnav-btn" data-page="contact" onclick="navTo('contact')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/><path d="M12 8v4"/><path d="M12 15h.01"/></svg>
+        <span>Help</span>
+      </button>
+      <button class="mnav-btn" data-page="settings" onclick="navTo('settings')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 018 0v2"/></svg>
+        <span>Profile</span>
+      </button>
+    </div>
   </nav>
 </div>
 
@@ -6635,19 +6768,12 @@ function navTo(page){
       messages.innerHTML = `<div class="msg msg-ai"><div class="msg-name">${S.coach}</div><span id="coach-greeting">${document.getElementById('coach-greeting')?.textContent}</span></div>`;
     }
   }
-  // Sync mobile bottom nav active state
-  document.querySelectorAll('.mbn-item').forEach(b => b.classList.remove('active'));
-  const mbnMap = {
-    'home': 'mbn-home',
-    'practice': 'mbn-practice',
-    'coldopen': 'mbn-coldopen',
-    'insights': 'mbn-insights',
-    'settings': 'mbn-settings',
-  };
-  const mbnId = mbnMap[page];
-  if (mbnId) {
-    const mbnEl = document.getElementById(mbnId);
-    if (mbnEl) mbnEl.classList.add('active');
+  // Sync mobile bottom nav active button
+  document.querySelectorAll('.mnav-btn[data-page]').forEach(b => b.classList.remove('active'));
+  const mobileBtn = document.querySelector(`.mnav-btn[data-page="${page}"]`);
+  if (mobileBtn) {
+    mobileBtn.classList.add('active');
+    mobileBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
   }
 }
 
