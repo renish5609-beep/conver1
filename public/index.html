@@ -6966,7 +6966,7 @@ function tzDateKey(offsetDays = 0) {
 
 function updateStreak() {
   const today = tzDateKey();
-  const lastSessionDate = localStorage.getItem('conver_last_session_date');
+  const lastSessionDate = localStorage.getItem(userStorageKey('conver_last_session_date'));
 
   if (lastSessionDate === today) {
     // Already completed a session today — streak doesn't change
@@ -6988,7 +6988,7 @@ function updateStreak() {
     S.streak = 1; // today counts as day 1 of the new streak
   }
 
-  localStorage.setItem('conver_last_session_date', today);
+  localStorage.setItem(userStorageKey('conver_last_session_date'), today);
   saveUserData(); // persist updated streak to Supabase immediately
 }
 
@@ -7009,7 +7009,7 @@ function checkSessionMilestone() {
 // over the daily-challenge nudge so the user isn't hit with two toasts at once.
 function checkDailyReminders() {
   const today = tzDateKey();
-  const practicedToday = localStorage.getItem('conver_last_session_date') === today;
+  const practicedToday = localStorage.getItem(userStorageKey('conver_last_session_date')) === today;
   if (S.streakWarn !== false && S.streak > 0 && !practicedToday) {
     showToast('', `Don't lose your ${S.streak}-day streak — practice today!`);
   } else if (S.dailyRemind !== false && !localStorage.getItem('conver_daily_done_' + today)) {
@@ -9215,7 +9215,7 @@ function migrateFlatKeyToUser(base) {
   }
 }
 function migrateAllSettingsKeysToUser() {
-  ['conver_settings', 'conver_accent', 'conver_avatar'].forEach(migrateFlatKeyToUser);
+  ['conver_settings', 'conver_accent', 'conver_avatar', 'conver_last_session_date'].forEach(migrateFlatKeyToUser);
 }
 
 const DEFAULT_SETTINGS = {
@@ -10956,7 +10956,7 @@ async function loadUserData() {
         S.xp = stats.xp || 0;
         S.xpLevel = getLevelFromXP(S.xp);
         // Validate streak on load — if last session was more than 1 day ago, reset streak
-        const savedLastDate = localStorage.getItem('conver_last_session_date');
+        const savedLastDate = localStorage.getItem(userStorageKey('conver_last_session_date'));
         if (savedLastDate) {
           const yesterday = tzDateKey(-1);
           const today = tzDateKey();
