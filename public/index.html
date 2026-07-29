@@ -10955,8 +10955,13 @@ async function loadUserData() {
         // emptying the ring even though real progress had been made.
         S.xp = stats.xp || 0;
         S.xpLevel = getLevelFromXP(S.xp);
-        // Validate streak on load — if last session was more than 1 day ago, reset streak
-        const savedLastDate = localStorage.getItem(userStorageKey('conver_last_session_date'));
+        // Validate streak on load — if last session was more than 1 day ago, reset streak.
+        // Prefer the cloud's settings.lastSessionDate (synced from whichever device
+        // most recently completed a session) over the local-only date — a device
+        // that's never itself logged a session locally would otherwise look like
+        // "first ever session" or "gap too long" and wrongly reset a streak that's
+        // still alive on another device.
+        const savedLastDate = (stats.settings && stats.settings.lastSessionDate) || localStorage.getItem(userStorageKey('conver_last_session_date'));
         if (savedLastDate) {
           const yesterday = tzDateKey(-1);
           const today = tzDateKey();
@@ -11002,6 +11007,7 @@ async function loadUserData() {
           const accentColor = incoming.accentColor; delete incoming.accentColor;
           const photoURL = incoming.photoURL; delete incoming.photoURL;
           const onboarded = incoming.onboarded; delete incoming.onboarded;
+          const lastSessionDate = incoming.lastSessionDate; delete incoming.lastSessionDate;
 
           const currentSettings = JSON.parse(localStorage.getItem(userStorageKey('conver_settings')) || '{}');
           localStorage.setItem(userStorageKey('conver_settings'), JSON.stringify({ ...currentSettings, ...incoming }));
@@ -11023,6 +11029,13 @@ async function loadUserData() {
           applyAvatarPhoto();
           if (onboarded) {
             try { localStorage.setItem('conver_onboarded', '1'); } catch(e) {}
+          }
+          // Keep this device's local copy in step with the cloud so
+          // updateStreak()'s own read of this key later in the session
+          // (and any load that happens before a new saveUserData()) agrees
+          // with what just validated the streak above.
+          if (lastSessionDate) {
+            localStorage.setItem(userStorageKey('conver_last_session_date'), lastSessionDate);
           }
         }
 
@@ -11104,6 +11117,10 @@ async function saveUserData() {
     settingsPayload.accentColor = localStorage.getItem(userStorageKey('conver_accent')) || '#7c6fff';
     settingsPayload.photoURL = localStorage.getItem(userStorageKey('conver_avatar')) || '';
     settingsPayload.onboarded = localStorage.getItem('conver_onboarded') === '1';
+    // The streak's "last practiced" date was local-only — a device that never
+    // itself logged a session had no way to know the streak was kept alive
+    // elsewhere. Sync it alongside streak so any device can validate correctly.
+    settingsPayload.lastSessionDate = localStorage.getItem(userStorageKey('conver_last_session_date')) || '';
 
     // Daily Challenge is generated fresh per day per browser (see
     // renderDailyChallenge()) — sync today's snapshot so a second device
