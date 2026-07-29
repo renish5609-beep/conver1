@@ -2782,6 +2782,99 @@ h1, h2, h3 {
 
   /* ── RADAR CANVAS ─────────────────────────────────────── */
   #radar-canvas { max-width: 160px !important; height: auto !important; }
+
+  /* ── VOICE / DEBATE / COLD OPEN LIVE SESSION ─────────────
+     Voice, Live Debate and Cold Open's "in conversation" screen
+     all share one immersive overlay (#voice-immersive-overlay,
+     ve-* ids) — it's not three separate stages, so the fix lives
+     here rather than on three different structures. */
+  #voice-immersive-overlay {
+    padding: 12px !important;
+    justify-content: flex-start !important;
+    padding-top: 56px !important;
+  }
+  .coach-orb.orb-xl { --orb-size: 130px !important; }
+  #ve-coach-name { font-size: 19px !important; }
+  #ve-coach-role { font-size: 10px !important; }
+  #ve-live-transcript { font-size: 14px !important; padding: 0 12px !important; min-height: 40px !important; }
+  #ve-status { font-size: 11px !important; }
+  #ve-done-btn, #ve-tap-to-talk-btn { font-size: 12.5px !important; padding: 9px 20px !important; }
+  #ve-history { max-height: 100px !important; padding: 12px 16px 16px !important; }
+  .ve-history-item { font-size: 11.5px !important; }
+
+  /* Voice controls side panel (pre-session, on the Voice page itself) */
+  .voice-controls-side {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  .vc-card { padding: 12px !important; }
+  .vc-title { font-size: 10px !important; margin-bottom: 8px !important; }
+  .voice-log { max-height: 120px !important; font-size: 12px !important; }
+  /* Coach picker horizontal scroll on mobile */
+  .coach-picker {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    gap: 6px !important;
+    padding-bottom: 4px !important;
+    scrollbar-width: none !important;
+  }
+  .coach-picker::-webkit-scrollbar { display: none; }
+
+  /* Mic buttons shared by Voice/Warmup/Debate/Cold Open */
+  .hold-btn { width: 64px !important; height: 64px !important; font-size: 24px !important; }
+
+  /* ── LIVE DEBATE ─────────────────────────────────────────── */
+  #debate-setup-screen { padding: 20px 16px !important; }
+  #debate-setup-screen > div:first-child { font-size: 32px !important; margin-bottom: 10px !important; }
+  #debate-setup-screen > div:nth-child(2) { font-size: 16px !important; }
+  #debate-live-screen > div:nth-child(2) > div { padding: 12px !important; }
+  #debate-face-a, #debate-face-b { width: 70px !important; height: 70px !important; }
+  #debate-log-a, #debate-log-b { max-height: 100px !important; font-size: 11px !important; }
+  /* Voice input row is the last child of #debate-conversation, not of #debate-live-screen */
+  #debate-conversation > div:last-child { padding: 14px !important; }
+  #debate-transcript { font-size: 12px !important; min-height: 28px !important; }
+  #debate-mic-btn { width: 56px !important; height: 56px !important; font-size: 20px !important; }
+  #debate-live-screen > div:first-child {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 6px !important;
+  }
+  #debate-topic-display { font-size: 12px !important; }
+
+  /* ── COLD OPEN ───────────────────────────────────────────── */
+  #coldopen-setup { padding: 20px 16px !important; max-width: 100% !important; }
+  #coldopen-setup > div:first-child { font-size: 32px !important; margin-bottom: 10px !important; }
+  #coldopen-setup > div:nth-child(2) { font-size: 16px !important; margin-bottom: 6px !important; }
+  #coldopen-setup p { font-size: 12px !important; margin-bottom: 18px !important; }
+  /* Category grid — 2 columns */
+  #coldopen-setup [style*="grid-template-columns:repeat(3"],
+  #coldopen-setup [style*="grid-template-columns: repeat(3"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+  /* Live cold-open screen — collapse the 1fr 360px chat/sidebar split */
+  #co-live-chat { grid-template-columns: 1fr !important; gap: 14px !important; }
+  #coldopen-live { padding: 14px !important; }
+  .coach-orb.orb-md { --orb-size: 76px !important; }
+  #co-person-name { font-size: 14px !important; }
+  #co-scenario-text { font-size: 12px !important; }
+  #co-transcript { font-size: 12px !important; }
+  #co-mic-btn { width: 60px !important; height: 60px !important; font-size: 22px !important; }
+
+  /* ── COMPANION / AI CHAT ─────────────────────────────────── */
+  .companion-layout { grid-template-columns: 1fr !important; }
+  .chat-wrap { min-height: 300px !important; max-height: 50vh !important; }
+  .chat-messages { max-height: calc(50vh - 60px) !important; font-size: 12.5px !important; }
+  .chat-input-row { gap: 6px !important; }
+  .chat-input-row input { font-size: 16px !important; } /* prevent iOS zoom */
+  .send-btn { padding: 8px 12px !important; font-size: 12px !important; white-space: nowrap !important; flex-shrink: 0 !important; }
+  .quick-prompts { display: flex !important; flex-direction: column !important; gap: 6px !important; }
+  .quick-prompts .btn-ghost { text-align: left !important; font-size: 11.5px !important; padding: 8px 10px !important; }
+
+  /* ── WAVEFORM ────────────────────────────────────────────── */
+  .wave-bar { width: 3px !important; }
 } /* end @media (max-width: 767px) */
 </style>
 </head>
