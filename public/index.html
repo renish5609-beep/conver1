@@ -10920,11 +10920,27 @@ async function afterSignIn(freshLogin = false) {
   showToast('', 'Welcome back!');
 }
 
+// Mobile networks drop/stall requests far more often than the loopback
+// connection this app was mostly tested against — a single failed fetch
+// here used to mean the whole restore (photo, accent, settings) silently
+// never happened for that page load, with nothing retrying it.
+async function fetchWithRetry(url, options, retries = 2, delayMs = 700) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url, options);
+      if (res.ok || attempt === retries) return res;
+    } catch (e) {
+      if (attempt === retries) throw e;
+    }
+    await new Promise(r => setTimeout(r, delayMs * (attempt + 1)));
+  }
+}
+
 async function loadUserData() {
   if (!authToken) return;
   try {
     // Load stats
-    const statsRes = await fetch('/api/user/stats', {
+    const statsRes = await fetchWithRetry('/api/user/stats', {
       headers: {'Authorization':'Bearer '+authToken}
     });
     if (statsRes.ok) {
