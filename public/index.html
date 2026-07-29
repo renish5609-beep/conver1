@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover"/>
 <title>Conver — AI Conversation Intelligence</title>
 <link rel="icon" type="image/png" href="/favicon.png"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -2586,9 +2586,14 @@ h1, h2, h3 {
 @media (max-width: 767px) {
   /* ── GLOBAL ─────────────────────────────────────────── */
   html, body { overflow-x: hidden; }
+  /* iOS Safari's address bar changes 100vh mid-scroll — fill-available
+     and the dvh fallback below keep the app shell locked to the actual
+     visible viewport instead of jumping/clipping as chrome shows/hides. */
+  html { height: -webkit-fill-available; }
+  body { height: 100%; height: -webkit-fill-available; }
 
   /* ── APP LAYOUT ─────────────────────────────────────── */
-  .app { flex-direction: column; height: 100vh; overflow: hidden; }
+  .app { flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; }
 
   /* Hide the desktop horizontal tab bar entirely (this app's real
      desktop nav — .sidebar/.topbar are legacy classes, already
@@ -2739,6 +2744,24 @@ h1, h2, h3 {
   /* ── REAL-TIME: DESKTOP & TABLET ONLY GATE ───────────── */
   .rt-desktop-gate { display: flex !important; }
   .rt-session-content { display: none !important; }
+
+  /* ── INLINE-STYLE GRID OVERRIDES ──────────────────────
+     A lot of panels in this app (Voice/Debate/Companion debriefs,
+     onboarding summary rows, etc.) set a two-equal-column grid
+     directly via inline style rather than a class, so the class-based
+     collapses above never touch them. Only targeting the "1fr 1fr"
+     shape here — repeat(3)/repeat(4) inline grids in this app are
+     mostly compact 3-stat score rows (Clarity/Confidence/Persuasion)
+     that read fine as 3 narrow columns and would look worse forced
+     into a tall single-column stack, so those are deliberately left
+     alone (checked their real markup before assuming otherwise). */
+  [style*="grid-template-columns:1fr 1fr"],
+  [style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── RADAR CANVAS ─────────────────────────────────────── */
+  #radar-canvas { max-width: 100% !important; height: auto !important; }
 } /* end @media (max-width: 767px) */
 </style>
 </head>
