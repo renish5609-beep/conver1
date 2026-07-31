@@ -1722,9 +1722,16 @@ input:focus,select:focus,textarea:focus{
 .skill-bar-persuasion{background:linear-gradient(90deg,#2dd4a0,#38bdf8)}
 .skill-bar-storytelling{background:linear-gradient(90deg,#fbbf24,#f472b6)}
 .skill-bar-conciseness{background:linear-gradient(90deg,#f472b6,#c084fc)}
-/* Back button */
-.back-btn{display:none;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;cursor:pointer;color:var(--muted2);font-size:13px;border:1px solid var(--border);background:transparent;transition:all 0.2s}
-.back-btn:hover{background:var(--s3);color:var(--text);border-color:var(--border2)}
+/* Back button — floats on the current page, top-right, away from the Conver logo */
+.back-btn{
+  display:none;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;cursor:pointer;
+  color:var(--muted2);font-size:13px;border:1px solid var(--border2);
+  background:rgba(20,22,46,0.92);backdrop-filter:blur(12px);
+  box-shadow:0 4px 16px rgba(0,0,0,0.35);
+  transition:all 0.2s;
+  position:fixed;top:106px;right:28px;z-index:15;
+}
+.back-btn:hover{background:var(--s3);color:var(--text);border-color:rgba(255,255,255,0.25)}
 .back-btn.visible{display:flex}
 /* Page transition animation */
 @keyframes ripple{to{width:130px;height:130px;opacity:0}}
@@ -2876,6 +2883,11 @@ h1, h2, h3 {
   /* ── WAVEFORM ────────────────────────────────────────────── */
   .wave-bar { width: 3px !important; }
 } /* end @media (max-width: 767px) */
+
+/* Back button — no tab bar on mobile, so sit right under the header */
+@media (max-width: 767px) {
+  .back-btn { top: 62px !important; right: 14px !important; padding: 6px 12px !important; font-size: 12px !important; }
+}
 
 /* ── SUB-TAB BAR ─────────────────────────────────── */
 .stab-bar {
