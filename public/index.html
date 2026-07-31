@@ -1244,7 +1244,7 @@ body::before{
   height:44px;min-height:44px;
   background:rgba(8,9,26,0.88);
   border-bottom:1px solid var(--border);
-  display:flex;align-items:center;padding:0 12px;gap:2px;
+  display:flex;align-items:center;justify-content:center;padding:0 12px;gap:2px;
   overflow-x:auto;scrollbar-width:thin;scrollbar-color:rgba(var(--accent-rgb),0.35) transparent;
   position:relative;
   backdrop-filter:blur(24px);
@@ -1253,7 +1253,7 @@ body::before{
 .app-tabs::-webkit-scrollbar{height:4px}
 .app-tabs::-webkit-scrollbar-thumb{background:rgba(var(--accent-rgb),0.35);border-radius:3px}
 .app-tabs::-webkit-scrollbar-track{background:transparent}
-.tabs-group{display:flex;align-items:center;gap:2px;flex:1;justify-content:space-evenly}
+.tabs-group{display:flex;align-items:center;gap:6px;margin:0 auto}
 .tabs-group-right{margin-left:auto;flex:none}
 .tabs-divider{width:1px;height:20px;background:var(--border);margin:0 8px;flex-shrink:0}
 /* Edge fades — only shown when JS detects there's more to scroll to, so it never lies about hidden tabs */
@@ -3071,9 +3071,6 @@ h1, h2, h3 {
       <button class="tab-item" data-page="practice" onclick="navTo('practice')">Practice Lab</button>
       <button class="tab-item" data-page="voice" onclick="navTo('voice')">Voice Session</button>
       <button class="tab-item" data-page="coldopen" onclick="navTo('coldopen')">Cold Open</button>
-    </div>
-    <div class="tabs-divider"></div>
-    <div class="tabs-group tabs-group-right">
       <button class="tab-item" data-page="insights" onclick="navTo('insights')">Insights</button>
     </div>
   </nav>
