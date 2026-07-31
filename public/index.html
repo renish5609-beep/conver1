@@ -1253,8 +1253,8 @@ body::before{
 .app-tabs::-webkit-scrollbar{height:4px}
 .app-tabs::-webkit-scrollbar-thumb{background:rgba(var(--accent-rgb),0.35);border-radius:3px}
 .app-tabs::-webkit-scrollbar-track{background:transparent}
-.tabs-group{display:flex;align-items:center;gap:2px}
-.tabs-group-right{margin-left:auto}
+.tabs-group{display:flex;align-items:center;gap:2px;flex:1;justify-content:space-evenly}
+.tabs-group-right{margin-left:auto;flex:none}
 .tabs-divider{width:1px;height:20px;background:var(--border);margin:0 8px;flex-shrink:0}
 /* Edge fades — only shown when JS detects there's more to scroll to, so it never lies about hidden tabs */
 .app-tabs-wrap::before,.app-tabs-wrap::after{
