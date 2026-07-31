@@ -3278,13 +3278,14 @@ h1, h2, h3 {
       <div class="page" id="page-practice">
         <div class="section-head"><h2>Practice Lab</h2><p>Submit a response and get real AI analysis — scores, feedback, and a rewritten stronger version.</p></div>
         <div class="stab-bar" id="practice-stab-bar">
-          <button class="stab active">Lab</button>
-          <button class="stab" onclick="navTo('debate')">Debate</button>
-          <button class="stab" onclick="navTo('qbank')">Question Bank</button>
-          <button class="stab" onclick="navTo('companion')">AI Chat</button>
-          <button class="stab" onclick="navTo('realtime')">Real-Time</button>
-          <button class="stab" onclick="navTo('profiles')">Coaches</button>
+          <button class="stab active" id="pstab-practice" onclick="switchPracticeTab('practice')">Lab</button>
+          <button class="stab" id="pstab-debate" onclick="switchPracticeTab('debate')">Debate</button>
+          <button class="stab" id="pstab-qbank" onclick="switchPracticeTab('qbank')">Question Bank</button>
+          <button class="stab" id="pstab-companion" onclick="switchPracticeTab('companion')">AI Chat</button>
+          <button class="stab" id="pstab-realtime" onclick="switchPracticeTab('realtime')">Real-Time</button>
+          <button class="stab" id="pstab-coaches" onclick="switchPracticeTab('coaches')">Coaches</button>
         </div>
+        <div id="psub-practice">
         <div class="practice-layout">
           <div>
             <div class="panel" style="margin-bottom:16px">
@@ -3302,6 +3303,14 @@ h1, h2, h3 {
             <div class="panel-title">Session Analysis</div>
             <div id="results-area"><div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg><p>Your analysis appears after you submit.</p></div></div>
           </div>
+        </div>
+        </div>
+        <div id="psub-debate" style="display:none"></div>
+        <div id="psub-qbank" style="display:none"></div>
+        <div id="psub-companion" style="display:none"></div>
+        <div id="psub-realtime" style="display:none"></div>
+        <div id="psub-coaches" style="display:none">
+          <div class="section-head" style="margin-top:4px"><h2>Choose Your Coach</h2><p>Each has a distinct style. Switch anytime.</p></div>
         </div>
       </div>
 
@@ -3620,8 +3629,8 @@ h1, h2, h3 {
           <button class="insights-tab-btn active" id="itab-insights" onclick="switchInsightsTab('insights')" style="padding:7px 16px;border-radius:8px;border:1px solid var(--accent);background:rgba(var(--accent-rgb),0.12);color:var(--accent3);font-size:12.5px;font-family:'DM Mono',monospace;cursor:pointer">Insights</button>
           <button class="insights-tab-btn" id="itab-skills" onclick="switchInsightsTab('skills')" style="padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted2);font-size:12.5px;font-family:'DM Mono',monospace;cursor:pointer">Skills & Progress</button>
           <button class="insights-tab-btn" id="itab-coachnotes" onclick="switchInsightsTab('coachnotes')" style="padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted2);font-size:12.5px;font-family:'DM Mono',monospace;cursor:pointer">Coach Notes</button>
-          <button class="insights-tab-btn" onclick="navTo('history')" style="padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted2);font-size:12.5px;font-family:'DM Mono',monospace;cursor:pointer">History</button>
-          <button class="insights-tab-btn" onclick="navTo('briefing')" style="padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted2);font-size:12.5px;font-family:'DM Mono',monospace;cursor:pointer">Briefing</button>
+          <button class="insights-tab-btn" id="itab-history" onclick="switchInsightsTab('history')" style="padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted2);font-size:12.5px;font-family:'DM Mono',monospace;cursor:pointer">History</button>
+          <button class="insights-tab-btn" id="itab-briefing" onclick="switchInsightsTab('briefing')" style="padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted2);font-size:12.5px;font-family:'DM Mono',monospace;cursor:pointer">Briefing</button>
         </div>
         <!-- Insights section -->
         <div id="insights-tab-insights">
@@ -3680,6 +3689,8 @@ h1, h2, h3 {
             </div>
           </div>
         </div>
+        <div id="insights-tab-history" style="display:none"></div>
+        <div id="insights-tab-briefing" style="display:none"></div>
       </div>
 
       <!-- HISTORY -->
@@ -6882,6 +6893,10 @@ function navTo(page){
   if (page === 'skills') { navTo('insights'); switchInsightsTab('skills'); return; }
   if (page === 'coachnotes') { navTo('insights'); switchInsightsTab('coachnotes'); return; }
   if (page === 'daily') { navTo('warmup'); return; }
+  const practiceSubTabs = { debate:1, qbank:1, companion:1, realtime:1, profiles:1 };
+  const insightsSubTabs = { history:1, briefing:1 };
+  if (practiceSubTabs[page]) { navTo('practice'); switchPracticeTab(page === 'profiles' ? 'coaches' : page); return; }
+  if (insightsSubTabs[page]) { navTo('insights'); switchInsightsTab(page); return; }
   try { localStorage.setItem('conver_last_page', page); } catch(e) {}
   if (page !== 'realtime') stopRealTimeIfActive();
   showBackBtn(false);
@@ -6901,7 +6916,6 @@ function navTo(page){
       : titleText;
   }
   if(page==='insights'){renderInsights();renderSkills();drawRadar();renderCoachNotes();}
-  if(page==='history')renderHistory();
   if(page==='voice'){
     const voiceAvatarEl = document.getElementById('voice-coach-avatar');
     if (voiceAvatarEl) {
@@ -6913,37 +6927,9 @@ function navTo(page){
     if(wuCurrentQuestion)showBackBtn(true,'Warmup');
     renderDailyChallenge();
   }
-  if(page==='debate'){initDebatePage();showBackBtn(true, debateRunning ? 'Debate Setup' : 'Practice');}
   if(page==='coldopen'){initColdOpen();if(coState.running)showBackBtn(true,'Cold Open Setup');}
-  if(page==='qbank'){initQBank();showBackBtn(true,'Practice');}
-  if(page==='companion')showBackBtn(true,'Practice');
-  if(page==='realtime')showBackBtn(true,'Practice');
   if(page==='settings'){applySettingsToUI();updateAccountDisplay();}
   if(page==='contact')initContactPage();
-  if(page==='profiles'){renderCoachProfiles();showBackBtn(true,'Practice');}
-  if(page==='history')showBackBtn(true,'Insights');
-  if(page==='briefing')showBackBtn(true,'Insights');
-  if (page === 'companion') {
-    // Reset companion chat with current coach
-    const messages = document.getElementById('chat-messages');
-    const coachLabel = document.getElementById('coach-label');
-    const coachGreeting = document.getElementById('coach-greeting');
-    if (coachLabel) coachLabel.textContent = S.coach;
-    if (coachGreeting && typeof COACH_DATA !== 'undefined' && COACH_DATA[S.coach]) {
-      const greetings = {
-        Blaze: "Alright, no warm-up. What are we fixing today and how bad is it?",
-        Echo: "Hey — I'm here. What's on your mind? Let's talk through it.",
-        Sage: "Good to see you. What are we working on strategically today?",
-        Nova: "Let's GO! What are we making happen today?",
-        Rex: "No fluff. What do you need to drill?",
-        Luna: "Welcome. Take your time — what would be most helpful right now?"
-      };
-      if (coachGreeting) coachGreeting.textContent = greetings[S.coach] || greetings.Blaze;
-    }
-    if (messages) {
-      messages.innerHTML = `<div class="msg msg-ai"><div class="msg-name">${S.coach}</div><span id="coach-greeting">${document.getElementById('coach-greeting')?.textContent}</span></div>`;
-    }
-  }
   // Sync mobile bottom nav active button
   document.querySelectorAll('.mnav-btn[data-page]').forEach(b => b.classList.remove('active'));
   const mobileBtn = document.querySelector(`.mnav-btn[data-page="${page}"]`);
@@ -8467,8 +8453,10 @@ function startDailyChallenge() {
 }
 
 // ── INSIGHTS INTERNAL TABS (Skills + Coach Notes merged in) ────────────────────
+let currentInsightsTab = 'insights';
 function switchInsightsTab(tab) {
-  ['insights','skills','coachnotes'].forEach(t => {
+  currentInsightsTab = tab;
+  ['insights','skills','coachnotes','history','briefing'].forEach(t => {
     const el = document.getElementById('insights-tab-' + t);
     if (el) el.style.display = 'none';
     const btn = document.getElementById('itab-' + t);
@@ -8491,6 +8479,44 @@ function switchInsightsTab(tab) {
   if (tab === 'skills' && typeof drawRadar === 'function') {
     setTimeout(drawRadar, 100);
   }
+  if (tab === 'history' && typeof renderHistory === 'function') renderHistory();
+  showBackBtn(tab !== 'insights', 'Insights');
+}
+
+// ── Practice sub-tabs ─────────────────────────────────────────
+let currentPracticeTab = 'practice';
+function switchPracticeTab(tab) {
+  currentPracticeTab = tab;
+  ['practice','debate','qbank','companion','realtime','coaches'].forEach(t => {
+    const panel = document.getElementById('psub-' + t);
+    if (panel) panel.style.display = t === tab ? 'block' : 'none';
+    const btn = document.getElementById('pstab-' + t);
+    if (btn) btn.classList.toggle('active', t === tab);
+  });
+  if (tab === 'debate' && typeof initDebatePage === 'function') initDebatePage();
+  if (tab === 'qbank' && typeof initQBank === 'function') initQBank();
+  if (tab === 'coaches' && typeof renderCoachProfiles === 'function') renderCoachProfiles();
+  if (tab === 'companion') {
+    const messages = document.getElementById('chat-messages');
+    const coachLabel = document.getElementById('coach-label');
+    const coachGreeting = document.getElementById('coach-greeting');
+    if (coachLabel) coachLabel.textContent = S.coach;
+    if (coachGreeting && typeof COACH_DATA !== 'undefined' && COACH_DATA[S.coach]) {
+      const greetings = {
+        Blaze: "Alright, no warm-up. What are we fixing today and how bad is it?",
+        Echo: "Hey — I'm here. What's on your mind? Let's talk through it.",
+        Sage: "Good to see you. What are we working on strategically today?",
+        Nova: "Let's GO! What are we making happen today?",
+        Rex: "No fluff. What do you need to drill?",
+        Luna: "Welcome. Take your time — what would be most helpful right now?"
+      };
+      coachGreeting.textContent = greetings[S.coach] || greetings.Blaze;
+    }
+    if (messages) {
+      messages.innerHTML = `<div class="msg msg-ai"><div class="msg-name">${S.coach}</div><span id="coach-greeting">${document.getElementById('coach-greeting')?.textContent}</span></div>`;
+    }
+  }
+  showBackBtn(tab !== 'practice', 'Practice');
 }
 
 // ── COACH NOTES ───────────────────────────────────────────────────────────────
@@ -11448,16 +11474,11 @@ const BACK_PAGES = {
     }
     showBackBtn(false);
   },
-  debate: () => { resetDebate(); navTo('practice'); },
   coldopen: () => { resetColdOpen(); showBackBtn(false); },
   warmup: () => { resetWarmup(); showBackBtn(false); },
-  // Sub-tab groups — return to their hub page
-  qbank: () => { navTo('practice'); },
-  companion: () => { navTo('practice'); },
-  realtime: () => { navTo('practice'); },
-  profiles: () => { navTo('practice'); },
-  history: () => { navTo('insights'); },
-  briefing: () => { navTo('insights'); },
+  // Practice/Insights are hubs with internal sub-tabs — back returns to the default sub-tab
+  practice: () => { if (currentPracticeTab === 'debate') resetDebate(); switchPracticeTab('practice'); },
+  insights: () => { switchInsightsTab('insights'); },
 };
 
 function showBackBtn(show, label) {
@@ -11476,6 +11497,28 @@ function handleBackBtn() {
     BACK_PAGES[activePage]();
   }
 }
+
+// Moves each standalone page's real content into its Practice/Insights
+// sub-tab container (a DOM move, not a copy — keeps every ID unique).
+(function migrateSubTabContent(){
+  const moves = [
+    ['page-debate', 'psub-debate'],
+    ['page-qbank', 'psub-qbank'],
+    ['page-companion', 'psub-companion'],
+    ['page-realtime', 'psub-realtime'],
+    ['page-history', 'insights-tab-history'],
+    ['page-briefing', 'insights-tab-briefing'],
+  ];
+  moves.forEach(([fromId, toId]) => {
+    const from = document.getElementById(fromId);
+    const to = document.getElementById(toId);
+    if (!from || !to) return;
+    while (from.firstChild) to.appendChild(from.firstChild);
+  });
+  const grid = document.getElementById('coach-profiles-grid');
+  const coachesPanel = document.getElementById('psub-coaches');
+  if (grid && coachesPanel) coachesPanel.appendChild(grid);
+})();
 
 initUI(); updateChips(); setTimeout(initToneDetector, 500); loadSettings();
 if(window.speechSynthesis){window.speechSynthesis.onvoiceschanged=()=>window.speechSynthesis.getVoices();window.speechSynthesis.getVoices();}
