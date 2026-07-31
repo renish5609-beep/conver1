@@ -1648,12 +1648,12 @@ input:focus,select:focus,textarea:focus{
 .t-amber{color:var(--amber);border-color:rgba(251,191,36,0.3);background:rgba(251,191,36,0.06)}
 
 /* ── SECTION HEADS ──────────────────────────────────────────── */
-.section-head{margin-bottom:22px}
+.section-head{margin-bottom:18px}
 .section-head h2{
   font-family:'Italiana',serif;font-size:38px;font-weight:400;
-  letter-spacing:0.5px;color:var(--text);margin-bottom:6px;line-height:1.1;
+  letter-spacing:0.5px;color:var(--text);margin-bottom:4px;line-height:1.1;
 }
-.section-head p{font-size:14px;color:var(--muted2);line-height:1.7;font-family:'Plus Jakarta Sans',sans-serif}
+.section-head p{font-size:13.5px;color:var(--muted2);line-height:1.5;font-family:'Plus Jakarta Sans',sans-serif}
 .page-title{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;white-space:nowrap;color:var(--text)}
 
 /* ── SCORE RING (sidebar/scorecard) ─────────────────────────── */
@@ -2697,10 +2697,10 @@ h1, h2, h3 {
   /* ── DAILY CHALLENGE (merged into Warmup) ────────────── */
   .daily-layout { grid-template-columns: 1fr !important; }
 
-  /* ── SECTION HEADS ──────────────────────────────────── */
-  .section-head h2 { font-size: 18px !important; letter-spacing: -0.2px !important; }
-  .section-head p { font-size: 12.5px !important; }
-  .section-head { margin-bottom: 14px !important; }
+  /* ── SECTION HEADS — topbar already shows page name, hide duplicate subtitle ── */
+  .section-head { margin-bottom: 10px !important; }
+  .section-head h2 { font-size: 14px !important; font-weight: 700 !important; letter-spacing: -0.2px !important; margin-bottom: 0 !important; }
+  .section-head p { display: none !important; }
 
   /* ── PANELS ─────────────────────────────────────────── */
   .panel { padding: 12px !important; border-radius: 10px !important; }
