@@ -3018,19 +3018,11 @@ h1, h2, h3 {
       <button class="tab-item" data-page="warmup" onclick="navTo('warmup')">Warmup</button>
       <button class="tab-item" data-page="practice" onclick="navTo('practice')">Practice Lab</button>
       <button class="tab-item" data-page="voice" onclick="navTo('voice')">Voice Session</button>
-      <button class="tab-item" data-page="debate" onclick="navTo('debate')">Live Debate</button>
       <button class="tab-item" data-page="coldopen" onclick="navTo('coldopen')">Cold Open</button>
-      <button class="tab-item" data-page="qbank" onclick="navTo('qbank')">Questions</button>
-      <button class="tab-item" data-page="companion" onclick="navTo('companion')">AI Companion</button>
-      <button class="tab-item" data-page="realtime" onclick="navTo('realtime')">Real-Time<span style="margin-left:6px;font-size:9px;font-weight:800;letter-spacing:0.5px;color:#fbbf24;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.3);border-radius:20px;padding:2px 7px;vertical-align:middle;font-family:'DM Mono',monospace">BETA</span></button>
     </div>
     <div class="tabs-divider"></div>
     <div class="tabs-group tabs-group-right">
       <button class="tab-item" data-page="insights" onclick="navTo('insights')">Insights</button>
-      <button class="tab-item" data-page="history" onclick="navTo('history')">History</button>
-      <button class="tab-item" data-page="briefing" onclick="navTo('briefing')">Briefing</button>
-      <button class="tab-item" data-page="profiles" onclick="navTo('profiles')">Profiles</button>
-      <button class="tab-item" data-page="contact" onclick="navTo('contact')">Help</button>
     </div>
   </nav>
   </div>
@@ -3224,6 +3216,13 @@ h1, h2, h3 {
       <!-- PRACTICE -->
       <div class="page" id="page-practice">
         <div class="section-head"><h2>Practice Lab</h2><p>Submit a response and get real AI analysis — scores, feedback, and a rewritten stronger version.</p></div>
+        <div style="display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap">
+          <button class="insights-tab-btn active" style="padding:7px 16px;border-radius:8px;border:1px solid var(--accent);background:rgba(var(--accent-rgb),0.12);color:var(--accent3);font-size:12.5px;font-family:'DM Mono',monospace;cursor:pointer">Practice Lab</button>
+          <button class="insights-tab-btn" onclick="navTo('debate')" style="padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted2);font-size:12.5px;font-family:'DM Mono',monospace;cursor:pointer">Live Debate</button>
+          <button class="insights-tab-btn" onclick="navTo('qbank')" style="padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted2);font-size:12.5px;font-family:'DM Mono',monospace;cursor:pointer">Question Bank</button>
+          <button class="insights-tab-btn" onclick="navTo('companion')" style="padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted2);font-size:12.5px;font-family:'DM Mono',monospace;cursor:pointer">AI Companion</button>
+          <button class="insights-tab-btn" onclick="navTo('realtime')" style="padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted2);font-size:12.5px;font-family:'DM Mono',monospace;cursor:pointer">Real-Time</button>
+        </div>
         <div class="practice-layout">
           <div>
             <div class="panel" style="margin-bottom:16px">
@@ -3559,6 +3558,7 @@ h1, h2, h3 {
           <button class="insights-tab-btn active" id="itab-insights" onclick="switchInsightsTab('insights')" style="padding:7px 16px;border-radius:8px;border:1px solid var(--accent);background:rgba(var(--accent-rgb),0.12);color:var(--accent3);font-size:12.5px;font-family:'DM Mono',monospace;cursor:pointer">Insights</button>
           <button class="insights-tab-btn" id="itab-skills" onclick="switchInsightsTab('skills')" style="padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted2);font-size:12.5px;font-family:'DM Mono',monospace;cursor:pointer">Skills & Progress</button>
           <button class="insights-tab-btn" id="itab-coachnotes" onclick="switchInsightsTab('coachnotes')" style="padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted2);font-size:12.5px;font-family:'DM Mono',monospace;cursor:pointer">Coach Notes</button>
+          <button class="insights-tab-btn" onclick="navTo('history')" style="padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted2);font-size:12.5px;font-family:'DM Mono',monospace;cursor:pointer">History</button>
         </div>
         <!-- Insights section -->
         <div id="insights-tab-insights">
@@ -3907,6 +3907,11 @@ h1, h2, h3 {
           <p>Customize every aspect of how Conver coaches, speaks, analyzes, and remembers you.</p>
         </div>
         <div style="display:flex;flex-direction:column;gap:16px;max-width:820px;margin:0 auto">
+        <div class="panel" style="display:flex;gap:8px;flex-wrap:wrap;padding:14px 16px">
+          <button class="btn-ghost" onclick="navTo('briefing')" style="width:auto;padding:7px 14px;font-size:12px">Briefing</button>
+          <button class="btn-ghost" onclick="navTo('profiles')" style="width:auto;padding:7px 14px;font-size:12px">AI Profiles</button>
+          <button class="btn-ghost" onclick="navTo('contact')" style="width:auto;padding:7px 14px;font-size:12px">Help</button>
+        </div>
         <div class="panel" style="display:flex;align-items:center;gap:18px;padding:22px">
           <div style="position:relative;flex-shrink:0">
             <div id="sp-avatar" style="width:72px;height:72px;border-radius:50%;background:var(--g-brand);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff;font-family:'Space Grotesk',sans-serif;background-size:cover;background-position:center;overflow:hidden">?</div>
