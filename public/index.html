@@ -3338,7 +3338,7 @@ h1, h2, h3 {
         <div class="companion-layout">
           <div class="panel" style="display:flex;flex-direction:column">
             <div class="chat-wrap">
-              <div class="chat-messages" id="chat-messages"><div class="msg msg-ai"><div class="msg-name" id="coach-label">Blaze</div><span id="coach-greeting">Hey. Ready to work? Tell me what you're preparing for.</span></div></div>
+              <div class="chat-messages" id="chat-messages"><div class="msg msg-ai" id="chat-greeting-msg"><div class="msg-name" id="coach-label"></div><span id="coach-greeting"></span></div></div>
               <div class="chat-input-row"><input type="text" id="chat-input" placeholder="Ask your coach anything..." onkeydown="if(event.key==='Enter'&&!event.shiftKey)sendChat()"/><button class="send-btn" id="send-btn" onclick="sendChat()">Send</button></div>
             </div>
           </div>
@@ -8496,27 +8496,30 @@ function switchPracticeTab(tab) {
   if (tab === 'debate' && typeof initDebatePage === 'function') initDebatePage();
   if (tab === 'qbank' && typeof initQBank === 'function') initQBank();
   if (tab === 'coaches' && typeof renderCoachProfiles === 'function') renderCoachProfiles();
-  if (tab === 'companion') {
-    const messages = document.getElementById('chat-messages');
-    const coachLabel = document.getElementById('coach-label');
-    const coachGreeting = document.getElementById('coach-greeting');
-    if (coachLabel) coachLabel.textContent = S.coach;
-    if (coachGreeting && typeof COACH_DATA !== 'undefined' && COACH_DATA[S.coach]) {
-      const greetings = {
-        Blaze: "Alright, no warm-up. What are we fixing today and how bad is it?",
-        Echo: "Hey — I'm here. What's on your mind? Let's talk through it.",
-        Sage: "Good to see you. What are we working on strategically today?",
-        Nova: "Let's GO! What are we making happen today?",
-        Rex: "No fluff. What do you need to drill?",
-        Luna: "Welcome. Take your time — what would be most helpful right now?"
-      };
-      coachGreeting.textContent = greetings[S.coach] || greetings.Blaze;
-    }
-    if (messages) {
-      messages.innerHTML = `<div class="msg msg-ai"><div class="msg-name">${S.coach}</div><span id="coach-greeting">${document.getElementById('coach-greeting')?.textContent}</span></div>`;
-    }
-  }
+  if (tab === 'companion') initCompanionChat();
   showBackBtn(tab !== 'practice', 'Practice');
+}
+
+// Sets the AI Chat greeting bubble to the currently selected coach's real
+// name/greeting instead of leaving whatever the static HTML happened to say.
+function initCompanionChat() {
+  const coachName = (S.coach && COACHES[S.coach]) ? S.coach : 'Blaze';
+  const coach = COACHES[coachName];
+  const labelEl = document.getElementById('coach-label');
+  if (labelEl) labelEl.textContent = coachName;
+  const greetingEl = document.getElementById('coach-greeting');
+  if (greetingEl) greetingEl.textContent = coach.greeting;
+  const messages = document.getElementById('chat-messages');
+  if (messages && messages.children.length <= 1) {
+    // Only reset if chat is empty (just the greeting) — don't wipe an active conversation
+    messages.innerHTML = `<div class="msg msg-ai" id="chat-greeting-msg"><div class="msg-name" id="coach-label" style="color:${coach.color}">${coachName}</div><span id="coach-greeting">${coach.greeting}</span></div>`;
+  }
+  const ctxEl = document.getElementById('companion-ctx');
+  if (ctxEl && S.briefing && S.briefing.preparing) {
+    const p = S.briefing.preparing;
+    const r = S.briefing.role || '';
+    ctxEl.innerHTML = `<strong style="color:var(--text)">${p}</strong>${r ? `<br><span style="color:var(--muted2)">Role: ${r}</span>` : ''}`;
+  }
 }
 
 // ── COACH NOTES ───────────────────────────────────────────────────────────────
