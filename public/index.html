@@ -7045,8 +7045,8 @@ function navTo(page){
     renderDailyChallenge();
   }
   if(page==='coldopen'){initColdOpen();if(coState.running)showBackBtn(true,'Cold Open Setup');}
-  if(page==='settings'){applySettingsToUI();updateAccountDisplay();}
-  if(page==='contact')initContactPage();
+  if(page==='settings'){applySettingsToUI();updateAccountDisplay();showBackBtn(true,'Home');}
+  if(page==='contact'){initContactPage();showBackBtn(true,'Home');}
   // Sync mobile bottom nav active button
   document.querySelectorAll('.mnav-btn[data-page]').forEach(b => b.classList.remove('active'));
   const mobileBtn = document.querySelector(`.mnav-btn[data-page="${page}"]`);
@@ -11600,6 +11600,9 @@ const BACK_PAGES = {
   // Practice/Insights are hubs with internal sub-tabs — back returns to the default sub-tab
   practice: () => { if (currentPracticeTab === 'debate') resetDebate(); switchPracticeTab('practice'); },
   insights: () => { switchInsightsTab('insights'); },
+  // Reached directly (footer link / account avatar), not through a hub — back returns to Home
+  contact: () => { navTo('home'); },
+  settings: () => { navTo('home'); },
 };
 
 function showBackBtn(show, label) {
