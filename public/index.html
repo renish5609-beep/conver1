@@ -4545,6 +4545,14 @@ const ScribeSTT = {
         token,
         microphone: {
           sampleRate: 16000,
+          // Without these, mobile mic capture is raw and unprocessed — on a
+          // phone (often on speaker, picking up its own coach TTS output,
+          // held at arm's length in a noisy room) that's the difference
+          // between usable and unusable transcription. Desktop mostly gets
+          // away without them because laptop mics/setups are more forgiving.
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
         },
         config: {
           model_id: 'scribe_v2_realtime',
@@ -4618,7 +4626,9 @@ const ScribeSTT = {
       const ws = new WebSocket(
         `wss://api.elevenlabs.io/v1/speech-to-text/stream?token=${token}&model_id=scribe_v2_realtime&language_code=en&no_verbatim=true&filter_background_audio=true`
       );
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 16000 } });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { sampleRate: 16000, echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+      });
       const ctx = new AudioContext({ sampleRate: 16000 });
       const source = ctx.createMediaStreamSource(stream);
       const processor = ctx.createScriptProcessor(4096, 1, 1);
