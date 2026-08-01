@@ -311,6 +311,46 @@ app.post('/api/stt-token', requireAuth, async (req, res) => {
   }
 });
 
+// Deepgram temporary token — keeps the permanent API key off the client.
+// Unlike the ElevenLabs token flow above, deliberately does NOT fall back to
+// sending the raw DEEPGRAM_API_KEY if temp-key creation fails — that key
+// grants full account access, and shipping it to the browser would let
+// anyone who opens dev tools steal it and run up charges. On any failure
+// here the client just falls back to the next STT engine instead.
+app.get('/api/deepgram-token', requireAuth, async (req, res) => {
+  if (!process.env.DEEPGRAM_API_KEY) {
+    return res.status(404).json({ error: 'Deepgram not configured' });
+  }
+  try {
+    const projectsRes = await fetch('https://api.deepgram.com/v1/projects', {
+      headers: { 'Authorization': `Token ${process.env.DEEPGRAM_API_KEY}` }
+    });
+    if (!projectsRes.ok) throw new Error('Failed to list Deepgram projects');
+    const projectsData = await projectsRes.json();
+    const projectId = projectsData.projects?.[0]?.project_id;
+    if (!projectId) throw new Error('No Deepgram project found');
+
+    const tokenRes = await fetch(`https://api.deepgram.com/v1/projects/${projectId}/keys`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Token ${process.env.DEEPGRAM_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        comment: 'Conver temp key',
+        scopes: ['usage:write'],
+        time_to_live_in_seconds: 3600
+      })
+    });
+    if (!tokenRes.ok) throw new Error('Failed to create Deepgram temp key');
+    const tokenData = await tokenRes.json();
+    if (!tokenData.key?.key) throw new Error('Deepgram temp key response missing key');
+    res.json({ key: tokenData.key.key });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Contact Form ─────────────────────────────────────────────
 const { Resend } = require('resend');
 

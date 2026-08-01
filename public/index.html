@@ -4531,6 +4531,13 @@ const ScribeSTT = {
     if (callbacks.onStop) this.onStop = callbacks.onStop;
     if (callbacks.onAutoSubmit) this.onAutoSubmit = callbacks.onAutoSubmit;
 
+    // Deepgram first — noticeably more reliable than the ElevenLabs/Web
+    // Speech chain below on mobile (Safari especially, where Web Speech
+    // cuts out constantly). Feeds the same handleTranscript()/silence-timer/
+    // auto-submit pipeline as every other engine here, so callers never see
+    // the difference. Falls through to the chain below on any failure.
+    if (await this._startDeepgram()) return;
+
     try {
       const token = await this.getToken();
 
@@ -4610,6 +4617,17 @@ const ScribeSTT = {
       } catch (e) { /* ignore */ }
       this._wsRef = null;
     }
+    if (this._dgRef) {
+      try {
+        this._dgRef.mediaRecorder?.stop();
+        this._dgRef.stream.getTracks().forEach(t => t.stop());
+        if (this._dgRef.socket.readyState === WebSocket.OPEN) {
+          this._dgRef.socket.send(JSON.stringify({ type: 'CloseStream' }));
+        }
+        this._dgRef.socket.close();
+      } catch (e) { /* ignore */ }
+      this._dgRef = null;
+    }
     if (this._fallbackRecognition) {
       try { this._fallbackRecognition.stop(); } catch (e) { /* ignore */ }
       this._fallbackRecognition = null;
@@ -4618,6 +4636,79 @@ const ScribeSTT = {
     this.partialText = '';
     if (this.onStop) this.onStop();
     console.log('✓ Scribe STT stopped');
+  },
+
+  // Deepgram — tried first in start(). Resolves true if it took over
+  // listening, false on any failure (no key/quota/network/socket), so
+  // start() can fall through to the ElevenLabs chain below unchanged.
+  _startDeepgram() {
+    return new Promise(async (resolve) => {
+      let settled = false;
+      const fail = () => { if (!settled) { settled = true; resolve(false); } };
+      try {
+        const token = (typeof authToken !== 'undefined' && authToken) || localStorage.getItem('conver_token');
+        const res = await fetch('/api/deepgram-token', {
+          headers: { 'Authorization': 'Bearer ' + (token || '') }
+        });
+        if (!res.ok) return fail();
+        const { key } = await res.json();
+        if (!key) return fail();
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+        });
+
+        const url = 'wss://api.deepgram.com/v1/listen?' + new URLSearchParams({
+          model: 'nova-2',
+          language: 'en-US',
+          punctuate: 'true',
+          interim_results: 'true',
+          endpointing: '300',
+          utterance_end_ms: '1000',
+          smart_format: 'true',
+        });
+        const socket = new WebSocket(url, ['token', key]);
+
+        socket.onopen = () => {
+          if (settled) return;
+          const mediaRecorder = new MediaRecorder(stream, {
+            mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm'
+          });
+          mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0 && socket.readyState === WebSocket.OPEN) socket.send(e.data);
+          };
+          mediaRecorder.start(250);
+          this._dgRef = { socket, stream, mediaRecorder };
+          this.isListening = true;
+          settled = true;
+          if (this.onStart) this.onStart();
+          resolve(true);
+        };
+        socket.onmessage = (e) => {
+          try {
+            const msg = JSON.parse(e.data);
+            if (msg.type === 'Results') {
+              const text = msg.channel?.alternatives?.[0]?.transcript?.trim();
+              if (text) this.handleTranscript(text, !!msg.is_final);
+            }
+          } catch(err) { /* ignore parse errors */ }
+        };
+        socket.onerror = (err) => {
+          if (settled) { console.error('Deepgram STT error:', err); if (this.onError) this.onError(err); }
+          else { stream.getTracks().forEach(t => t.stop()); fail(); }
+        };
+        socket.onclose = () => {
+          if (this._dgRef?.socket === socket) this._dgRef = null;
+          fail();
+        };
+        // No explicit auth-ack from Deepgram — a rejected key closes the
+        // socket almost immediately, so a short grace window is enough to
+        // tell "never opened" apart from a slow-but-working connection.
+        setTimeout(() => { if (!settled) { try { socket.close(); } catch(e){} stream.getTracks().forEach(t => t.stop()); fail(); } }, 4000);
+      } catch (e) {
+        fail();
+      }
+    });
   },
 
   // Manual WebSocket fallback (if SDK fails to load)
