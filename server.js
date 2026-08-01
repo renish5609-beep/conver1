@@ -364,9 +364,19 @@ app.post('/api/contact', async (req, res) => {
     return res.status(400).json({ error: 'Message too long — max 2000 characters.' });
   }
 
-  const resend = new Resend(process.env.RESEND_API_KEY);
+  if (!process.env.RESEND_API_KEY) {
+    console.error('Contact form error: RESEND_API_KEY is not set');
+    return res.status(500).json({ error: 'Email not configured.' });
+  }
 
   try {
+    // Constructed inside the try block — the Resend SDK throws synchronously
+    // on a missing/malformed key, and since this is an async handler that
+    // throw becomes an unhandled promise rejection Express never sees,
+    // which crashes the whole Node process (not just this request). The
+    // env-var guard above should already catch the "missing key" case, but
+    // this keeps any other constructor failure from taking the site down too.
+    const resend = new Resend(process.env.RESEND_API_KEY);
     await resend.emails.send({
       from: 'Conver <onboarding@resend.dev>',
       to: 'appconver@gmail.com',
