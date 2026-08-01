@@ -2795,11 +2795,6 @@ h1, h2, h3 {
      all share one immersive overlay (#voice-immersive-overlay,
      ve-* ids) — it's not three separate stages, so the fix lives
      here rather than on three different structures. */
-  #voice-immersive-overlay {
-    padding: 12px !important;
-    justify-content: flex-start !important;
-    padding-top: 56px !important;
-  }
   .coach-orb.orb-xl { --orb-size: 130px !important; }
   #ve-coach-name { font-size: 19px !important; }
   #ve-coach-role { font-size: 10px !important; }
@@ -6414,6 +6409,21 @@ function stopRealTimeIfActive() {
 }
 
 // ── VOICE ENGINE — fully immersive voice conversation loop ────
+// A 1-sample silent WAV, played once synchronously inside whichever button
+// click started the session (start() is always called directly from that
+// click, with no awaits first) to satisfy mobile browsers' autoplay policy
+// for every subsequent script-initiated audio.play() call in _playTTS() —
+// same trick as _rtUnlockAudio() for Real-Time, just scoped to VoiceEngine.
+let _veAudioUnlocked = false;
+function _veUnlockAudio() {
+  if (_veAudioUnlocked) return;
+  _veAudioUnlocked = true;
+  try {
+    const el = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=');
+    el.play().catch(() => {});
+  } catch(e) { /* non-fatal */ }
+}
+
 const VoiceEngine = {
   active: false,
   mode: null,           // 'voice' | 'coldopen' | 'debate' | 'warmup'
@@ -6426,6 +6436,7 @@ const VoiceEngine = {
 
   // Start a voice-native session
   start(mode, onUserSpeech) {
+    _veUnlockAudio();
     this.active = true;
     this.mode = mode;
     this.onUserSpeech = onUserSpeech;
@@ -6524,8 +6535,13 @@ const VoiceEngine = {
         const audio = new Audio(url);
         this.currentAudio = audio;
         audio.onended = () => { URL.revokeObjectURL(url); this.currentAudio = null; resolve(); };
-        audio.onerror = () => { resolve(); };
-        audio.play();
+        audio.onerror = () => { URL.revokeObjectURL(url); this.currentAudio = null; resolve(); };
+        // play() can reject on mobile if this call falls outside the browser's
+        // autoplay/user-activation window — without a .catch() that rejection
+        // goes unhandled and this promise (and the whole conversation loop
+        // awaiting it) hangs forever with no audio and no error. Treat a
+        // blocked play the same as a failed one: skip the audio, move on.
+        audio.play().catch(() => { URL.revokeObjectURL(url); this.currentAudio = null; resolve(); });
       } catch(e) { resolve(); }
     });
   },
@@ -11741,12 +11757,12 @@ document.head.appendChild(rippleStyle);
   </div>
 </div>
 
-<div id="voice-immersive-overlay" style="display:none;position:fixed;inset:0;background:var(--s0,#03030a);z-index:5000;flex-direction:column;align-items:center;justify-content:center;gap:0">
+<div id="voice-immersive-overlay" style="display:none;position:fixed;inset:0;background:var(--s0,#03030a);z-index:5000;flex-direction:column;align-items:stretch;gap:0">
   <!-- Ambient background -->
   <div style="position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 40%,rgba(var(--accent-rgb),0.08) 0%,transparent 60%);pointer-events:none"></div>
 
-  <!-- Top bar -->
-  <div style="position:absolute;top:0;left:0;right:0;padding:20px 28px;display:flex;align-items:center;justify-content:space-between;z-index:2">
+  <!-- Top bar — real flow space now, not absolute, so it can never overlap the centered content below -->
+  <div style="position:relative;flex-shrink:0;padding:20px 28px;display:flex;align-items:center;justify-content:space-between;z-index:2">
     <div style="font-family:'Italiana',serif;font-size:20px;background:linear-gradient(135deg,#7c6fff,#b48cff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Conver</div>
     <div id="ve-state-label" style="font-size:11px;color:var(--muted,#6b7494);font-family:'DM Mono',monospace;letter-spacing:1px;text-transform:uppercase"></div>
     <button onclick="endVoiceNativeSession()"
@@ -11755,37 +11771,43 @@ document.head.appendChild(rippleStyle);
     </button>
   </div>
 
-  <!-- Coach avatar area -->
-  <div style="position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:20px;margin-bottom:32px">
-    <div id="ve-coach-avatar-container" style="position:relative">
-      <!-- Coach orb injected by JS — animates its own speaking/listening/processing state via setOrbState() -->
+  <!-- Middle content — fills whatever space is left between the top bar and history strip,
+       and centers within THAT space, so it can never be centered into the top bar on short screens -->
+  <div style="position:relative;z-index:2;flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 0">
+
+    <!-- Coach avatar area -->
+    <div style="display:flex;flex-direction:column;align-items:center;gap:20px;margin-bottom:32px">
+      <div id="ve-coach-avatar-container" style="position:relative">
+        <!-- Coach orb injected by JS — animates its own speaking/listening/processing state via setOrbState() -->
+      </div>
+      <div id="ve-coach-name" style="font-family:'Italiana',serif;font-size:28px;color:#f0f1f8"></div>
+      <div id="ve-coach-role" style="font-size:11px;color:#6b7494;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1.5px"></div>
     </div>
-    <div id="ve-coach-name" style="font-family:'Italiana',serif;font-size:28px;color:#f0f1f8"></div>
-    <div id="ve-coach-role" style="font-size:11px;color:#6b7494;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1.5px"></div>
-  </div>
 
-  <!-- Live transcript -->
-  <div style="position:relative;z-index:2;width:100%;max-width:600px;text-align:center;padding:0 40px;margin-bottom:24px">
-    <div id="ve-live-transcript" style="font-size:18px;color:#9099b8;font-family:'Plus Jakarta Sans',sans-serif;line-height:1.7;min-height:60px;transition:all 0.3s"></div>
-  </div>
-
-  <!-- Status -->
-  <div style="position:relative;z-index:2;text-align:center">
-    <div id="ve-status" style="font-size:13px;color:#6b7494;font-family:'DM Mono',monospace;letter-spacing:1px"></div>
-    <div style="display:flex;gap:12px;justify-content:center;margin-top:20px">
-      <button id="ve-done-btn" onclick="ScribeSTT.submitNow()"
-        style="display:none;background:linear-gradient(135deg,#2dd4a0,#38bdf8);border:none;border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;padding:11px 28px;cursor:pointer;box-shadow:0 4px 16px rgba(45,212,160,0.35)">
-        ✓ Done Speaking
-      </button>
-      <button id="ve-tap-to-talk-btn" onclick="VoiceEngine._startListening()"
-        style="display:none;background:linear-gradient(135deg,#7c6fff,#c084fc);border:none;border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;padding:11px 28px;cursor:pointer;box-shadow:0 4px 16px rgba(124,111,255,0.35)">
-        Tap to Respond
-      </button>
+    <!-- Live transcript -->
+    <div style="width:100%;max-width:600px;text-align:center;padding:0 40px;margin-bottom:24px">
+      <div id="ve-live-transcript" style="font-size:18px;color:#9099b8;font-family:'Plus Jakarta Sans',sans-serif;line-height:1.7;min-height:60px;transition:all 0.3s"></div>
     </div>
+
+    <!-- Status -->
+    <div style="text-align:center">
+      <div id="ve-status" style="font-size:13px;color:#6b7494;font-family:'DM Mono',monospace;letter-spacing:1px"></div>
+      <div style="display:flex;gap:12px;justify-content:center;margin-top:20px">
+        <button id="ve-done-btn" onclick="ScribeSTT.submitNow()"
+          style="display:none;background:linear-gradient(135deg,#2dd4a0,#38bdf8);border:none;border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;padding:11px 28px;cursor:pointer;box-shadow:0 4px 16px rgba(45,212,160,0.35)">
+          ✓ Done Speaking
+        </button>
+        <button id="ve-tap-to-talk-btn" onclick="VoiceEngine._startListening()"
+          style="display:none;background:linear-gradient(135deg,#7c6fff,#c084fc);border:none;border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;padding:11px 28px;cursor:pointer;box-shadow:0 4px 16px rgba(124,111,255,0.35)">
+          Tap to Respond
+        </button>
+      </div>
+    </div>
+
   </div>
 
-  <!-- Conversation history -->
-  <div style="position:absolute;bottom:0;left:0;right:0;padding:20px 40px 28px;z-index:2">
+  <!-- Conversation history — real flow space at the bottom, not absolute -->
+  <div style="position:relative;flex-shrink:0;padding:16px 40px 24px;z-index:2">
     <div id="ve-history" style="display:flex;flex-direction:column;gap:8px;max-height:140px;overflow-y:auto;scrollbar-width:none"></div>
   </div>
 </div>
