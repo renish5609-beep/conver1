@@ -9699,6 +9699,7 @@ async function submitContactForm() {
       showToast('✓', 'Message sent! We will get back to you soon.');
     }
   } catch(e) {
+    console.error('Contact form request failed:', e);
     showContactError('Network error. Please email appconver@gmail.com directly.');
   }
   btn.disabled = false;
