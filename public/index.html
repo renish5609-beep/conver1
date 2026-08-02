@@ -11393,6 +11393,17 @@ async function saveUserData() {
 
     const res = await fetch('/api/user/stats', {
       method: 'POST',
+      // updateStreak() (and other callers) fire this save without awaiting
+      // it — if the user closes the tab, backgrounds the app, or navigates
+      // away right after finishing a session (very common on mobile: finish
+      // practicing, immediately switch apps), the browser can cancel this
+      // request mid-flight. The streak looks incremented locally but never
+      // actually reaches Supabase, so the next day loads the last value that
+      // DID save — which can still be yesterday's, making the streak appear
+      // to silently reset every single day despite genuine consecutive use.
+      // keepalive lets the browser finish this specific request even after
+      // the page that started it unloads.
+      keepalive: true,
       headers: {'Content-Type':'application/json','Authorization':'Bearer '+authToken},
       body: JSON.stringify({
         stats: {
