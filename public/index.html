@@ -4671,18 +4671,32 @@ const ScribeSTT = {
 
         socket.onopen = () => {
           if (settled) return;
-          const mediaRecorder = new MediaRecorder(stream, {
-            mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm'
-          });
-          mediaRecorder.ondataavailable = (e) => {
-            if (e.data.size > 0 && socket.readyState === WebSocket.OPEN) socket.send(e.data);
-          };
-          mediaRecorder.start(250);
-          this._dgRef = { socket, stream, mediaRecorder };
-          this.isListening = true;
-          settled = true;
-          if (this.onStart) this.onStart();
-          resolve(true);
+          try {
+            // iOS Safari (and some Android WebViews) don't support
+            // audio/webm at all — only audio/mp4 — so the old hardcoded
+            // 'audio/webm' fallback threw there. That throw happened inside
+            // this event callback, outside the try/catch below it used to
+            // live in, so the promise never resolved and start() hung
+            // forever instead of falling through to the next STT engine.
+            const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
+            const mimeType = candidates.find(t => MediaRecorder.isTypeSupported?.(t));
+            if (!mimeType) throw new Error('No supported MediaRecorder mimeType on this device');
+            const mediaRecorder = new MediaRecorder(stream, { mimeType });
+            mediaRecorder.ondataavailable = (e) => {
+              if (e.data.size > 0 && socket.readyState === WebSocket.OPEN) socket.send(e.data);
+            };
+            mediaRecorder.start(250);
+            this._dgRef = { socket, stream, mediaRecorder };
+            this.isListening = true;
+            settled = true;
+            if (this.onStart) this.onStart();
+            resolve(true);
+          } catch (e) {
+            console.warn('Deepgram MediaRecorder setup failed, falling back:', e.message);
+            try { socket.close(); } catch(e2) {}
+            stream.getTracks().forEach(t => t.stop());
+            fail();
+          }
         };
         socket.onmessage = (e) => {
           try {
