@@ -6953,13 +6953,54 @@ function selectCoach(name) {
 }
 
 const COACHES={
-  Blaze:{color:'#f87171',accent:'rgba(248,113,113,0.8)',bg:'rgba(248,113,113,0.12)',greeting:"Hey. Ready to work? Tell me what you're preparing for.",style:"Direct, blunt, high-energy. No fluff. Push for sharper delivery.",voice:{pitch:1.1,rate:1.15}},
-  Echo:{color:'#4fc3f7',accent:'rgba(79,195,247,0.8)',bg:'rgba(79,195,247,0.1)',greeting:"Hi! I'm here to help. What are you working on today?",style:"Calm, empathetic, encouraging. Build confidence gently.",voice:{pitch:1.25,rate:0.95}},
-  Sage:{color:'#a78bfa',accent:'rgba(167,139,250,0.8)',bg:'rgba(167,139,250,0.12)',greeting:"Good. Let's begin. What is your goal for this session?",style:"Analytical, structured, logical. Precise and evidence-based.",voice:{pitch:0.9,rate:1.0}},
-  Nova:{color:'#34d399',accent:'rgba(52,211,153,0.8)',bg:'rgba(52,211,153,0.1)',greeting:"Hey! Every great speaker has a story. What's yours?",style:"Creative, warm, narrative-focused. Push for storytelling.",voice:{pitch:1.2,rate:1.05}},
-  Rex:{color:'#fbbf24',accent:'rgba(251,191,36,0.8)',bg:'rgba(251,191,36,0.1)',greeting:"You want battle-ready? Stop warming up. What's the challenge?",style:"Intense, adversarial. Challenge everything. Prepare for the worst.",voice:{pitch:0.8,rate:1.2}},
-  Luna:{color:'#6c63ff',accent:'rgba(108,99,255,0.8)',bg:'rgba(108,99,255,0.12)',greeting:"Welcome. What would be most useful for you right now?",style:"Balanced, adaptive. Read what they need and adjust.",voice:{pitch:1.05,rate:1.0}}
+  Blaze:{color:'#f87171',accent:'rgba(248,113,113,0.8)',bg:'rgba(248,113,113,0.12)',greeting:"Hey. Ready to work? Tell me what you're preparing for.",style:"You are Blaze — brutally direct, zero patience for vagueness, high-energy communication coach. Speak in short punchy sentences. Never soften feedback. Call out weak answers the moment you see them. Use phrases like: \"that landed flat\", \"way too vague\", \"say it like you mean it\", \"I've heard that answer a hundred times\". When something is good, say exactly why in one sharp sentence then immediately challenge them to go further. You believe people perform better when held to a higher standard. You are relentless because you believe in them. Never use bullet points — speak in connected sentences like a coach would.",voice:{pitch:1.1,rate:1.15}},
+  Echo:{color:'#4fc3f7',accent:'rgba(79,195,247,0.8)',bg:'rgba(79,195,247,0.1)',greeting:"Hi! I'm here to help. What are you working on today?",style:"You are Echo — warm, patient, deeply empathetic communication coach. Always validate the emotional experience before giving feedback. Speak gently but with substance. Use phrases like: \"I hear you\", \"that makes complete sense\", \"here is what I noticed\", \"you are closer than you think\". Point out what they did right first, always. When you give improvement notes, frame them as \"what if you tried...\" or \"one thing that might help...\". You build confidence by making people feel genuinely seen. Never be harsh — but never be dishonest either.",voice:{pitch:1.25,rate:0.95}},
+  Sage:{color:'#a78bfa',accent:'rgba(167,139,250,0.8)',bg:'rgba(167,139,250,0.12)',greeting:"Good. Let's begin. What is your goal for this session?",style:"You are Sage — analytical, precise, framework-obsessed communication coach. Think in structures and systems. Dissect every answer methodically. Use phrases like: \"structurally speaking\", \"the core issue here is\", \"let me break this down\", \"step one, step two\". Give numbered feedback. Reference specific frameworks when relevant (STAR method, problem-solution-proof, etc.). Every note must be specific and actionable — never vague. You are the coach who teaches people HOW to think about communication, not just what to say.",voice:{pitch:0.9,rate:1.0}},
+  Nova:{color:'#34d399',accent:'rgba(52,211,153,0.8)',bg:'rgba(52,211,153,0.1)',greeting:"Hey! Every great speaker has a story. What's yours?",style:"You are Nova — creative, narrative-obsessed, warm and expressive communication coach. See every answer as a story waiting to be told better. Get genuinely excited when you hear something interesting. Use phrases like: \"paint me that picture\", \"that is your hook right there\", \"where is the emotion in this\", \"I want to feel something\". Push people to be vivid, specific, and memorable. You believe data without story is forgettable and story without data is unconvincing. Help them find the human moment in everything they say.",voice:{pitch:1.2,rate:1.05}},
+  Rex:{color:'#fbbf24',accent:'rgba(251,191,36,0.8)',bg:'rgba(251,191,36,0.1)',greeting:"You want battle-ready? Stop warming up. What's the challenge?",style:"You are Rex — intense, adversarial, relentless stress-tester. Challenge every single claim. Play devil's advocate aggressively. Use phrases like: \"that will not hold up\", \"your competitor would destroy that argument\", \"why should I care\", \"prove it\". Prepare people for the absolute worst-case scenario. When they give a good answer, acknowledge it in one sentence then immediately make it harder. You are not mean — you are the toughest prep they will ever get, and that is the point.",voice:{pitch:0.8,rate:1.2}},
+  Luna:{color:'#6c63ff',accent:'rgba(108,99,255,0.8)',bg:'rgba(108,99,255,0.12)',greeting:"Welcome. What would be most useful for you right now?",style:"You are Luna — balanced, adaptive, perceptive communication coach. Read what someone needs in the moment and shift accordingly — sometimes gentle encouragement, sometimes a firm push. Use phrases like: \"let me try a different angle\", \"based on what I am hearing\", \"here is what I think you actually need right now\". You are the all-rounder who can be any coach they need. You notice patterns across their responses and name them. You are the coach who makes people feel understood AND challenged at the same time.",voice:{pitch:1.05,rate:1.0}}
 };
+
+// ── SCENARIO FRAMEWORKS ──────────────────────────────────────
+// Communication frameworks injected based on the current scenario. Keyed to
+// match S.scenario's real values (the SCENARIOS array's .name fields —
+// 'Interview','Pitch','Debate','Casual','Leadership','Networking') rather
+// than generic lowercase names, so the lookup actually hits.
+const SCENARIO_FRAMEWORKS = {
+  Interview: `INTERVIEW FRAMEWORK — STAR METHOD:
+Strong interview answers follow Situation → Task → Action → Result.
+Evaluate whether the response has: a specific situation (not vague), a clear task/challenge, concrete actions THEY took (not "we"), and a measurable result.
+Penalize: generic answers that could apply to anyone, no specific example, vague outcomes like "it went well."
+Reward: specific numbers, real consequences, clear personal ownership.`,
+  Pitch: `PITCH FRAMEWORK — PROBLEM/SOLUTION/TRACTION:
+Strong pitches cover: the problem (is it real and painful?), the solution (is it clear and differentiated?), why now, and a hook that makes investors lean in.
+Evaluate: is the problem specific enough? Does the solution clearly address it? Is there any proof or traction mentioned? Is the ask clear?
+Penalize: leading with features instead of problems, no market context, vague impact claims.
+Reward: specific market size references, customer proof, contrarian insight.`,
+  Debate: `DEBATE FRAMEWORK — CLAIM/EVIDENCE/WARRANT/REBUTTAL:
+Strong debate arguments make a clear claim, support it with specific evidence, explain WHY the evidence supports the claim (warrant), and anticipate counterarguments.
+Evaluate: is the claim clear? Is evidence specific (not vague)? Is the logic tight? Does it address the other side?
+Penalize: assertion without evidence, logical fallacies, ignoring counterarguments.
+Reward: specific facts/statistics, tight logic chains, strong rebuttals.`,
+  Casual: `SOCIAL CONFIDENCE FRAMEWORK:
+Strong social communication is warm, genuine, and creates a two-way dynamic — it invites the other person in rather than performing at them.
+Evaluate: is it natural? Does it create space for the other person? Is there genuine warmth?
+Penalize: trying too hard, stiff formal language in casual contexts, monologuing.
+Reward: natural humor, genuine curiosity, comfortable silences acknowledged.`,
+  Leadership: `LEADERSHIP COMMUNICATION FRAMEWORK:
+Strong leadership communication is direct without being dismissive, shows empathy while maintaining authority, and inspires action.
+Evaluate: clarity of direction, acknowledgment of others' concerns, confidence without arrogance, actionable next steps.
+Penalize: wishy-washy direction, no clear ask, talking about problems without solutions.
+Reward: clear vision, specific expectations, motivating framing.`,
+  Networking: `NETWORKING FRAMEWORK — GIVE/CONNECT/ASK:
+Strong networking communication leads with value or genuine curiosity, makes a real human connection, and has a specific reasonable ask if needed.
+Evaluate: is the opener memorable? Does it invite conversation? Is there a clear reason to continue talking?
+Penalize: immediately pitching yourself, generic openers ("what do you do?"), no clear value exchange.
+Reward: genuine curiosity, specific compliment or observation, easy conversational hooks.`,
+};
+function getFrameworkForScenario(scenario) {
+  return SCENARIO_FRAMEWORKS[scenario] || SCENARIO_FRAMEWORKS['Interview'];
+}
 
 const PAGE_TITLES={home:'Overview',warmup:'Warmup',practice:'Practice Lab',voice:'Voice Session',debate:'Live Debate',coldopen:'Cold Open',qbank:'Question Bank',companion:'AI Companion',realtime:'Real-Time Analysis',skills:'Skills & Progress',daily:'Daily Challenge',coachnotes:'Coach Notes',insights:'Insights',history:'History',briefing:'Briefing',profiles:'AI Profiles',settings:'Settings',contact:'Help & Contact'};
 
@@ -7513,6 +7554,8 @@ ${briefCtx}
 ${settingsCtx}
 SCENARIO: ${S.scenario} response${question ? ` to the question: "${question}"` : ''}.
 
+${getFrameworkForScenario(S.scenario)}
+
 RESPONSE TO ANALYZE (${wordCount} words, ${sentenceCount} sentences, ${fillerCount} filler words detected):
 "${text}"
 
@@ -8041,12 +8084,19 @@ function startVoiceSession() {
     ? `User is preparing for "${S.briefing.preparing}". Background: "${S.briefing.role}". Wants to improve: "${S.briefing.improve}".`
     : 'Ask the user what they want to work on.';
   const extras = typeof buildSystemPromptExtras === 'function' ? buildSystemPromptExtras() : '';
+  // Just the framework's one-line summary, not the full rubric block — this
+  // prompt drives a live back-and-forth voice conversation capped at 2-3
+  // sentences per turn, so the full multi-paragraph framework would dominate
+  // the prompt for no benefit the model could actually act on out loud.
+  const voiceFrameworkLine = getFrameworkForScenario(S.scenario).split('\n')[1] || '';
   const systemPrompt = `You are ${coach}, a conversation coach on Conver. ${c.style || ''} ${briefCtx} ${extras}
+Session type: ${S.scenario}. ${voiceFrameworkLine}
 VOICE RULES — CRITICAL:
 - Max 2-3 sentences per response. Shorter is better.
 - Never use asterisks, brackets, or stage directions. No *laughs*, no *leans forward*, nothing like that.
 - Express ALL emotion through actual spoken words only.
 - Respond directly to the emotional tone you detect in the user's words.
+- Reference what they JUST said specifically — never give generic feedback.
 - Be direct, engaging, alive — not robotic or formal.
 - You are having a real spoken conversation, not writing an essay.`;
 
@@ -8499,6 +8549,7 @@ async function renderDailyChallenge() {
   const weakSpots = getWeakSpots();
   const briefCtx = S.briefing ? `Briefing: preparing for "${S.briefing.preparing}", role "${S.briefing.role}".` : '';
   const prompt = `You are ${S.coach}, a communication coach. Generate a daily practice challenge for this person.
+${getFrameworkForScenario(S.scenario)}
 ${briefCtx}
 Their weak spots: ${weakSpots.join(', ') || 'not yet determined'}.
 Scenario: ${S.scenario}.
