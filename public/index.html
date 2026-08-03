@@ -7932,20 +7932,41 @@ Return ONLY this JSON:
     S.xp = (S.xp || 0) + xpEarned;
     S.sessions++;
     checkSessionMilestone();
+
+    // Derive a single score from the per-question breakdown — the debrief
+    // doesn't naturally split into clarity/confidence/persuasion the way
+    // Practice Lab's rubric does, but History's list view and the report
+    // modal both read a.clarity/a.confidence/a.persuasion directly and will
+    // throw on undefined, so every session type needs SOME value here.
+    const breakdown = d.question_breakdown || [];
+    const avgScore = breakdown.length
+      ? Math.round(breakdown.reduce((sum, q) => sum + (q.score || 0), 0) / breakdown.length)
+      : 5;
+
+    // Same {scenario, coach, question, text, analysis, time} shape every
+    // other mode uses — History's rendering and the report modal both
+    // depend on this exact contract (analysis.strengths/.improvements are
+    // .map()'d directly with no null-check, so they crash on anything else).
+    const newSession = {
+      scenario: 'Mock Interview',
+      coach: MI_STATE.interviewerName,
+      question: `${MI_STATE.role} at ${MI_STATE.company}`,
+      text: d.overall_impression || d.decision_reasoning || '',
+      analysis: {
+        clarity: avgScore,
+        confidence: avgScore,
+        persuasion: avgScore,
+        overall: `${d.decision}: ${d.decision_reasoning || ''}`,
+        strengths: d.strengths || [],
+        improvements: [...(d.red_flags || []), d.coach_note].filter(Boolean),
+        rewrite: ''
+      },
+      time: new Date()
+    };
+    S.history.unshift(newSession);
+    if (S.autosave !== false) saveSessionToCloud(newSession);
     updateStreak();
     updateChips();
-
-    const historyEntry = {
-      date: new Date().toISOString(),
-      type: 'Mock Interview',
-      company: MI_STATE.company,
-      role: MI_STATE.role,
-      decision: d.decision,
-      xp: xpEarned,
-      coach: MI_STATE.interviewerName
-    };
-    if (!S.history) S.history = [];
-    S.history.unshift(historyEntry);
     saveUserData();
     showToast('✓', `Interview complete! +${xpEarned} XP`);
   } catch(e) {
