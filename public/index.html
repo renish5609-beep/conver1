@@ -3285,6 +3285,7 @@ h1, h2, h3 {
         <div class="section-head"><h2>Practice Lab</h2><p>Submit a response and get real AI analysis — scores, feedback, and a rewritten stronger version.</p></div>
         <div class="stab-bar" id="practice-stab-bar">
           <button class="stab active" id="pstab-practice" onclick="switchPracticeTab('practice')">Lab</button>
+          <button class="stab" id="pstab-mockinterview" onclick="switchPracticeTab('mockinterview')">Mock Interview</button>
           <button class="stab" id="pstab-debate" onclick="switchPracticeTab('debate')">Debate</button>
           <button class="stab" id="pstab-qbank" onclick="switchPracticeTab('qbank')">Question Bank</button>
           <button class="stab" id="pstab-companion" onclick="switchPracticeTab('companion')">AI Chat</button>
@@ -3317,6 +3318,110 @@ h1, h2, h3 {
         <div id="psub-realtime" style="display:none"></div>
         <div id="psub-coaches" style="display:none">
           <div class="section-head" style="margin-top:4px"><h2>Choose Your Coach</h2><p>Each has a distinct style. Switch anytime.</p></div>
+        </div>
+        <div id="psub-mockinterview" style="display:none">
+          <!-- SETUP SCREEN -->
+          <div id="mi-setup">
+            <div class="section-head" style="margin-top:4px">
+              <h2>Mock Interview</h2>
+              <p>A real interview simulation. Upload your resume, tell us where you're interviewing, and face a hiring manager who won't go easy on you.</p>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+              <div style="display:flex;flex-direction:column;gap:14px">
+                <div class="panel">
+                  <div class="panel-title">Company</div>
+                  <input type="text" id="mi-company" placeholder="e.g. Google, McKinsey, Goldman Sachs..." style="width:100%"/>
+                  <div style="font-size:11px;color:var(--muted);margin-top:6px">We'll tailor questions to this company's interview style and values.</div>
+                </div>
+                <div class="panel">
+                  <div class="panel-title">Role Title</div>
+                  <input type="text" id="mi-role" placeholder="e.g. Software Engineer, Product Manager..." style="width:100%"/>
+                </div>
+                <div class="panel">
+                  <div class="panel-title">Interview Type</div>
+                  <select id="mi-type" style="width:100%">
+                    <option value="behavioral">Behavioral (tell me about a time...)</option>
+                    <option value="technical">Technical + Behavioral mix</option>
+                    <option value="case">Case Interview (consulting)</option>
+                    <option value="executive">Executive / Leadership</option>
+                    <option value="startup">Startup / Culture Fit</option>
+                    <option value="sales">Sales Interview</option>
+                  </select>
+                </div>
+                <div class="panel">
+                  <div class="panel-title">Difficulty</div>
+                  <select id="mi-difficulty" style="width:100%">
+                    <option value="standard">Standard — realistic but fair</option>
+                    <option value="tough">Tough — curveballs and follow-ups</option>
+                    <option value="brutal">Brutal — FAANG / top firm level pressure</option>
+                  </select>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:14px">
+                <div class="panel">
+                  <div class="panel-title">Your Resume <span style="color:var(--muted);font-size:9px">OPTIONAL BUT RECOMMENDED</span></div>
+                  <div id="mi-resume-drop" style="border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;cursor:pointer;transition:all 0.2s"
+                    onclick="document.getElementById('mi-resume-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
+                    ondragleave="this.style.borderColor='var(--border)'" ondrop="handleMiResumeDrop(event)">
+                    <div style="font-size:28px;margin-bottom:8px">📄</div>
+                    <div style="font-size:13px;color:var(--text);margin-bottom:4px">Drop your resume here</div>
+                    <div style="font-size:11px;color:var(--muted)">PDF, DOCX, or paste text below</div>
+                    <input type="file" id="mi-resume-input" accept=".pdf,.docx,.doc,.txt" style="display:none" onchange="handleMiResumeFile(this)"/>
+                  </div>
+                  <div id="mi-resume-filename" style="font-size:11px;color:var(--accent3);margin-top:6px;display:none"></div>
+                  <div style="margin-top:10px;font-size:11px;color:var(--muted);margin-bottom:4px">Or paste resume text:</div>
+                  <textarea id="mi-resume-text" placeholder="Paste your resume content here..." style="width:100%;min-height:120px;font-size:12px;padding:10px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);resize:vertical;font-family:'Plus Jakarta Sans',sans-serif"></textarea>
+                </div>
+                <div class="panel">
+                  <div class="panel-title">Anything else? <span style="color:var(--muted);font-size:9px">OPTIONAL</span></div>
+                  <textarea id="mi-context" placeholder="e.g. This is a final round. The role is hybrid. I'm a career changer from finance..." style="width:100%;min-height:72px;font-size:12px;padding:10px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);resize:vertical;font-family:'Plus Jakarta Sans',sans-serif"></textarea>
+                </div>
+              </div>
+            </div>
+            <button class="btn-primary" id="mi-start-btn" onclick="startMockInterview()" style="width:100%;max-width:320px;margin:0 auto;display:block">
+              Start Interview →
+            </button>
+          </div>
+          <!-- ACTIVE INTERVIEW -->
+          <div id="mi-active" style="display:none">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:8px">
+              <div>
+                <div style="font-size:11px;color:var(--accent3);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px" id="mi-company-display"></div>
+                <div style="font-size:16px;font-weight:700;color:var(--text)" id="mi-role-display"></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <div style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace" id="mi-progress">Question 1 of 7</div>
+                <button onclick="endMockInterviewEarly()" style="font-size:11px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer">End Interview</button>
+              </div>
+            </div>
+            <div class="panel" style="margin-bottom:14px">
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+                <div id="mi-interviewer-avatar" style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#6c63ff,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">💼</div>
+                <div>
+                  <div style="font-size:13px;font-weight:700;color:var(--text)" id="mi-interviewer-name">Sarah Chen</div>
+                  <div style="font-size:11px;color:var(--muted2)" id="mi-interviewer-title">Senior Engineering Manager</div>
+                </div>
+              </div>
+              <div id="mi-question" style="font-size:15px;color:var(--text);line-height:1.7;font-style:italic"></div>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
+                <div id="mi-speaking-status" style="display:none;font-size:11px;color:var(--accent3);font-family:'DM Mono',monospace"></div>
+                <button id="mi-replay-btn" onclick="speakMiQuestion(MI_STATE.questions[MI_STATE.currentQ]?.question || MI_STATE.questions[MI_STATE.currentQ])"
+                  style="font-size:11px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:6px;padding:3px 9px;cursor:pointer;display:none">
+                  🔊 Replay</button>
+              </div>
+            </div>
+            <div id="mi-history-area" style="margin-bottom:14px"></div>
+            <div class="panel">
+              <div class="panel-title">Your Answer</div>
+              <textarea id="mi-answer" placeholder="Type your answer here... Take your time. This is a real interview." style="width:100%;min-height:120px;font-size:13px;padding:12px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);resize:vertical;font-family:'Plus Jakarta Sans',sans-serif;line-height:1.6"></textarea>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;flex-wrap:wrap;gap:8px">
+                <div style="font-size:11px;color:var(--muted)">No feedback until the end — just like a real interview.</div>
+                <button class="btn-primary" id="mi-next-btn" onclick="submitMockAnswer()">Next Question →</button>
+              </div>
+            </div>
+          </div>
+          <!-- DEBRIEF -->
+          <div id="mi-debrief" style="display:none"></div>
         </div>
       </div>
 
@@ -7521,10 +7626,412 @@ function saveBriefing(){
 }
 
 // ── API ───────────────────────────────────────────────────────────────────────
-async function callAI(messages,system){
-  const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages,system})});
+async function callAI(messages,system,maxTokens){
+  const body={messages,system};
+  if(maxTokens) body.maxTokens=maxTokens;
+  const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   if(!res.ok){const e=await res.json().catch(()=>({error:res.statusText}));throw new Error(e.error||'Server error');}
   const d=await res.json();return d.text;
+}
+
+// ── MOCK INTERVIEW ENGINE ─────────────────────────────────────
+const MI_STATE = {
+  running: false,
+  company: '',
+  role: '',
+  type: 'behavioral',
+  difficulty: 'standard',
+  resumeText: '',
+  context: '',
+  questions: [], // array of {question, userAnswer} once answered
+  currentQ: 0,
+  interviewerName: '',
+  interviewerTitle: '',
+  interviewerVoice: null,
+  sessionStart: null,
+  audioPlaying: false,
+};
+
+// Same confirmed-gender voice pools Cold Open uses server-side, mirrored
+// here so the hiring manager gets a consistent, gender-matched voice
+// without adding a round trip just to fetch a voice ID.
+const MI_VOICES_FEMALE = ['4O1sYUnmtThcBoSBrri7','6fZce9LFNG3iEITDfqZZ','CICpbs1ZGqlhQNbQmCUP','tIb1FHpzlwSiTGg6JxF0','hod33eJyEU4TLqiYFttr','8DzKSPdgEQPaK5vKG0Rs','yj30vwTGJxSHezdAGsv9'];
+const MI_VOICES_MALE = ['1t1EeRixsJrKbiF1zwM6','Gubgw9l4dtIoQA9YZHgx','hIreuBly94QFepU63yel','EitqXD7jgIy0K5Z1zGGp','Ib97zM6uFBc71OWgj75I','wAGzRVkxKEs8La0lmdrE'];
+
+function getMiVoice(name) {
+  const firstName = (name || '').toLowerCase().split(' ')[0];
+  const gender = typeof detectCharacterGender === 'function' ? detectCharacterGender(name, '') : 'female';
+  const pool = gender === 'male' ? MI_VOICES_MALE : MI_VOICES_FEMALE;
+  const hash = firstName.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  return pool[hash % pool.length];
+}
+
+async function speakMiQuestion(text) {
+  if (!text || !MI_STATE.interviewerVoice) return;
+  if (MI_STATE.audioPlaying) return; // don't overlap
+  const statusEl = document.getElementById('mi-speaking-status');
+  if (statusEl) { statusEl.textContent = `${MI_STATE.interviewerName} is speaking...`; statusEl.style.display = 'block'; }
+  MI_STATE.audioPlaying = true;
+  try {
+    const res = await fetch('/api/speak', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, voiceId: MI_STATE.interviewerVoice, speed: S.voiceSpeed || 'normal' })
+    });
+    if (!res.ok) throw new Error('TTS failed');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.onended = () => { MI_STATE.audioPlaying = false; URL.revokeObjectURL(url); if (statusEl) statusEl.style.display = 'none'; };
+    audio.onerror = () => { MI_STATE.audioPlaying = false; if (statusEl) statusEl.style.display = 'none'; };
+    await audio.play().catch(() => { MI_STATE.audioPlaying = false; if (statusEl) statusEl.style.display = 'none'; });
+  } catch(e) {
+    MI_STATE.audioPlaying = false;
+    if (statusEl) statusEl.style.display = 'none';
+  }
+}
+
+async function handleMiResumeFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const nameEl = document.getElementById('mi-resume-filename');
+  if (nameEl) { nameEl.textContent = '📎 ' + file.name; nameEl.style.display = 'block'; }
+  if (file.type === 'text/plain') {
+    const text = await file.text();
+    const ta = document.getElementById('mi-resume-text');
+    if (ta) ta.value = text;
+  } else {
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await fetch('/api/extract-resume', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.text) {
+        const ta = document.getElementById('mi-resume-text');
+        if (ta) ta.value = data.text;
+        if (nameEl) nameEl.textContent = '✓ ' + file.name + ' — text extracted';
+      } else {
+        if (nameEl) nameEl.textContent = '⚠ Could not parse file — please paste resume text below';
+      }
+    } catch(e) {
+      if (nameEl) nameEl.textContent = '⚠ Could not parse file — please paste resume text below';
+    }
+  }
+}
+
+function handleMiResumeDrop(event) {
+  event.preventDefault();
+  const file = event.dataTransfer.files[0];
+  if (file) {
+    const input = document.getElementById('mi-resume-input');
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    input.files = dt.files;
+    handleMiResumeFile(input);
+  }
+}
+
+async function startMockInterview() {
+  const company = document.getElementById('mi-company')?.value?.trim();
+  const role = document.getElementById('mi-role')?.value?.trim();
+  const type = document.getElementById('mi-type')?.value || 'behavioral';
+  const difficulty = document.getElementById('mi-difficulty')?.value || 'standard';
+  const resumeText = document.getElementById('mi-resume-text')?.value?.trim();
+  const context = document.getElementById('mi-context')?.value?.trim();
+
+  if (!company) { showToast('❌', 'Please enter a company name.'); return; }
+  if (!role) { showToast('❌', 'Please enter the role you are interviewing for.'); return; }
+
+  const btn = document.getElementById('mi-start-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Preparing your interview...'; }
+
+  MI_STATE.running = true;
+  MI_STATE.company = company;
+  MI_STATE.role = role;
+  MI_STATE.type = type;
+  MI_STATE.difficulty = difficulty;
+  MI_STATE.resumeText = resumeText;
+  MI_STATE.context = context;
+  MI_STATE.questions = [];
+  MI_STATE.currentQ = 0;
+  MI_STATE.sessionStart = Date.now();
+
+  try {
+    const prompt = buildMockInterviewPrompt();
+    const text = await callAI(
+      [{ role: 'user', content: prompt }],
+      'You are a world-class interview simulation engine. Generate a realistic hiring manager persona and a complete list of 7 interview questions for the specified role and company. Return ONLY valid JSON, no markdown.',
+      1500
+    );
+    const m = text.match(/\{[\s\S]*\}/);
+    if (!m) throw new Error('No JSON');
+    const parsed = JSON.parse(m[0]);
+
+    MI_STATE.interviewerName = parsed.interviewer_name || 'Alex Morgan';
+    MI_STATE.interviewerTitle = parsed.interviewer_title || 'Senior Hiring Manager';
+    MI_STATE.questions = parsed.questions || [];
+    MI_STATE.interviewerVoice = getMiVoice(MI_STATE.interviewerName);
+
+    showMockInterviewActive();
+    setTimeout(() => speakMiQuestion(MI_STATE.questions[0]?.question || MI_STATE.questions[0]), 600);
+  } catch(e) {
+    showToast('❌', 'Could not generate interview. Try again.');
+    if (btn) { btn.disabled = false; btn.textContent = 'Start Interview →'; }
+    MI_STATE.running = false;
+  }
+}
+
+function buildMockInterviewPrompt() {
+  const difficultyGuide = {
+    standard: 'realistic but fair — the kind of interview at a solid company that values both skills and culture fit',
+    tough: 'challenging — expect follow-up questions, curveballs, and moments of pressure. Questions dig deep.',
+    brutal: 'FAANG or top consulting firm level — extremely high bar, stress questions, rapid follow-ups, designed to find your limits'
+  }[MI_STATE.difficulty];
+
+  return `Generate a mock interview for this candidate:
+
+COMPANY: ${MI_STATE.company}
+ROLE: ${MI_STATE.role}
+INTERVIEW TYPE: ${MI_STATE.type}
+DIFFICULTY: ${difficultyGuide}
+${MI_STATE.resumeText ? `\nCANDIDATE RESUME:\n${MI_STATE.resumeText.slice(0, 3000)}` : ''}
+${MI_STATE.context ? `\nADDITIONAL CONTEXT: ${MI_STATE.context}` : ''}
+
+Generate a realistic hiring manager persona for ${MI_STATE.company} and exactly 7 interview questions.
+Question structure MUST follow this arc:
+1. Warm opener (NOT "tell me about yourself" — make it specific to the company/role, e.g. "What drew you specifically to our work on X?")
+2. Background/fit question (probe their experience relevant to THIS role)
+3. Behavioral question (STAR-style, specific to challenges in this role)
+4. Hard behavioral or situational question (dig into a weakness or failure)
+5. Company/role specific question (shows knowledge of the company's actual work, challenges, or culture)
+6. Curveball (something unexpected — a hypothetical, a challenge to their experience, or a values test)
+7. Closing question ("What questions do you have for me?" is banned — make it something like "What would you do in your first 30 days?" or "Convince me you're the right person for this over someone with more experience")
+
+Return ONLY this JSON structure:
+{
+  "interviewer_name": "realistic full name",
+  "interviewer_title": "realistic title at ${MI_STATE.company}",
+  "questions": ["Question 1 text","Question 2 text","Question 3 text","Question 4 text","Question 5 text","Question 6 text","Question 7 text"]
+}`;
+}
+
+function showMockInterviewActive() {
+  document.getElementById('mi-setup').style.display = 'none';
+  document.getElementById('mi-active').style.display = 'block';
+  document.getElementById('mi-debrief').style.display = 'none';
+  document.getElementById('mi-interviewer-name').textContent = MI_STATE.interviewerName;
+  document.getElementById('mi-interviewer-title').textContent = MI_STATE.interviewerTitle;
+  document.getElementById('mi-company-display').textContent = MI_STATE.company.toUpperCase();
+  document.getElementById('mi-role-display').textContent = MI_STATE.role;
+  showMockQuestion();
+  showBackBtn(true, 'Mock Interview');
+}
+
+function showMockQuestion() {
+  const q = MI_STATE.questions[MI_STATE.currentQ];
+  const total = MI_STATE.questions.length;
+  const questionText = q?.question || q || 'Thank you — that concludes our questions.';
+  document.getElementById('mi-question').textContent = questionText;
+  document.getElementById('mi-progress').textContent = `Question ${MI_STATE.currentQ + 1} of ${total}`;
+  document.getElementById('mi-answer').value = '';
+
+  const nextBtn = document.getElementById('mi-next-btn');
+  if (nextBtn) nextBtn.textContent = MI_STATE.currentQ === total - 1 ? 'Finish Interview →' : 'Next Question →';
+
+  const replayBtn = document.getElementById('mi-replay-btn');
+  if (replayBtn) replayBtn.style.display = 'inline-block';
+  if (MI_STATE.currentQ > 0) {
+    // Q1 is already spoken from startMockInterview() — only auto-speak from Q2 on
+    setTimeout(() => speakMiQuestion(questionText), 300);
+  }
+
+  const historyArea = document.getElementById('mi-history-area');
+  if (historyArea) {
+    historyArea.innerHTML = MI_STATE.questions
+      .slice(0, MI_STATE.currentQ)
+      .map((question, i) => {
+        const answer = MI_STATE.questions[i]?.userAnswer || '';
+        const qText = MI_STATE.questions[i]?.question || '';
+        return answer ? `
+          <div style="margin-bottom:8px;padding:10px 14px;background:var(--s2);border-radius:8px;border:1px solid var(--border)">
+            <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:4px">Q${i+1} — ${qText.slice(0,60)}...</div>
+            <div style="font-size:12px;color:var(--muted2);line-height:1.5">${answer.slice(0,100)}...</div>
+          </div>
+        ` : '';
+      }).join('');
+  }
+}
+
+function submitMockAnswer() {
+  const answer = document.getElementById('mi-answer')?.value?.trim();
+  if (!answer) { showToast('❌', 'Please type your answer before continuing.'); return; }
+
+  MI_STATE.questions[MI_STATE.currentQ] = {
+    question: MI_STATE.questions[MI_STATE.currentQ]?.question || MI_STATE.questions[MI_STATE.currentQ],
+    userAnswer: answer
+  };
+  MI_STATE.currentQ++;
+
+  if (MI_STATE.currentQ >= MI_STATE.questions.length) {
+    generateMockInterviewDebrief();
+  } else {
+    showMockQuestion();
+  }
+}
+
+function endMockInterviewEarly() {
+  if (!confirm('End the interview now? You\'ll get a partial debrief based on answers so far.')) return;
+  generateMockInterviewDebrief();
+}
+
+async function generateMockInterviewDebrief() {
+  document.getElementById('mi-active').style.display = 'none';
+  document.getElementById('mi-debrief').innerHTML = `
+    <div style="text-align:center;padding:48px 24px">
+      <div style="font-size:36px;margin-bottom:12px">⏳</div>
+      <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:8px">${MI_STATE.interviewerName} is reviewing your interview...</div>
+      <div style="font-size:13px;color:var(--muted2)">This takes a few seconds.</div>
+    </div>
+  `;
+  document.getElementById('mi-debrief').style.display = 'block';
+
+  const answeredQs = MI_STATE.questions.filter(q => q && q.userAnswer);
+  const debriefPrompt = `You are ${MI_STATE.interviewerName}, ${MI_STATE.interviewerTitle} at ${MI_STATE.company}.
+You just interviewed a candidate for the ${MI_STATE.role} position. Here is the full interview transcript:
+
+${answeredQs.map((q, i) => `Q${i+1}: ${q.question}\nCandidate: ${q.userAnswer}`).join('\n\n')}
+${MI_STATE.resumeText ? `\nCandidate's resume:\n${MI_STATE.resumeText.slice(0, 2000)}` : ''}
+
+Provide a detailed, honest hiring decision. Be specific. Reference actual things they said. Don't be generic.
+
+Return ONLY this JSON:
+{
+  "decision": "STRONG YES" | "MOVE FORWARD" | "BORDERLINE" | "NOT THIS TIME",
+  "decision_reasoning": "2-3 sentences explaining the decision in the interviewer's voice — specific to what they actually said",
+  "overall_impression": "2-3 sentences of honest overall impression — what stood out most, good or bad",
+  "question_breakdown": [{"question": "Q1 text", "assessment": "brief honest take on this specific answer", "score": 1-10}],
+  "strengths": ["specific strength with example from their answers", "another specific strength"],
+  "red_flags": ["specific concern with example", "another concern if any"],
+  "what_would_have_changed_decision": "what specifically would have made this a stronger yes or moved them to a no",
+  "coach_note": "one actionable thing they should work on before their next interview"
+}`;
+
+  try {
+    const text = await callAI(
+      [{ role: 'user', content: debriefPrompt }],
+      'You are a senior hiring manager giving an honest, specific post-interview debrief. Be direct. Reference what they actually said. No fluff. Return only valid JSON.',
+      2500
+    );
+    const m = text.match(/\{[\s\S]*\}/);
+    if (!m) throw new Error('No JSON');
+    const d = JSON.parse(m[0]);
+    renderMockInterviewDebrief(d);
+
+    const xpMap = { 'STRONG YES': 120, 'MOVE FORWARD': 90, 'BORDERLINE': 60, 'NOT THIS TIME': 40 };
+    const xpEarned = xpMap[d.decision] || 60;
+    S.xp = (S.xp || 0) + xpEarned;
+    S.sessions++;
+    checkSessionMilestone();
+    updateStreak();
+    updateChips();
+
+    const historyEntry = {
+      date: new Date().toISOString(),
+      type: 'Mock Interview',
+      company: MI_STATE.company,
+      role: MI_STATE.role,
+      decision: d.decision,
+      xp: xpEarned,
+      coach: MI_STATE.interviewerName
+    };
+    if (!S.history) S.history = [];
+    S.history.unshift(historyEntry);
+    saveUserData();
+    showToast('✓', `Interview complete! +${xpEarned} XP`);
+  } catch(e) {
+    document.getElementById('mi-debrief').innerHTML = `
+      <div style="text-align:center;padding:40px">
+        <div style="font-size:32px;margin-bottom:12px">❌</div>
+        <div style="font-size:15px;color:var(--text)">Could not generate debrief. Your answers were saved.</div>
+        <button class="btn-primary" onclick="resetMockInterview()" style="margin-top:16px">Try Again</button>
+      </div>
+    `;
+  }
+  showBackBtn(false);
+}
+
+function renderMockInterviewDebrief(d) {
+  const decisionColors = {
+    'STRONG YES':   { bg: 'rgba(16,185,129,0.12)', border: '#10b981', text: '#10b981', emoji: '🌟' },
+    'MOVE FORWARD': { bg: 'rgba(59,130,246,0.12)',  border: '#3b82f6', text: '#3b82f6', emoji: '👍' },
+    'BORDERLINE':   { bg: 'rgba(245,158,11,0.12)',  border: '#f59e0b', text: '#f59e0b', emoji: '🤔' },
+    'NOT THIS TIME':{ bg: 'rgba(239,68,68,0.12)',   border: '#ef4444', text: '#ef4444', emoji: '📋' }
+  };
+  const dc = decisionColors[d.decision] || decisionColors['BORDERLINE'];
+
+  document.getElementById('mi-debrief').innerHTML = `
+    <div style="padding:24px;background:${dc.bg};border:2px solid ${dc.border};border-radius:14px;text-align:center;margin-bottom:20px">
+      <div style="font-size:36px;margin-bottom:10px">${dc.emoji}</div>
+      <div style="font-size:22px;font-weight:800;color:${dc.text};font-family:'Syne',sans-serif;letter-spacing:-0.5px;margin-bottom:8px">${d.decision}</div>
+      <div style="font-size:14px;color:var(--text);line-height:1.7;max-width:520px;margin:0 auto">${d.decision_reasoning}</div>
+    </div>
+    <div class="panel" style="margin-bottom:14px">
+      <div class="panel-title">Overall Impression — ${MI_STATE.interviewerName}</div>
+      <div style="font-size:14px;color:var(--text);line-height:1.75;font-style:italic">"${d.overall_impression}"</div>
+    </div>
+    <div class="panel" style="margin-bottom:14px">
+      <div class="panel-title">Question by Question</div>
+      <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px">
+        ${(d.question_breakdown || []).map((q, i) => `
+          <div style="padding:12px 14px;background:var(--s2);border-radius:9px;border:1px solid var(--border)">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+              <div style="font-size:12px;color:var(--accent3);font-family:'DM Mono',monospace">Q${i+1}</div>
+              <div style="font-size:12px;font-weight:700;color:${q.score >= 7 ? '#10b981' : q.score >= 5 ? '#f59e0b' : '#ef4444'}">${q.score}/10</div>
+            </div>
+            <div style="font-size:12.5px;color:var(--muted2);margin-bottom:6px;font-style:italic">${(q.question||'').slice(0,80)}...</div>
+            <div style="font-size:13px;color:var(--text);line-height:1.6">${q.assessment}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+      <div class="panel">
+        <div class="panel-title" style="color:#10b981">✓ Strengths</div>
+        ${(d.strengths || []).map(s => `<div style="font-size:13px;color:var(--text);padding:6px 0;border-bottom:1px solid var(--border);line-height:1.5">${s}</div>`).join('')}
+      </div>
+      <div class="panel">
+        <div class="panel-title" style="color:#ef4444">⚠ Red Flags</div>
+        ${(d.red_flags || ['None identified']).map(f => `<div style="font-size:13px;color:var(--text);padding:6px 0;border-bottom:1px solid var(--border);line-height:1.5">${f}</div>`).join('')}
+      </div>
+    </div>
+    <div class="panel" style="margin-bottom:14px">
+      <div class="panel-title">What Would Have Changed The Decision</div>
+      <div style="font-size:13.5px;color:var(--text);line-height:1.7">${d.what_would_have_changed_decision}</div>
+    </div>
+    <div class="panel" style="margin-bottom:20px;background:rgba(108,99,255,0.06);border-color:rgba(108,99,255,0.2)">
+      <div class="panel-title" style="color:var(--accent3)">💡 Your Coach's Note</div>
+      <div style="font-size:13.5px;color:var(--text);line-height:1.7">${d.coach_note}</div>
+    </div>
+    <div style="text-align:center">
+      <button class="btn-primary" onclick="resetMockInterview()" style="max-width:240px;width:100%">↺ New Interview</button>
+    </div>
+  `;
+}
+
+function resetMockInterview() {
+  MI_STATE.running = false;
+  MI_STATE.questions = [];
+  MI_STATE.currentQ = 0;
+  document.getElementById('mi-setup').style.display = 'block';
+  document.getElementById('mi-active').style.display = 'none';
+  document.getElementById('mi-debrief').style.display = 'none';
+  document.getElementById('mi-start-btn').disabled = false;
+  document.getElementById('mi-start-btn').textContent = 'Start Interview →';
+  document.getElementById('mi-resume-text').value = '';
+  document.getElementById('mi-answer').value = '';
+  const fn = document.getElementById('mi-resume-filename');
+  if (fn) fn.style.display = 'none';
+  showBackBtn(false);
 }
 
 // ── Warmup ────────────────────────────────────────────────────────────────────
@@ -8680,7 +9187,7 @@ function switchInsightsTab(tab) {
 let currentPracticeTab = 'practice';
 function switchPracticeTab(tab) {
   currentPracticeTab = tab;
-  ['practice','debate','qbank','companion','realtime','coaches'].forEach(t => {
+  ['practice','mockinterview','debate','qbank','companion','realtime','coaches'].forEach(t => {
     const panel = document.getElementById('psub-' + t);
     if (panel) panel.style.display = t === tab ? 'block' : 'none';
     const btn = document.getElementById('pstab-' + t);

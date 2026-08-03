@@ -223,10 +223,14 @@ app.get('/api/coldopen-voice', (req, res) => {
 
 // ── Claude chat ───────────────────────────────────────────────────────────────
 app.post('/api/chat', async (req, res) => {
-  const { messages, system } = req.body;
+  const { messages, system, maxTokens } = req.body;
   if (!process.env.ANTHROPIC_API_KEY) return res.status(500).json({ error: 'No Anthropic key' });
   try {
-    const body = { model: 'claude-sonnet-4-5', max_tokens: 1000, messages };
+    // Capped client override — callers with larger structured JSON output
+    // (e.g. Mock Interview's 7-question debrief) can ask for more than the
+    // 1000-token default without every other caller's request changing.
+    const tokens = Math.min(Math.max(parseInt(maxTokens) || 1000, 1), 4000);
+    const body = { model: 'claude-sonnet-4-5', max_tokens: tokens, messages };
     if (system) body.system = system;
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -242,6 +246,55 @@ app.post('/api/chat', async (req, res) => {
     res.json({ text: data.content.map(i => i.text || '').join('') });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Mock Interview: resume text extraction ─────────────────────────────────
+const multer = require('multer');
+const resumeUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
+app.post('/api/extract-resume', resumeUpload.single('file'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file' });
+  if (!process.env.ANTHROPIC_API_KEY) return res.status(500).json({ error: 'No Anthropic key' });
+  try {
+    let text = '';
+    if (req.file.mimetype === 'text/plain') {
+      text = req.file.buffer.toString('utf-8');
+    } else if (req.file.mimetype === 'application/pdf') {
+      // Claude reads the PDF directly via its document content-block support
+      const base64 = req.file.buffer.toString('base64');
+      const result = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': process.env.ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-5',
+          max_tokens: 4000,
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } },
+              { type: 'text', text: 'Extract all text from this resume. Return only the text content, no commentary.' }
+            ]
+          }]
+        })
+      });
+      if (!result.ok) { const err = await result.text(); return res.status(result.status).json({ error: err }); }
+      const data = await result.json();
+      text = (data.content || []).map(i => i.text || '').join('');
+    } else {
+      // DOCX and other binary formats — no dedicated parser here, so this
+      // just strips non-printable bytes rather than pretending to fully
+      // parse the format. Good enough as a fallback; the UI already tells
+      // the user to paste resume text directly if extraction looks off.
+      text = req.file.buffer.toString('utf-8').replace(/[^\x20-\x7E\n]/g, ' ');
+    }
+    res.json({ text: text.slice(0, 5000) });
+  } catch (err) {
+    console.error('Resume extraction error:', err);
+    res.status(500).json({ error: 'Could not extract text' });
   }
 });
 
