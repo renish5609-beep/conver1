@@ -11439,8 +11439,16 @@ async function saveUserData() {
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       console.error('Save stats failed:', res.status, body.error || '');
+      // This used to be console-only — invisible unless you had DevTools
+      // open. A failed save here means your session count/streak/XP just
+      // silently never reached the server, so you'd only find out days
+      // later when a reload showed the old number. Surface it immediately.
+      showToast('', 'Progress may not have saved — check your connection.');
     }
-  } catch(e) { console.error('Save stats error:', e); }
+  } catch(e) {
+    console.error('Save stats error:', e);
+    showToast('', 'Progress may not have saved — check your connection.');
+  }
 }
 
 async function saveSessionToCloud(session) {
