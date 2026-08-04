@@ -164,6 +164,20 @@ app.get('/api/user/stats', requireAuth, async (req, res) => {
   const { data, error } = await supabase
     .from('user_stats').select('*').eq('user_id', req.user.id).single();
   if (error && error.code !== 'PGRST116') return res.status(400).json({ error: error.message });
+  // total_sessions is a counter incremented alongside each session save —
+  // if that increment ever silently failed (a dropped request, an old bug)
+  // while the session row itself still saved fine, the counter permanently
+  // drifts BEHIND the real number of completed sessions with no way to
+  // self-correct. The actual row count in `sessions` is ground truth and
+  // can only ever be >= what really happened, so use it as a floor.
+  if (data) {
+    const { count } = await supabase
+      .from('sessions').select('id', { count: 'exact', head: true }).eq('user_id', req.user.id);
+    if (typeof count === 'number' && count > (data.total_sessions || 0)) {
+      data.total_sessions = count;
+      supabase.from('user_stats').update({ total_sessions: count }).eq('user_id', req.user.id).then(() => {}, () => {});
+    }
+  }
   res.json({ stats: data || null });
 });
 
