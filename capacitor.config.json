@@ -1,0 +1,30 @@
+{
+  "appId": "com.conver.app",
+  "appName": "Conver AI",
+  "webDir": "public",
+  "server": {
+    "url": "https://conver.services/app",
+    "androidScheme": "https",
+    "cleartext": false
+  },
+  "ios": {
+    "contentInset": "always",
+    "scrollEnabled": true,
+    "backgroundColor": "#08090d"
+  },
+  "plugins": {
+    "StatusBar": {
+      "style": "dark",
+      "backgroundColor": "#08090d"
+    },
+    "Keyboard": {
+      "resize": "body",
+      "resizeOnFullScreen": true
+    },
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "backgroundColor": "#08090d",
+      "showSpinner": false
+    }
+  }
+}
