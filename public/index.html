@@ -6636,6 +6636,11 @@ const VoiceEngine = {
       onError: (err) => {
         console.warn('VoiceEngine mic error:', err);
         this._updateUI('ready');
+        // Every STT engine failed (mic permission denied, no supported
+        // codec, etc.) — without a manual fallback the user is just stuck
+        // staring at a conversation that will never hear them again.
+        const btn = document.getElementById('ve-tap-to-talk-btn');
+        if (btn) btn.style.display = 'inline-block';
       },
       onStart: () => {
         const el = document.getElementById('ve-status');
@@ -6647,28 +6652,51 @@ const VoiceEngine = {
   // Play TTS and return promise that resolves when audio ends
   _playTTS(text, voiceId, coachName) {
     return new Promise(async (resolve) => {
+      let settled = false;
+      const done = () => { if (settled) return; settled = true; clearTimeout(hardTimeout); resolve(); };
+      // Hard safety net: on mobile, a stalled network mid-stream or a silent
+      // playback interruption (iOS especially) can mean onended/onerror never
+      // fire at all. Without this, the promise — and the entire speak-then-
+      // listen conversation loop awaiting it — hangs forever: the coach looks
+      // frozen and the mic never comes back on for the user to respond. Cap
+      // to roughly how long the line should take to speak, with headroom.
+      const estMs = Math.min(45000, Math.max(9000, text.length * 90));
+      const hardTimeout = setTimeout(() => {
+        if (this.currentAudio) { try { this.currentAudio.pause(); } catch(e){} this.currentAudio = null; }
+        done();
+      }, estMs);
       try {
         const body = { text, coach: coachName };
         if (voiceId) body.voiceId = voiceId;
-        const res = await fetch('/api/speak', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        });
-        if (!res.ok) { resolve(); return; }
+        // Also guard the fetch itself — a stalled mobile connection can hang
+        // before audio even starts, well before the playback timeout above
+        // would ever kick in.
+        const ctrl = new AbortController();
+        const fetchTimeout = setTimeout(() => ctrl.abort(), 15000);
+        let res;
+        try {
+          res = await fetch('/api/speak', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+            signal: ctrl.signal
+          });
+        } finally { clearTimeout(fetchTimeout); }
+        if (!res.ok) { done(); return; }
         const blob = await res.blob();
+        if (settled) return;
         const url = URL.createObjectURL(blob);
         const audio = new Audio(url);
         this.currentAudio = audio;
-        audio.onended = () => { URL.revokeObjectURL(url); this.currentAudio = null; resolve(); };
-        audio.onerror = () => { URL.revokeObjectURL(url); this.currentAudio = null; resolve(); };
+        audio.onended = () => { URL.revokeObjectURL(url); this.currentAudio = null; done(); };
+        audio.onerror = () => { URL.revokeObjectURL(url); this.currentAudio = null; done(); };
         // play() can reject on mobile if this call falls outside the browser's
         // autoplay/user-activation window — without a .catch() that rejection
         // goes unhandled and this promise (and the whole conversation loop
         // awaiting it) hangs forever with no audio and no error. Treat a
         // blocked play the same as a failed one: skip the audio, move on.
-        audio.play().catch(() => { URL.revokeObjectURL(url); this.currentAudio = null; resolve(); });
-      } catch(e) { resolve(); }
+        audio.play().catch(() => { URL.revokeObjectURL(url); this.currentAudio = null; done(); });
+      } catch(e) { done(); }
     });
   },
 
