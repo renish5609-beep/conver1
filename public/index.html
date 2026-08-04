@@ -7327,6 +7327,32 @@ CALIBRATION — these are real examples:
 YOU MUST SCORE WHAT WAS ACTUALLY SAID. If they said nothing meaningful, score it as nothing meaningful.
 DO NOT be kind. DO NOT inflate scores to encourage the user. Real improvement requires honest assessment.`;
 
+// Multi-turn conversation length rule — appended to the scoring prompt for
+// every mode that scores a FULL back-and-forth (Voice Session, Debate, Cold
+// Open), not a single isolated response. Taking 5+ exchanges to make a point
+// is a conciseness/clarity failure on its own, not something extra content
+// should be allowed to paper over — without this, the model had no length
+// signal at all and a rambling exchange that eventually landed somewhere
+// decent could still score high just because there was more to draw from.
+const LONG_CONVO_CAP_RULE = `\n\nCONVERSATION LENGTH RULE: If this conversation took 5 or more back-and-forth exchanges to reach its point, NO score may exceed 4, regardless of how it eventually resolved. Going long is itself a communication weakness, not a reason for leniency. If this rule applies, you MUST say so explicitly in your verdict — name the number of exchanges and state plainly that the length capped the score.`;
+
+// Belt-and-suspenders enforcement of the rule above — asking the model
+// nicely isn't reliable enough on its own, and if it forgets to mention the
+// cap the user has no way to know why a score came out low. Runs after the
+// JSON response is parsed, mutates it in place, and always returns it.
+function capLongConversation(r, turnCount, numericFields, verdictKey = 'verdict') {
+  if (turnCount < 5) return r;
+  let capped = false;
+  numericFields.forEach(k => {
+    if (typeof r[k] === 'number' && r[k] > 4) { r[k] = 4; capped = true; }
+  });
+  if (capped) {
+    const note = ` This took ${turnCount} back-and-forth exchanges to get there — extended, meandering exchanges cap the score no matter how it resolved.`;
+    r[verdictKey] = (r[verdictKey] || '').trim() + note;
+  }
+  return r;
+}
+
 // A minimum-substance check shared by every mode that scores spoken/typed
 // text — run this BEFORE calling the API at all so "said nothing" never
 // even reaches Claude to be scored generously; it's scored as nothing
@@ -8294,10 +8320,11 @@ async function scoreVoiceSession() {
   panel.style.display = 'block';
   container.innerHTML = `<div class="loading-dots"><span></span><span></span><span></span></div>`;
 
-  const userLines = S.voiceChatHistory.filter(m => m.role === 'user').map(m => m.content).join(' ');
+  const userTurns = S.voiceChatHistory.filter(m => m.role === 'user');
+  const userLines = userTurns.map(m => m.content).join(' ');
   const voiceSubstance = checkResponseSubstance(userLines);
   const convText = S.voiceChatHistory.map(m => `${m.role === 'user' ? 'You' : currentVoiceCoach}: ${m.content}`).join('\n');
-  const prompt = `You are ${S.coach}, a communication coach reviewing this full voice conversation the user just had with ${currentVoiceCoach}.\n\nConversation:\n${convText}\n\nAnalyze this as a full arc, not isolated lines: did their clarity and confidence build or fade as the conversation went on? Did they actually engage with what the coach asked/said, or just talk past it? What does their communication style across the whole conversation reveal, not just their best or worst line?\n\n${STRICT_SCORING_RUBRIC}\n\ntop_strength and top_improvement MUST quote or directly reference what the user actually said.\nReturn ONLY valid JSON:\n{"clarity":<1-10>,"confidence":<1-10>,"persuasion":<1-10>,"storytelling":<1-10>,"conciseness":<1-10>,"verdict":"<2-3 sentence overall assessment>","arc":"<1-2 sentences on how they evolved across the conversation>","top_strength":"<quote their actual words>","top_improvement":"<quote their actual words, with a specific rewrite>"}\nNo markdown.\nCRITICAL: Never use asterisks for actions or stage directions. Never write things like *laughs*, *shifts*, *coughs*, *leans forward*, *smiles*, or any physical action in asterisks or brackets. Speak only in plain spoken words as if you are actually talking. No stage directions of any kind.`;
+  const prompt = `You are ${S.coach}, a communication coach reviewing this full voice conversation the user just had with ${currentVoiceCoach}.\n\nConversation:\n${convText}\n\nAnalyze this as a full arc, not isolated lines: did their clarity and confidence build or fade as the conversation went on? Did they actually engage with what the coach asked/said, or just talk past it? What does their communication style across the whole conversation reveal, not just their best or worst line?\n\n${STRICT_SCORING_RUBRIC}${LONG_CONVO_CAP_RULE}\n\ntop_strength and top_improvement MUST quote or directly reference what the user actually said.\nReturn ONLY valid JSON:\n{"clarity":<1-10>,"confidence":<1-10>,"persuasion":<1-10>,"storytelling":<1-10>,"conciseness":<1-10>,"verdict":"<2-3 sentence overall assessment>","arc":"<1-2 sentences on how they evolved across the conversation>","top_strength":"<quote their actual words>","top_improvement":"<quote their actual words, with a specific rewrite>"}\nNo markdown.\nCRITICAL: Never use asterisks for actions or stage directions. Never write things like *laughs*, *shifts*, *coughs*, *leans forward*, *smiles*, or any physical action in asterisks or brackets. Speak only in plain spoken words as if you are actually talking. No stage directions of any kind.`;
 
   try {
     let raw;
@@ -8315,6 +8342,7 @@ async function scoreVoiceSession() {
     raw = raw.replace(/\`\`\`json|\`\`\`/g, '').trim();
     const m = raw.match(/\{[\s\S]*\}/); if (!m) throw new Error('No JSON');
     const r = JSON.parse(m[0]);
+    capLongConversation(r, userTurns.length, ['clarity','confidence','persuasion','storytelling','conciseness']);
 
     container.innerHTML = `
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
@@ -9435,7 +9463,7 @@ async function scoreDebate(){
     `Round ${i+1} — You: "${a}"${debateOppResponses[i]?`\nRound ${i+1} — Opponent countered: "${debateOppResponses[i]}"`:''}`
   ).join('\n\n');
   const debateSubstance = checkResponseSubstance(debateUserArgs.join(' '));
-  const prompt=`You are ${debateCoachA}, scoring the user's debate performance. Topic: "${debateTopic}". User argued ${yourSide}.\n\nFull exchange, in order:\n${exchangeText}\n\n${STRICT_SCORING_RUBRIC}\n\nSpecifically look at the ARC across rounds, not just isolated statements: did their arguments get sharper or weaker as the opponent's counters got tougher? Did they actually engage with the opponent's specific points, or just repeat their own? Did they stay composed or get rattled/defensive under pressure? Let that trajectory inform the scores and verdict, and call it out directly in pressure_response.\n\ntop_strength and top_improvement MUST quote or directly reference what the user actually said — not generic advice.\nReturn ONLY valid JSON:\n{"clarity":<1-10>,"persuasion":<1-10>,"confidence":<1-10>,"verdict":"<2-3 sentence overall assessment of how well they argued>","top_strength":"<quote their actual words: one thing they did best>","top_improvement":"<quote their actual words: one thing to work on, with a specific rewrite>","pressure_response":"<1-2 sentences on how they evolved across rounds as the opponent pushed back harder — did they adapt, engage with the actual counter-arguments, and hold up, or did they get repetitive/rattled?>"}\nNo markdown.\nCRITICAL: Never use asterisks for actions or stage directions. Never write things like *laughs*, *shifts*, *coughs*, *leans forward*, *smiles*, or any physical action in asterisks or brackets. Speak only in plain spoken words as if you are actually talking. No stage directions of any kind.`;
+  const prompt=`You are ${debateCoachA}, scoring the user's debate performance. Topic: "${debateTopic}". User argued ${yourSide}.\n\nFull exchange, in order:\n${exchangeText}\n\n${STRICT_SCORING_RUBRIC}${LONG_CONVO_CAP_RULE}\n\nSpecifically look at the ARC across rounds, not just isolated statements: did their arguments get sharper or weaker as the opponent's counters got tougher? Did they actually engage with the opponent's specific points, or just repeat their own? Did they stay composed or get rattled/defensive under pressure? Let that trajectory inform the scores and verdict, and call it out directly in pressure_response.\n\ntop_strength and top_improvement MUST quote or directly reference what the user actually said — not generic advice.\nReturn ONLY valid JSON:\n{"clarity":<1-10>,"persuasion":<1-10>,"confidence":<1-10>,"verdict":"<2-3 sentence overall assessment of how well they argued>","top_strength":"<quote their actual words: one thing they did best>","top_improvement":"<quote their actual words: one thing to work on, with a specific rewrite>","pressure_response":"<1-2 sentences on how they evolved across rounds as the opponent pushed back harder — did they adapt, engage with the actual counter-arguments, and hold up, or did they get repetitive/rattled?>"}\nNo markdown.\nCRITICAL: Never use asterisks for actions or stage directions. Never write things like *laughs*, *shifts*, *coughs*, *leans forward*, *smiles*, or any physical action in asterisks or brackets. Speak only in plain spoken words as if you are actually talking. No stage directions of any kind.`;
   try{
     let r;
     if (!debateSubstance.valid) {
@@ -9452,6 +9480,7 @@ async function scoreDebate(){
       raw=raw.replace(/\`\`\`json|\`\`\`/g,'').trim();
       const m=raw.match(/\{[\s\S]*\}/);if(!m)throw new Error('No JSON');
       r=JSON.parse(m[0]);
+      capLongConversation(r, debateUserArgs.length, ['clarity','persuasion','confidence']);
     }
     document.getElementById('debate-final-scores').innerHTML=`
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
@@ -10571,7 +10600,7 @@ async function endColdOpen(){
   const convText=coState.history.map((m,i)=>`${i%2===0?'You':'Them'}: ${m.content}`).join('\n');
   const userLines = coState.history.filter((m,i)=>i%2===0).map(m=>m.content).join(' ');
   const coSubstance = checkResponseSubstance(userLines);
-  const prompt=`You are ${S.coach}, a communication coach. Analyze this cold open:\n\nContext: ${coState.scenario.setup}\nOpener: "${coState.scenario.opener}"\n\nConversation:\n${convText}\n\nLook at this as a full arc, not isolated lines: how did their energy/warmth shift from the opener to the close? Did they actually pick up on cues the other person dropped and follow them, or steamroll past them with their own agenda? Was their conversational personality consistent throughout, or did it shift noticeably (e.g. confident opener, awkward middle)? Let that trajectory shape the scores, verdict, and arc field below.\n\nSTRICT SCORING — there is no default middle score. If their turns were mostly filler, one-word replies, or didn't really engage, score 1-3 across the board. Most genuine engaged effort scores 4-6. Reserve 7+ for responses that were specific, warm, and actually built on what the other person said. Do not inflate scores to be kind.\n\nReturn ONLY valid JSON:\n{"naturalness":<1-10>,"warmth":<1-10>,"impact":<1-10>,"verdict":"<2-3 sentence assessment, must reference something specific they actually said>","best_moment":"<quote or reference something they actually said>","missed_opportunity":"<quote or reference something they actually said, with what a stronger reply would've looked like>","arc":"<1-2 sentences on how they evolved from opener to close — did they warm up, stay consistent, or lose steam, and did they actually follow the other person's cues?>"}\nNo markdown.\nCRITICAL: Never use asterisks for actions or stage directions. Never write things like *laughs*, *shifts*, *coughs*, *leans forward*, *smiles*, or any physical action in asterisks or brackets. Speak only in plain spoken words as if you are actually talking. No stage directions of any kind.`;
+  const prompt=`You are ${S.coach}, a communication coach. Analyze this cold open:\n\nContext: ${coState.scenario.setup}\nOpener: "${coState.scenario.opener}"\n\nConversation:\n${convText}\n\nLook at this as a full arc, not isolated lines: how did their energy/warmth shift from the opener to the close? Did they actually pick up on cues the other person dropped and follow them, or steamroll past them with their own agenda? Was their conversational personality consistent throughout, or did it shift noticeably (e.g. confident opener, awkward middle)? Let that trajectory shape the scores, verdict, and arc field below.\n\nSTRICT SCORING — there is no default middle score. If their turns were mostly filler, one-word replies, or didn't really engage, score 1-3 across the board. Most genuine engaged effort scores 4-6. Reserve 7+ for responses that were specific, warm, and actually built on what the other person said. Do not inflate scores to be kind.${LONG_CONVO_CAP_RULE}\n\nReturn ONLY valid JSON:\n{"naturalness":<1-10>,"warmth":<1-10>,"impact":<1-10>,"verdict":"<2-3 sentence assessment, must reference something specific they actually said>","best_moment":"<quote or reference something they actually said>","missed_opportunity":"<quote or reference something they actually said, with what a stronger reply would've looked like>","arc":"<1-2 sentences on how they evolved from opener to close — did they warm up, stay consistent, or lose steam, and did they actually follow the other person's cues?>"}\nNo markdown.\nCRITICAL: Never use asterisks for actions or stage directions. Never write things like *laughs*, *shifts*, *coughs*, *leans forward*, *smiles*, or any physical action in asterisks or brackets. Speak only in plain spoken words as if you are actually talking. No stage directions of any kind.`;
   try{
     let raw;
     if (!coSubstance.valid) {
@@ -10588,6 +10617,7 @@ async function endColdOpen(){
     raw=raw.replace(/\`\`\`json|\`\`\`/g,'').trim();
     const m=raw.match(/\{[\s\S]*\}/);if(!m)throw new Error('No JSON');
     const r=JSON.parse(m[0]);
+    capLongConversation(r, coState.turns, ['naturalness','warmth','impact']);
     document.getElementById('co-scores').innerHTML=`
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
         <div class="score-box"><div class="score-num ${scoreClass(r.naturalness)}">${r.naturalness}</div><div class="score-lbl">Natural</div></div>
