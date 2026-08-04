@@ -4559,7 +4559,13 @@ const ScribeSTT = {
         return this._startWebSocket(token);
       }
 
-      this.connection = await Scribe.connect({
+      // Same class of hang as _startDeepgram's getUserMedia() call — the SDK
+      // does its own mic acquisition internally, and on some mobile WebViews
+      // a repeat request right after a prior stream was torn down can just
+      // never resolve. Race it against a hard cap so a stuck connect() falls
+      // through to Web Speech instead of leaving the mic dead forever.
+      this.connection = await Promise.race([
+        Scribe.connect({
         token,
         microphone: {
           sampleRate: 16000,
@@ -4584,7 +4590,9 @@ const ScribeSTT = {
             'Conver', 'coaching', 'feedback'
           ]
         }
-      });
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Scribe connect timeout')), 8000))
+      ]);
 
       this.connection.on('transcript', (event) => {
         if (event.type === 'partial_transcript') {
@@ -4655,7 +4663,16 @@ const ScribeSTT = {
   _startDeepgram() {
     return new Promise(async (resolve) => {
       let settled = false;
-      const fail = () => { if (!settled) { settled = true; resolve(false); } };
+      const fail = () => { if (!settled) { settled = true; clearTimeout(overallTimeout); resolve(false); } };
+      // Overall hard cap on the WHOLE setup — the 4s grace timer further
+      // below only starts once the socket already exists, so it does nothing
+      // to protect the token fetch or getUserMedia() before it. On some
+      // mobile WebViews, a repeat getUserMedia() call right after a prior
+      // stream's tracks were stopped can silently hang — never resolving,
+      // never rejecting — which used to mean this promise (and everything
+      // waiting on it, including the entire mic never turning back on) just
+      // hung forever with no fallback ever kicking in.
+      const overallTimeout = setTimeout(fail, 8000);
       try {
         const token = (typeof authToken !== 'undefined' && authToken) || localStorage.getItem('conver_token');
         const res = await fetch('/api/deepgram-token', {
@@ -4664,10 +4681,12 @@ const ScribeSTT = {
         if (!res.ok) return fail();
         const { key } = await res.json();
         if (!key) return fail();
+        if (settled) return; // overall timeout already fired while we were fetching
 
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
         });
+        if (settled) { stream.getTracks().forEach(t => t.stop()); return; }
 
         const url = 'wss://api.deepgram.com/v1/listen?' + new URLSearchParams({
           model: 'nova-2',
@@ -4700,6 +4719,7 @@ const ScribeSTT = {
             this._dgRef = { socket, stream, mediaRecorder };
             this.isListening = true;
             settled = true;
+            clearTimeout(overallTimeout);
             if (this.onStart) this.onStart();
             resolve(true);
           } catch (e) {
