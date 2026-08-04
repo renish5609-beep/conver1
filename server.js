@@ -168,8 +168,28 @@ app.get('/api/user/stats', requireAuth, async (req, res) => {
 });
 
 app.post('/api/user/stats', requireAuth, async (req, res) => {
-  const { stats } = req.body;
+  const { stats, allowDecrease } = req.body;
   const payload = { user_id: req.user.id, ...stats, updated_at: new Date().toISOString() };
+  // A stale browser tab (old cached JS, or just a tab that's been open since
+  // before a more recent session elsewhere) holds a lower total_sessions/xp
+  // in memory. Since this endpoint blindly upserted whatever the client
+  // sent, ANY save from that stale tab — even something unrelated like
+  // toggling a setting — silently dragged a correct, higher count back down.
+  // Guard against that by never letting a save regress these two fields,
+  // unless the request explicitly opts out (Clear History / Reset XP &
+  // Level in Settings are the only legitimate reasons to go down).
+  if (!allowDecrease && (payload.total_sessions !== undefined || payload.xp !== undefined)) {
+    const { data: existing } = await supabase
+      .from('user_stats').select('total_sessions, xp').eq('user_id', req.user.id).maybeSingle();
+    if (existing) {
+      if (payload.total_sessions !== undefined) {
+        payload.total_sessions = Math.max(payload.total_sessions || 0, existing.total_sessions || 0);
+      }
+      if (payload.xp !== undefined) {
+        payload.xp = Math.max(payload.xp || 0, existing.xp || 0);
+      }
+    }
+  }
   let { error } = await supabase.from('user_stats').upsert(payload, { onConflict: 'user_id' });
   // user_stats.user_id has a foreign key against profiles — if the one
   // POST /api/user/profile call at sign-in never fired or failed (a slow

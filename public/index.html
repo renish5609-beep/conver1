@@ -4298,7 +4298,7 @@ h1, h2, h3 {
               <div class="settings-section-title" style="color:var(--red)">Danger Zone</div>
               <div class="setting-row">
                 <div class="setting-info"><h4>Reset All Progress</h4><p>Clear XP, level, and all skill scores. Keeps session history.</p></div>
-                <button class="btn-ghost" onclick="if(confirm('Reset all XP and level progress? This cannot be undone.')){S.xp=0;S.skills={clarity:0,confidence:0,persuasion:0,storytelling:0,conciseness:0};S.scores={clarity:[],confidence:[],persuasion:[]};updateChips();saveUserData();showToast('','Progress reset')}" style="width:auto;padding:6px 14px;font-size:12px;color:var(--red);border-color:rgba(248,113,113,0.25)">Reset</button>
+                <button class="btn-ghost" onclick="if(confirm('Reset all XP and level progress? This cannot be undone.')){S.xp=0;S.skills={clarity:0,confidence:0,persuasion:0,storytelling:0,conciseness:0};S.scores={clarity:[],confidence:[],persuasion:[]};updateChips();saveUserData(true);showToast('','Progress reset')}" style="width:auto;padding:6px 14px;font-size:12px;color:var(--red);border-color:rgba(248,113,113,0.25)">Reset</button>
               </div>
               <div class="setting-row">
                 <div class="setting-info"><h4>Delete Account</h4><p>Permanently delete your account and all data</p></div>
@@ -8474,7 +8474,7 @@ function renderHistory(){
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function clearHistory(){if(!confirm('Clear all history?'))return;S.history=[];S.sessions=0;S.scores={clarity:[],confidence:[],persuasion:[]};S.skills={clarity:0,confidence:0,persuasion:0,storytelling:0,conciseness:0};S.streak=0;updateChips();renderHistory();}
+function clearHistory(){if(!confirm('Clear all history?'))return;S.history=[];S.sessions=0;S.scores={clarity:[],confidence:[],persuasion:[]};S.skills={clarity:0,confidence:0,persuasion:0,storytelling:0,conciseness:0};S.streak=0;updateChips();renderHistory();saveUserData(true);}
 function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 // Sound Effects setting — "UI sounds for toasts and completions" was saved
 // but the app had no sound system at all to gate. A short synthesized chime
@@ -11369,7 +11369,7 @@ async function loadUserData() {
   }
 }
 
-async function saveUserData() {
+async function saveUserData(allowDecrease) {
   if (!authToken) return;
   try {
     // Settings live as a single namespaced-localStorage blob (not on S), so
@@ -11410,6 +11410,7 @@ async function saveUserData() {
       keepalive: true,
       headers: {'Content-Type':'application/json','Authorization':'Bearer '+authToken},
       body: JSON.stringify({
+        allowDecrease: !!allowDecrease,
         stats: {
           total_sessions: S.sessions,
           streak: S.streak,
