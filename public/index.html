@@ -2812,7 +2812,7 @@ h1, h2, h3 {
   #ve-live-transcript { font-size: 14px !important; padding: 0 !important; min-height: 40px !important; }
   #ve-status { font-size: 11px !important; }
   #ve-done-btn, #ve-tap-to-talk-btn { font-size: 12.5px !important; padding: 9px 20px !important; }
-  #ve-history { max-height: 100px !important; padding: 0 !important; }
+  #ve-history { max-height: 220px !important; padding: 0 !important; }
   .ve-history-item { font-size: 11.5px !important; max-width: 85% !important; }
 
   /* Voice controls side panel (pre-session, on the Voice page itself) */
@@ -8173,8 +8173,13 @@ function _veAddHistory(who, text, isUser, variant) {
   div.textContent = label + text;
   container.appendChild(div);
   container.scrollTop = container.scrollHeight;
-  // Keep only last 6 items
-  while (container.children.length > 6) container.removeChild(container.firstChild);
+  // Was capped at 6 items — far too few for a real back-and-forth (Cold
+  // Open negotiations especially run long), and combined with the small
+  // fixed box height, scrolling to the newest message made it look like
+  // earlier text was getting cut off mid-sentence rather than just being
+  // scrolled past. Raised the cap and the box height together so there's
+  // an actual scrollable conversation instead of a tiny cramped window.
+  while (container.children.length > 30) container.removeChild(container.firstChild);
 }
 
 // Shared error recovery for voice-native modes — a failed AI/TTS call must never
@@ -12013,7 +12018,7 @@ document.head.appendChild(rippleStyle);
 
   <!-- Conversation history — real flow space at the bottom, not absolute -->
   <div class="ve-history-wrap" style="position:relative;flex-shrink:0;padding:16px 40px 24px;z-index:2">
-    <div id="ve-history" style="display:flex;flex-direction:column;gap:8px;max-height:140px;overflow-y:auto;scrollbar-width:none"></div>
+    <div id="ve-history" style="display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto;scrollbar-width:none"></div>
   </div>
 </div>
 
