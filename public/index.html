@@ -6103,35 +6103,52 @@ function _rtStopSpeaking() {
 function _rtSpeak(text) {
   return new Promise(async (resolve) => {
     if (!RealTimeAnalyzer.active) return resolve(); // session already ended
+    let settled = false;
+    const done = () => { if (settled) return; settled = true; clearTimeout(hardTimeout); resolve(); };
+    // Same class of bug fixed in VoiceEngine._playTTS: on mobile a stalled
+    // connection or a silently-interrupted playback can mean onended/onerror
+    // never fire, hanging this promise (and _rtSpeakThenListen's loop) forever.
+    const estMs = Math.min(45000, Math.max(9000, text.length * 90));
+    const hardTimeout = setTimeout(() => {
+      if (_rtCurrentAudio) { try { _rtCurrentAudio.pause(); } catch(e){} _rtCurrentAudio = null; }
+      done();
+    }, estMs);
     try {
-      const res = await fetch('/api/speak', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, coach: rtVoiceCoach || S.coach })
-      });
+      const ctrl = new AbortController();
+      const fetchTimeout = setTimeout(() => ctrl.abort(), 15000);
+      let res;
+      try {
+        res = await fetch('/api/speak', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, coach: rtVoiceCoach || S.coach }),
+          signal: ctrl.signal
+        });
+      } finally { clearTimeout(fetchTimeout); }
       if (!res.ok) throw new Error('TTS request failed: ' + res.status);
-      if (!RealTimeAnalyzer.active) return resolve(); // ended while TTS was generating
+      if (!RealTimeAnalyzer.active) return done(); // ended while TTS was generating
       const blob = await res.blob();
+      if (settled) return;
       const url = URL.createObjectURL(blob);
       const audio = new Audio(url);
       _rtCurrentAudio = audio;
-      audio.onended = () => { URL.revokeObjectURL(url); if (_rtCurrentAudio === audio) _rtCurrentAudio = null; resolve(); };
-      audio.onerror = () => { URL.revokeObjectURL(url); if (_rtCurrentAudio === audio) _rtCurrentAudio = null; resolve(); };
+      audio.onended = () => { URL.revokeObjectURL(url); if (_rtCurrentAudio === audio) _rtCurrentAudio = null; done(); };
+      audio.onerror = () => { URL.revokeObjectURL(url); if (_rtCurrentAudio === audio) _rtCurrentAudio = null; done(); };
       await audio.play();
     } catch (e) {
       console.warn('Real-Time TTS failed, falling back to browser speech:', e.name, e.message);
-      if (!RealTimeAnalyzer.active) return resolve();
+      if (!RealTimeAnalyzer.active) return done();
       if (!_rtTTSFailedOnce) {
         _rtTTSFailedOnce = true;
         showToast('', 'Voice service unavailable — using your browser\'s built-in voice instead');
       }
       if (window.speechSynthesis) {
         const utt = new SpeechSynthesisUtterance(text);
-        utt.onend = () => resolve();
-        utt.onerror = () => resolve();
+        utt.onend = () => done();
+        utt.onerror = () => done();
         window.speechSynthesis.speak(utt);
       } else {
-        resolve();
+        done();
       }
     }
   });
@@ -9261,20 +9278,34 @@ async function speakDebate(text, side){
     setTimeout(()=>{if(side==='a')debateMouthA=0;else debateMouthB=0;},100);
   },160);
   return new Promise(async(resolve)=>{
+    let settled=false;
+    const done=()=>{ if(settled)return; settled=true; clearTimeout(hardTimeout); resolve(); };
+    // Same hang class fixed in VoiceEngine._playTTS: a stalled connection or
+    // silently-interrupted playback can mean onended/onerror never fire,
+    // freezing this awaited call (and the whole debate exchange) forever.
+    const estMs=Math.min(45000,Math.max(9000,text.length*90));
+    const hardTimeout=setTimeout(()=>{ clearInterval(mi); done(); },estMs);
     try{
-      const res=await fetch('/api/speak',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,coach,speed:S.voiceSpeed||'normal'})});
+      const ctrl=new AbortController();
+      const fetchTimeout=setTimeout(()=>ctrl.abort(),15000);
+      let res;
+      try{
+        res=await fetch('/api/speak',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,coach,speed:S.voiceSpeed||'normal'}),signal:ctrl.signal});
+      } finally { clearTimeout(fetchTimeout); }
       if(!res.ok)throw new Error('TTS failed');
-      const blob=await res.blob();const url=URL.createObjectURL(blob);
+      const blob=await res.blob();
+      if(settled)return;
+      const url=URL.createObjectURL(blob);
       const audio=new Audio(url);
       audio.onended=()=>{
         clearInterval(mi);
         if(side==='a'){debateStateA='idle';debateMouthA=0;document.getElementById('debate-status-a').textContent='';setCoachSpeaking(debateCoachA,false);}
         else{debateStateB='idle';debateMouthB=0;document.getElementById('debate-status-b').textContent='';}
-        URL.revokeObjectURL(url);resolve();
+        URL.revokeObjectURL(url);done();
       };
-      audio.onerror=()=>{clearInterval(mi);resolve();};
-      audio.play();
-    }catch(e){clearInterval(mi);if(side==='a'){debateStateA='idle';document.getElementById('debate-status-a').textContent='';}else{debateStateB='idle';document.getElementById('debate-status-b').textContent='';}resolve();}
+      audio.onerror=()=>{clearInterval(mi);done();};
+      audio.play().catch(()=>{clearInterval(mi);done();});
+    }catch(e){clearInterval(mi);if(side==='a'){debateStateA='idle';document.getElementById('debate-status-a').textContent='';}else{debateStateB='idle';document.getElementById('debate-status-b').textContent='';}done();}
   });
 }
 
@@ -10435,14 +10466,29 @@ async function speakCO(text){
   const coach=coState.personCoach||S.coach||'Echo';
   setOrbState(coach,'speaking');document.getElementById('co-status').textContent='Speaking...';
   return new Promise(async resolve=>{
+    let settled=false;
+    const done=()=>{ if(settled)return; settled=true; clearTimeout(hardTimeout); resolve(); };
+    // Same hang class fixed in VoiceEngine._playTTS: a stalled connection or
+    // silently-interrupted playback can mean onended never fires, freezing
+    // this awaited call (and the whole Cold Open exchange) forever.
+    const estMs=Math.min(45000,Math.max(9000,text.length*90));
+    const hardTimeout=setTimeout(()=>{ setOrbState(coach,'idle'); done(); },estMs);
     try{
-      const res=await fetch('/api/speak',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,coach:coState.personCoach,voiceId:coState.voiceId||undefined,speed:S.voiceSpeed||'normal'})});
+      const ctrl=new AbortController();
+      const fetchTimeout=setTimeout(()=>ctrl.abort(),15000);
+      let res;
+      try{
+        res=await fetch('/api/speak',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,coach:coState.personCoach,voiceId:coState.voiceId||undefined,speed:S.voiceSpeed||'normal'}),signal:ctrl.signal});
+      } finally { clearTimeout(fetchTimeout); }
       if(!res.ok)throw new Error();
-      const blob=await res.blob();const url=URL.createObjectURL(blob);
+      const blob=await res.blob();
+      if(settled)return;
+      const url=URL.createObjectURL(blob);
       const audio=new Audio(url);
-      audio.onended=()=>{setOrbState(coach,'idle');document.getElementById('co-status').textContent='';URL.revokeObjectURL(url);resolve();};
-      audio.play();
-    }catch(e){setOrbState(coach,'idle');resolve();}
+      audio.onended=()=>{setOrbState(coach,'idle');document.getElementById('co-status').textContent='';URL.revokeObjectURL(url);done();};
+      audio.onerror=()=>{setOrbState(coach,'idle');done();};
+      audio.play().catch(()=>{setOrbState(coach,'idle');done();});
+    }catch(e){setOrbState(coach,'idle');done();}
   });
 }
 

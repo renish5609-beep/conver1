@@ -192,15 +192,35 @@ app.post('/api/user/stats', requireAuth, async (req, res) => {
   // Guard against that by never letting a save regress these two fields,
   // unless the request explicitly opts out (Clear History / Reset XP &
   // Level in Settings are the only legitimate reasons to go down).
-  if (!allowDecrease && (payload.total_sessions !== undefined || payload.xp !== undefined)) {
+  if (!allowDecrease && (payload.total_sessions !== undefined || payload.xp !== undefined || payload.streak !== undefined)) {
     const { data: existing } = await supabase
-      .from('user_stats').select('total_sessions, xp').eq('user_id', req.user.id).maybeSingle();
+      .from('user_stats').select('total_sessions, xp, streak, settings').eq('user_id', req.user.id).maybeSingle();
     if (existing) {
       if (payload.total_sessions !== undefined) {
         payload.total_sessions = Math.max(payload.total_sessions || 0, existing.total_sessions || 0);
       }
       if (payload.xp !== undefined) {
         payload.xp = Math.max(payload.xp || 0, existing.xp || 0);
+      }
+      // streak needed the same guard as the two above — saveUserData() fires
+      // unawaited from many places in a session (session-end, updateStreak,
+      // even unrelated settings toggles), so multiple saves can be in flight
+      // at once. Whichever lands last on the server used to win outright,
+      // so a stale save still holding yesterday's lower streak could land
+      // after a fresh increment and silently drag it back down.
+      // Streak legitimately needs to go DOWN too though (missing a day
+      // resets it to 0/1) — that's not staleness, it's real. Tell the two
+      // apart using lastSessionDate: if this save's "last practiced" date
+      // matches what's already stored, nothing about the streak should have
+      // changed since that save, so never let it regress. If the date is
+      // different, this is a genuine new-day update (increment or reset)
+      // and the client's value is trusted as-is.
+      if (payload.streak !== undefined) {
+        const incomingDate = payload.settings?.lastSessionDate;
+        const existingDate = existing.settings?.lastSessionDate;
+        if (incomingDate && existingDate && incomingDate === existingDate) {
+          payload.streak = Math.max(payload.streak || 0, existing.streak || 0);
+        }
       }
     }
   }
