@@ -11344,8 +11344,10 @@ async function loadUserData() {
         S.scores.clarity = sessions.map(s=>s.clarity);
         S.scores.confidence = sessions.map(s=>s.confidence);
         S.scores.persuasion = sessions.map(s=>s.persuasion);
-        // Always restore session count and recalculate from actual session data
-        S.sessions = sessions.length;
+        // DO NOT overwrite S.sessions here — it was already set from total_sessions
+        // in Supabase stats above. sessions.length only reflects how many rows this
+        // capped history query returned, not the real lifetime total; overwriting
+        // with it here silently clobbered the correct count on every load.
         // Reset skills and rebuild from scratch from session history
         S.skills = {clarity:0,confidence:0,persuasion:0,storytelling:0,conciseness:0};
         sessions.slice().reverse().forEach(s => {

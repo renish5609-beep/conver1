@@ -199,7 +199,7 @@ app.post('/api/user/session', requireAuth, async (req, res) => {
 app.get('/api/user/sessions', requireAuth, async (req, res) => {
   const { data, error } = await supabase
     .from('sessions').select('*').eq('user_id', req.user.id)
-    .order('created_at', { ascending: false }).limit(50);
+    .order('created_at', { ascending: false }).limit(500); // was 50 — History display cap only; real count always comes from user_stats.total_sessions
   if (error) return res.status(400).json({ error: error.message });
   res.json({ sessions: data });
 });
