@@ -5,59 +5,71 @@ workflows:
     instance_type: mac_mini_m2
     integrations:
       app_store_connect: CodeMagic
+
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.conver.app
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
         APP_STORE_APP_ID: "6797966618"
-        APPLE_TEAM_ID: "5HFL3W5KS3"
+        BUNDLE_ID: "com.conver.app"
       node: v20.14.0
       xcode: latest
       cocoapods: default
+
     triggering:
       events:
         - tag
       tag_patterns:
         - pattern: 'v*'
           include: true
+
     scripts:
       - name: Install npm dependencies
         script: |
           npm install
+
       - name: Sync Capacitor iOS
         script: |
           npx cap sync ios
+
       - name: Install CocoaPods
         script: |
           cd ios/App && pod install
+
+      - name: Set up keychain
+        script: |
+          keychain initialize
+
+      - name: Fetch signing files
+        script: |
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+
+      - name: Add certificates to keychain
+        script: |
+          keychain add-certificates
+
       - name: Set up code signing
         script: |
-          xcode-project use-profiles --export-options-plist ios/ExportOptions.plist
+          xcode-project use-profiles
+
       - name: Increment build number
         script: |
           cd $CM_BUILD_DIR/ios/App
           LATEST_BUILD_NUMBER=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APP_ID")
-          cd $CM_BUILD_DIR/ios/App
           agvtool new-version -all $(($LATEST_BUILD_NUMBER + 1))
-      - name: Build iOS
-        script: |
-          xcode-build-and-archive \
-            -workspace "$CM_BUILD_DIR/$XCODE_WORKSPACE" \
-            -scheme "$XCODE_SCHEME" \
-            -config "Release" \
-            -archivePath "/tmp/xcode_build/Conver.xcarchive"
-      - name: Export IPA
+
+      - name: Build IPA
         script: |
           xcode-project build-ipa \
             --workspace "$CM_BUILD_DIR/$XCODE_WORKSPACE" \
-            --config "Release"
+            --scheme "$XCODE_SCHEME"
+
     artifacts:
       - build/ios/ipa/*.ipa
-      - /tmp/xcode_build/*.xcarchive
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+
     publishing:
       app_store_connect:
         auth: integration
