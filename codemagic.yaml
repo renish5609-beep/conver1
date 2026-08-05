@@ -32,10 +32,6 @@ workflows:
         script: |
           npx cap sync ios
 
-      - name: Install CocoaPods
-        script: |
-          cd ios/App && pod install
-
       - name: Set up keychain
         script: |
           keychain initialize
