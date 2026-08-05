@@ -12,7 +12,7 @@ workflows:
         XCODE_SCHEME: "App"
         APP_STORE_APP_ID: "6797966618"
         BUNDLE_ID: "com.conver.app"
-      node: v20.14.0
+      node: v22.16.0
       xcode: latest
       cocoapods: default
 
