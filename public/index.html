@@ -1618,6 +1618,15 @@ input:focus,select:focus,textarea:focus{
 .auth-link{font-size:12.5px;color:var(--muted2);text-align:center;margin-top:16px}
 .auth-link a{color:var(--accent3);cursor:pointer;transition:color 0.2s}
 .auth-link a:hover{color:var(--text)}
+.auth-divider{display:flex;align-items:center;gap:10px;margin:20px 0 14px;color:var(--muted);font-size:11px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.auth-btn-guest{
+  width:100%;padding:12px;
+  background:transparent;border:1px solid var(--border2);border-radius:10px;
+  color:var(--muted2);font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:600;
+  cursor:pointer;transition:all 0.2s;
+}
+.auth-btn-guest:hover{background:var(--s2);color:var(--text);border-color:rgba(255,255,255,0.25)}
 
 /* ── CHIPS (topbar context pills) ───────────────────────────── */
 .chip{
@@ -1722,14 +1731,20 @@ input:focus,select:focus,textarea:focus{
 .skill-bar-persuasion{background:linear-gradient(90deg,#2dd4a0,#38bdf8)}
 .skill-bar-storytelling{background:linear-gradient(90deg,#fbbf24,#f472b6)}
 .skill-bar-conciseness{background:linear-gradient(90deg,#f472b6,#c084fc)}
-/* Back button — floats on the current page, top-right, away from the Conver logo */
+/* Back button — sits inline in the header next to the Conver logo (its actual
+   DOM position). This used to be position:fixed at a hardcoded top/right
+   offset, which pulled it out of the header entirely and left it floating
+   over the page's scrollable content — on mobile especially it would drift
+   over cards/buttons near the bottom of a page since a fixed element ignores
+   inner-content scroll and never moves. The app shell is already a 100vh
+   flex column with the header always on screen, so fixed positioning was
+   never needed to keep it visible — being a normal in-flow header item does
+   that for free, uniformly, on every screen size. */
 .back-btn{
   display:none;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;cursor:pointer;
   color:var(--muted2);font-size:13px;border:1px solid var(--border2);
-  background:rgba(20,22,46,0.92);backdrop-filter:blur(12px);
-  box-shadow:0 4px 16px rgba(0,0,0,0.35);
+  background:var(--bg2);
   transition:all 0.2s;
-  position:fixed;top:106px;right:28px;z-index:15;
 }
 .back-btn:hover{background:var(--s3);color:var(--text);border-color:rgba(255,255,255,0.25)}
 .back-btn.visible{display:flex}
@@ -2362,25 +2377,75 @@ body.reducemotion .ve-mic-ring { animation: none !important; }
   filter: blur(12px);
 }
 
-/* Inner orb sphere */
+/* Iridescent rim — a slow-rotating conic sweep clipped to a thin ring around
+   the sphere's edge, giving it a bit of the shifting oil-slick sheen real
+   "AI orb" UIs have instead of a single flat hue. */
+.coach-orb::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  padding: 2px;
+  background: conic-gradient(from 0deg,
+    var(--orb-c1), var(--orb-c2), color-mix(in srgb, var(--orb-c1) 50%, white 50%),
+    var(--orb-c2), var(--orb-c1)
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.55;
+  animation: orbRimSpin 9s linear infinite;
+  pointer-events: none;
+}
+@keyframes orbRimSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* Inner orb sphere — layered like a glass/liquid marble rather than a flat
+   lit ball: a base sphere shade plus two off-center color pools so it reads
+   as translucent depth instead of one gradient, closer to the softly-swirled
+   "AI orb" look than the old plain sun-shaded sphere. */
 .coach-orb-inner {
   width: 100%;
   height: 100%;
   border-radius: 50%;
   position: relative;
   overflow: hidden;
-  background: radial-gradient(circle at 35% 30%,
-    color-mix(in srgb, var(--orb-c1) 60%, white 40%) 0%,
-    var(--orb-c1) 40%,
-    color-mix(in srgb, var(--orb-c1) 80%, black 20%) 70%,
-    color-mix(in srgb, var(--orb-c2) 60%, black 40%) 100%
-  );
+  background:
+    radial-gradient(circle at 28% 24%, color-mix(in srgb, var(--orb-c1) 35%, white 65%) 0%, transparent 46%),
+    radial-gradient(circle at 72% 68%, color-mix(in srgb, var(--orb-c2) 70%, white 15%) 0%, transparent 55%),
+    radial-gradient(circle at 50% 50%,
+      color-mix(in srgb, var(--orb-c1) 55%, white 45%) 0%,
+      var(--orb-c1) 45%,
+      color-mix(in srgb, var(--orb-c1) 75%, black 25%) 72%,
+      color-mix(in srgb, var(--orb-c2) 55%, black 45%) 100%
+    );
   box-shadow:
     inset -8px -8px 20px rgba(0,0,0,0.3),
     inset 4px 4px 12px rgba(255,255,255,0.2),
     0 0 32px color-mix(in srgb, var(--orb-c1) 60%, transparent),
     0 0 64px color-mix(in srgb, var(--orb-c1) 30%, transparent);
   animation: orbIdle 3s ease-in-out infinite;
+}
+
+/* Drifting inner color pool — a soft blurred blob that slowly wanders inside
+   the sphere, giving it the slow "liquid" motion of a real AI orb instead of
+   a static gradient that only ever scales in place. */
+.coach-orb-inner::after {
+  content: '';
+  position: absolute;
+  inset: -25%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--orb-c2) 75%, white 25%) 0%, transparent 62%);
+  filter: blur(10px);
+  opacity: 0.55;
+  mix-blend-mode: screen;
+  animation: orbDrift 8s ease-in-out infinite;
+}
+@keyframes orbDrift {
+  0%, 100% { transform: translate(-8%, -6%) scale(1); }
+  33%      { transform: translate(10%, 8%) scale(1.2); }
+  66%      { transform: translate(-6%, 12%) scale(0.9); }
 }
 
 /* Specular highlight */
@@ -2393,6 +2458,7 @@ body.reducemotion .ve-mic-ring { animation: none !important; }
   background: radial-gradient(ellipse, rgba(255,255,255,0.45) 0%, transparent 70%);
   filter: blur(3px);
   animation: orbSheen 3s ease-in-out infinite;
+  z-index: 1;
 }
 
 /* Waveform ring (sound bars around the orb) */
@@ -2473,17 +2539,6 @@ body.reducemotion .ve-mic-ring { animation: none !important; }
 .orb-rex   { --orb-c1: #c084fc; --orb-c2: #7c6fff; }
 .orb-luna  { --orb-c1: #f472b6; --orb-c2: #c084fc; }
 
-/* Sound wave bars — appear during speaking */
-.orb-sound-bars {
-  position: absolute;
-  inset: -28px;
-  border-radius: 50%;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-.coach-orb.speaking .orb-sound-bars { opacity: 1; }
-
 /* Orb size variants */
 .coach-orb.orb-sm { --orb-size: 72px; }
 .coach-orb.orb-md { --orb-size: 120px; }
@@ -2544,16 +2599,13 @@ body.reducemotion .ve-mic-ring { animation: none !important; }
   50%     { transform: scale(1.02); filter: brightness(1.08); }
 }
 
-@keyframes orbBarPulse {
-  from { stroke-width: 1.5px; opacity: 0.4; }
-  to   { stroke-width: 3.5px; opacity: 1; }
-}
-
 /* Reduce motion — orbs too */
 body.reducemotion .coach-orb,
 body.reducemotion .coach-orb-inner,
 body.reducemotion .coach-orb::before,
+body.reducemotion .coach-orb::after,
 body.reducemotion .coach-orb-inner::before,
+body.reducemotion .coach-orb-inner::after,
 body.reducemotion .coach-orb-wave { animation: none !important; }
 
 @keyframes targetPulse {
@@ -2890,9 +2942,10 @@ h1, h2, h3 {
   .wave-bar { width: 3px !important; }
 } /* end @media (max-width: 767px) */
 
-/* Back button — no tab bar on mobile, so sit right under the header */
+/* Back button — inline in the header now (see .back-btn above), just needs
+   tighter padding/font on small screens like the rest of the header chrome. */
 @media (max-width: 767px) {
-  .back-btn { top: 62px !important; right: 14px !important; padding: 6px 12px !important; font-size: 12px !important; }
+  .back-btn { padding: 6px 12px !important; font-size: 12px !important; }
 }
 
 /* ── SUB-TAB BAR ─────────────────────────────────── */
@@ -3055,6 +3108,12 @@ h1, h2, h3 {
       <div style="font-size:10.5px;color:var(--muted);text-align:center;margin-top:12px;line-height:1.6">
         By signing up you agree to our <a href="/terms.html" target="_blank" style="color:var(--accent3)">Terms</a> and <a href="/privacy.html" target="_blank" style="color:var(--accent3)">Privacy Policy</a>
       </div>
+    </div>
+
+    <div class="auth-divider"><span>or</span></div>
+    <button class="auth-btn-guest" onclick="continueAsGuest()">Continue as guest</button>
+    <div style="font-size:10.5px;color:var(--muted);text-align:center;margin-top:8px;line-height:1.6">
+      No account, nothing saved — progress resets when you leave.
     </div>
   </div>
 </div>
@@ -6867,11 +6926,6 @@ function createCoachOrb(coachName, size = 'md', showName = true) {
       <div class="coach-orb ${orbClass} ${sizeClass}" id="${orbId}">
         <div class="coach-orb-inner"></div>
         <div class="coach-orb-wave"></div>
-        <div class="orb-sound-bars" id="${orbId}-bars">
-          <svg viewBox="0 0 100 100" style="width:100%;height:100%;position:absolute;inset:0">
-            ${generateOrbWaveSVG()}
-          </svg>
-        </div>
       </div>
       ${showName ? `
         <div class="orb-name">${coach.title || coachName}</div>
@@ -6879,26 +6933,6 @@ function createCoachOrb(coachName, size = 'md', showName = true) {
       ` : ''}
     </div>
   `;
-}
-
-function generateOrbWaveSVG() {
-  // 12 bars arranged in a circle around the orb — animate during speaking
-  const bars = [];
-  for (let i = 0; i < 12; i++) {
-    const angle = (i / 12) * Math.PI * 2;
-    const x1 = 50 + Math.cos(angle) * 44;
-    const y1 = 50 + Math.sin(angle) * 44;
-    const x2 = 50 + Math.cos(angle) * 48;
-    const y2 = 50 + Math.sin(angle) * 48;
-    const delay = (i / 12) * 0.8;
-    bars.push(`
-      <line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}"
-            x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"
-            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" opacity="0.7"
-            style="animation:orbBarPulse 0.6s ease-in-out ${delay.toFixed(2)}s infinite alternate"/>
-    `);
-  }
-  return bars.join('');
 }
 
 // Set orb state
@@ -11012,6 +11046,14 @@ const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 let sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 let currentUser = null;
 let authToken = null;
+// Guest mode — no Supabase account, no cloud sync. authToken stays null,
+// which is exactly the flag every loadUserData()/saveUserData()/
+// saveSessionToCloud() call already checks before touching Supabase, so a
+// guest session never reads or writes anything server-side for free. Only
+// this file's own localStorage (settings/theme, unnamespaced since there's
+// no currentUser.id) sticks around on the device, and even that's wiped by
+// a normal sign-out/reload — nothing is tied to an account, ever.
+let isGuestMode = false;
 
 // Detects a Supabase email-verification redirect (#access_token=... gets
 // appended to the URL when the user clicks the link in their verification
@@ -11086,6 +11128,24 @@ function showAuthScreen() {
 
 function hideAuthScreen() {
   document.getElementById('auth-screen').classList.add('hidden');
+}
+
+// Guest mode — skips Supabase entirely. authToken is never set, so every
+// cloud read/write in the app (loadUserData, saveUserData,
+// saveSessionToCloud, etc.) short-circuits on its own existing `if
+// (!authToken) return;` guard. Nothing about this session ever reaches
+// Supabase — no profile row, no user_stats row, no session row.
+function continueAsGuest() {
+  isGuestMode = true;
+  currentUser = { email: 'Guest' };
+  authToken = null;
+  document.getElementById('user-email-display').textContent = 'Guest';
+  document.getElementById('user-avatar').textContent = 'G';
+  if (typeof updateAccountDisplay === 'function') updateAccountDisplay();
+  try { localStorage.removeItem('conver_last_page'); } catch(e) {}
+  navTo('home');
+  hideAuthScreen();
+  showToast('', "Browsing as a guest — nothing here gets saved. Sign up anytime to keep your progress.");
 }
 
 function showView(v) {
