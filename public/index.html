@@ -11136,6 +11136,10 @@ function hideAuthScreen() {
 // (!authToken) return;` guard. Nothing about this session ever reaches
 // Supabase — no profile row, no user_stats row, no session row.
 function continueAsGuest() {
+  // Track guest visit — fire and forget, no await needed. This is the only
+  // network call guest mode ever makes, and it's an anonymous counter
+  // increment, not a per-guest record — see /api/guest-visit in server.js.
+  fetch('/api/guest-visit', { method: 'POST' }).catch(() => null);
   isGuestMode = true;
   currentUser = { email: 'Guest' };
   authToken = null;

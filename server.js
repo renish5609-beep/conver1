@@ -264,6 +264,45 @@ app.post('/api/user/profile', requireAuth, async (req, res) => {
   res.json({ success: true });
 });
 
+// ── Guest visit tracking ─────────────────────────────────────────────────────
+// No auth required — this only ever increments a single counter row, never
+// reads or writes anything tied to a person. Requires the app_stats table
+// (key text primary key, value int8 default 0) to exist in Supabase with a
+// guest_visits row seeded first — see setup notes.
+app.post('/api/guest-visit', async (req, res) => {
+  try {
+    const { error: rpcError } = await supabase.rpc('increment_stat', { stat_key: 'guest_visits' });
+    if (rpcError) {
+      // Fallback for when the increment_stat SQL function hasn't been
+      // created yet — read the current value and write it back up by one.
+      // (Not atomic like the RPC, so back-to-back guest clicks in the same
+      // instant could race and undercount by one — acceptable for a rough
+      // counter. Blindly upserting value:1 here instead, like a naive
+      // fallback would, silently resets the real count to 1 every time this
+      // path runs, which is the bug this avoids.)
+      const { data: existing } = await supabase
+        .from('app_stats').select('value').eq('key', 'guest_visits').maybeSingle();
+      await supabase
+        .from('app_stats')
+        .upsert({ key: 'guest_visits', value: (existing?.value || 0) + 1 }, { onConflict: 'key' });
+    }
+    res.json({ success: true });
+  } catch (e) {
+    console.error('Guest visit tracking error:', e);
+    res.json({ success: false });
+  }
+});
+
+app.get('/api/guest-visits', async (req, res) => {
+  try {
+    const { data } = await supabase
+      .from('app_stats').select('value').eq('key', 'guest_visits').maybeSingle();
+    res.json({ count: data?.value || 0 });
+  } catch (e) {
+    res.json({ count: 0 });
+  }
+});
+
 // ── Voices API ────────────────────────────────────────────────────────────────
 app.get('/api/voices', (req, res) => {
   res.json({ voices: assignedVoices, coldOpenVoices });
