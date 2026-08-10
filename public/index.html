@@ -1748,6 +1748,18 @@ input:focus,select:focus,textarea:focus{
 }
 .back-btn:hover{background:var(--s3);color:var(--text);border-color:rgba(255,255,255,0.25)}
 .back-btn.visible{display:flex}
+
+/* Feedback entry point — sits in the header next to the account menu so it's
+   reachable from every page without a new top-level tab competing with the
+   core practice flows (Warmup/Practice/Voice/Cold Open/Insights). Just links
+   to the existing Help & Contact page/form — no separate feedback system. */
+.feedback-btn{
+  display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;cursor:pointer;
+  color:var(--muted2);font-size:13px;border:1px solid var(--border2);background:var(--bg2);
+  transition:all 0.2s;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap;flex-shrink:0;
+}
+.feedback-btn:hover{background:var(--s3);color:var(--text);border-color:rgba(255,255,255,0.25)}
+
 /* Page transition animation */
 @keyframes ripple{to{width:130px;height:130px;opacity:0}}
 
@@ -2946,6 +2958,11 @@ h1, h2, h3 {
    tighter padding/font on small screens like the rest of the header chrome. */
 @media (max-width: 767px) {
   .back-btn { padding: 6px 12px !important; font-size: 12px !important; }
+  /* Header's tight on mobile (50px, see .app-header above) — the user email
+     next to it already truncates, so drop the Feedback button to an icon-only
+     circle instead of fighting both for space. */
+  .feedback-btn { padding: 6px !important; width: 28px !important; height: 28px !important; justify-content: center !important; }
+  .feedback-btn .feedback-btn-label { display: none !important; }
 }
 
 /* ── SUB-TAB BAR ─────────────────────────────────── */
@@ -3133,6 +3150,10 @@ h1, h2, h3 {
       <span id="streak-chip" class="chip streak-chip">0 day streak</span>
     </div>
     <div class="app-header-right">
+      <button class="feedback-btn" onclick="navTo('contact')" title="Send feedback, report a bug, or ask a question">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span class="feedback-btn-label">Feedback</span>
+      </button>
       <div class="user-menu user-btn" id="user-menu-btn" onclick="toggleUserMenu()">
         <div class="user-avatar" id="user-avatar">?</div>
         <div class="user-email" id="user-email-display" style="font-size:12px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Not signed in</div>
