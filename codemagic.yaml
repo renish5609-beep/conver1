@@ -14,7 +14,7 @@ workflows:
         XCODE_SCHEME: "App"
         APP_STORE_APP_ID: "6797966618"
         BUNDLE_ID: "com.conver.app"
-        CERTIFICATE_PRIVATE_KEY: $CERTIFICATE_PRIVATE_KEY
+      
       node: v22.16.0
       xcode: latest
       cocoapods: default
