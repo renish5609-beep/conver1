@@ -10,10 +10,10 @@ workflows:
       groups:
         - ios_signing
       vars:
-        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
-        XCODE_SCHEME: "App"
-        APP_STORE_APP_ID: "6797966618"
-        BUNDLE_ID: "com.conver.app"
+         XCODE_PROJECT: "ios/App/App.xcodeproj"
+         XCODE_SCHEME: "App"
+         APP_STORE_APP_ID: "6797966618"
+         BUNDLE_ID: "com.conver.app"
       
       node: v22.16.0
       xcode: latest
@@ -63,7 +63,7 @@ workflows:
       - name: Build IPA
         script: |
           xcode-project build-ipa \
-            --workspace "$CM_BUILD_DIR/$XCODE_WORKSPACE" \
+            --project "$CM_BUILD_DIR/$XCODE_PROJECT" \
             --scheme "$XCODE_SCHEME"
 
     artifacts:
