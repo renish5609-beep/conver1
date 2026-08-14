@@ -2672,12 +2672,40 @@ h1, h2, h3 {
   .app-tabs-wrap { display: none !important; }
 
   /* ── HEADER ─────────────────────────────────────────── */
-  .app-header { padding: 0 14px; height: 50px; min-height: 50px; flex-shrink: 0; }
+  /* .app-header-center is the flex:1 spacer that normally pushes
+     .app-header-right to the right edge — hiding it below (chip row is
+     too cluttered on phone) removes that spacer, so without an explicit
+     space-between here .app-header-left and .app-header-right just sit
+     next to each other in normal flow and can run past the right edge
+     of the viewport, invisible under html/body's overflow-x:hidden.
+     That's what was cutting the account email off. */
+  .app-header { padding: 0 12px; height: 50px; min-height: 50px; flex-shrink: 0; justify-content: space-between; }
+  .app-header-left { margin-right: 0 !important; min-width: 0; }
+  .app-header-right { margin-left: 0 !important; }
 
   /* Hide the chip row — too cluttered on phone */
   .app-header-center { display: none !important; }
 
-  .user-avatar { width: 26px !important; height: 26px !important; }
+  /* Wordmark competes for the same tight row as the back button and the
+     account menu — the logo icon alone is still a clear tap-to-home
+     target, so drop the text label on phone like the icon-only patterns
+     used elsewhere in this header (feedback button, etc). */
+  .app-logo-text { display: none !important; }
+
+  /* Back label can be a longer phrase ("Cold Open Setup") set from JS —
+     cap it so it can never push the account menu off-screen. */
+  .back-btn { max-width: 28vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .back-btn.visible { display: inline-flex !important; }
+
+  .user-avatar { width: 24px !important; height: 24px !important; }
+  .user-menu { padding: 3px 6px !important; gap: 6px !important; }
+  /* Inline style on this element hard-codes 140px, sized for the desktop
+     header — on a narrow phone that's most of the remaining row width
+     after the logo/back button, so it either gets clipped or shoves the
+     avatar off-screen. Cap it relative to viewport width instead, small
+     enough that even the longest back-button label + full header chrome
+     still fits on a 320px-wide phone (checked against iPhone SE width). */
+  .user-email { max-width: 26vw !important; font-size: 11px !important; }
 
   /* ── CONTENT SCROLL AREA ────────────────────────────── */
   .app-content { width: 100%; flex: 1; min-height: 0; }
