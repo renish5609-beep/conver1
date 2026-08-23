@@ -68,6 +68,8 @@
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Conver needs microphone access so you can practice voice conversations with your AI coach.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Conver uses speech recognition to transcribe your voice responses and analyze your communication skills.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Conver may use the camera to let you set a profile photo.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
