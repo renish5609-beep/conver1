@@ -2924,7 +2924,14 @@ h1, h2, h3 {
      ve-* ids) — it's not three separate stages, so the fix lives
      here rather than on three different structures. */
   .coach-orb.orb-xl { --orb-size: 130px !important; }
-  .ve-topbar { padding: 14px 14px !important; gap: 8px !important; }
+  /* This overlay is position:fixed;inset:0 (see markup) — it covers the
+     ENTIRE viewport corner to corner, including behind the status bar/
+     notch, with none of the .app-header safe-area handling applying to
+     it (it's a totally separate full-screen element, not nested inside
+     .app-header). ve-topbar has no fixed height here, just padding, so
+     unlike .app-header this only needs padding-top grown by the inset —
+     nothing to crush since the box isn't height-constrained. */
+  .ve-topbar { padding: calc(14px + var(--safe-top)) max(14px, var(--safe-right)) 14px max(14px, var(--safe-left)) !important; gap: 8px !important; }
   /* State label text ("Processing your response" etc.) can be long — keep it
      from wrapping or pushing the End Session button off-screen on a narrow phone */
   #ve-state-label { flex:1; min-width:0; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size: 9.5px !important; }
@@ -2936,7 +2943,10 @@ h1, h2, h3 {
      never actually went away and stacked with the inner padding on top of
      it, squeezing everything into a much narrower column than intended. */
   .ve-transcript-wrap { padding: 0 16px !important; }
-  .ve-history-wrap { padding: 10px 14px 14px !important; }
+  /* Last real element in this position:fixed;inset:0 overlay — sits flush
+     against the physical bottom edge (home indicator) with no accounting
+     for it otherwise. */
+  .ve-history-wrap { padding: 10px 14px calc(14px + var(--safe-bottom)) !important; }
   #ve-live-transcript { font-size: 14px !important; padding: 0 !important; min-height: 40px !important; }
   #ve-status { font-size: 11px !important; }
   #ve-done-btn, #ve-tap-to-talk-btn { font-size: 12.5px !important; padding: 9px 20px !important; }
@@ -12333,7 +12343,7 @@ document.head.appendChild(rippleStyle);
   <div style="position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 40%,rgba(var(--accent-rgb),0.08) 0%,transparent 60%);pointer-events:none"></div>
 
   <!-- Top bar — real flow space now, not absolute, so it can never overlap the centered content below -->
-  <div class="ve-topbar" style="position:relative;flex-shrink:0;padding:20px 28px;display:flex;align-items:center;justify-content:space-between;z-index:2">
+  <div class="ve-topbar" style="position:relative;flex-shrink:0;padding:calc(20px + env(safe-area-inset-top)) calc(28px + env(safe-area-inset-right)) 20px calc(28px + env(safe-area-inset-left));display:flex;align-items:center;justify-content:space-between;z-index:2">
     <div style="font-family:'Italiana',serif;font-size:20px;background:linear-gradient(135deg,#7c6fff,#b48cff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Conver</div>
     <div id="ve-state-label" style="font-size:11px;color:var(--muted,#6b7494);font-family:'DM Mono',monospace;letter-spacing:1px;text-transform:uppercase"></div>
     <button onclick="endVoiceNativeSession()"
@@ -12378,7 +12388,7 @@ document.head.appendChild(rippleStyle);
   </div>
 
   <!-- Conversation history — real flow space at the bottom, not absolute -->
-  <div class="ve-history-wrap" style="position:relative;flex-shrink:0;padding:16px 40px 24px;z-index:2">
+  <div class="ve-history-wrap" style="position:relative;flex-shrink:0;padding:16px 40px calc(24px + env(safe-area-inset-bottom));z-index:2">
     <div id="ve-history" style="display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto;scrollbar-width:none"></div>
   </div>
 </div>
