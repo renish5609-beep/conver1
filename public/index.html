@@ -10768,6 +10768,17 @@ function detectCharacterGender(name, role) {
   return hash % 2 === 0 ? 'female' : 'male';
 }
 
+// Matches SPEECH_ENGINES' cold-open keys on the server exactly — 6 female
+// voices, 7 male (one of the original pool's "female" voices was actually
+// labeled male by ElevenLabs' own metadata; moved to the male list rather
+// than trust the old pool's grouping).
+function pickColdOpenVoiceKey(gender) {
+  const pool = gender === 'male'
+    ? ['coldopen_cm1','coldopen_cm2','coldopen_cm3','coldopen_cm4','coldopen_cm5','coldopen_cm6','coldopen_cm7']
+    : ['coldopen_cf1','coldopen_cf2','coldopen_cf3','coldopen_cf4','coldopen_cf5','coldopen_cf6'];
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 let coState = { running: false, type: '', scenario: null, history: [], faceAnim: null, personCoach: 'Echo', turns: 0 };
 let isCOListening = false, coFinalTranscript = '';
 
@@ -10825,10 +10836,11 @@ async function startColdOpen() {
   document.getElementById('co-transcript').textContent='Click the mic to respond...';
   drawCOFace();
   addCOMsg(scenario.person, scenario.opener, false);
-  try{
-    const vRes=await fetch(`/api/coldopen-voice?gender=${coState.charGender || 'female'}`);
-    if(vRes.ok){const {voiceId}=await vRes.json();coState.voiceId=voiceId;}
-  }catch(e){/* fall back to coach voice if this fails */}
+  // coState.voiceId (fetched from /api/coldopen-voice) used to feed the old
+  // VoiceEngine-based pipeline's TTS call. The Speech Engine version below
+  // picks its own voice via pickColdOpenVoiceKey() from the full 13-voice
+  // pool instead — this fetch's result went unused, just adding a wasted
+  // round-trip to every Cold Open start.
   setScenarioCharSpeaking(type, true);
   setTimeout(() => setScenarioCharSpeaking(type, false), 3000);
   startColdOpenVoice(scenario);
@@ -10861,7 +10873,11 @@ async function startColdOpenVoice(scenario) {
     mode: 'coldopen',
     systemPrompt,
     firstMessage: scenario.opener,
-    voiceKey: 'coldopen_' + (coState.charGender === 'male' ? 'male' : 'female'),
+    // Randomly pick from the correct-gender pool — same real per-scenario
+    // variety the old /api/coldopen-voice pipeline had (13 voices, not one
+    // fixed voice per gender). Pool members match SPEECH_ENGINES on the
+    // server exactly (coldopen_cf1..cf6, coldopen_cm1..cm7).
+    voiceKey: pickColdOpenVoiceKey(coState.charGender),
     onStatus: updateSpeechEngineOverlayUI,
     onMessage(role, text) {
       const isUser = role === 'user';

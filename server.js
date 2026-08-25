@@ -32,6 +32,18 @@ const sessionMeta = new Map();
 // requires a separate fixed-voice engine per voice instead. Each key here
 // is also the token endpoint's voiceKey and the path segment engine.attach()
 // listens on below.
+// Cold Open originally had a 13-voice pool (7 "female" + 6 "male") for
+// real per-scenario variety, picked randomly client-side. First pass at
+// this migration collapsed that down to just 2 fixed voices (one per
+// gender) — every character of the same gender sounded identical, losing
+// the variety the old pipeline had. Fixed by provisioning one engine per
+// individual voice instead of per gender, same as coaches.
+//
+// Also: one of the original pool's "female" entries (tIb1FHpzlwSiTGg6JxF0,
+// "Belle B - Conversational Chatbot Voice") is actually labeled male by
+// ElevenLabs' own voice metadata — checked every voice ID directly via
+// el.voices.get() rather than trust the old pool's grouping, and moved it
+// to the male list (CM7) here.
 const SPEECH_ENGINES = {
   Blaze: process.env.SPEECH_ENGINE_ID_BLAZE || process.env.SPEECH_ENGINE_ID,
   Echo: process.env.SPEECH_ENGINE_ID_ECHO,
@@ -39,8 +51,19 @@ const SPEECH_ENGINES = {
   Nova: process.env.SPEECH_ENGINE_ID_NOVA,
   Rex: process.env.SPEECH_ENGINE_ID_REX,
   Luna: process.env.SPEECH_ENGINE_ID_LUNA,
-  coldopen_female: process.env.SPEECH_ENGINE_ID_COLDOPEN_FEMALE,
-  coldopen_male: process.env.SPEECH_ENGINE_ID_COLDOPEN_MALE,
+  coldopen_cf1: process.env.SPEECH_ENGINE_ID_CF1,
+  coldopen_cf2: process.env.SPEECH_ENGINE_ID_CF2,
+  coldopen_cf3: process.env.SPEECH_ENGINE_ID_CF3,
+  coldopen_cf4: process.env.SPEECH_ENGINE_ID_CF4,
+  coldopen_cf5: process.env.SPEECH_ENGINE_ID_CF5,
+  coldopen_cf6: process.env.SPEECH_ENGINE_ID_CF6,
+  coldopen_cm1: process.env.SPEECH_ENGINE_ID_CM1,
+  coldopen_cm2: process.env.SPEECH_ENGINE_ID_CM2,
+  coldopen_cm3: process.env.SPEECH_ENGINE_ID_CM3,
+  coldopen_cm4: process.env.SPEECH_ENGINE_ID_CM4,
+  coldopen_cm5: process.env.SPEECH_ENGINE_ID_CM5,
+  coldopen_cm6: process.env.SPEECH_ENGINE_ID_CM6,
+  coldopen_cm7: process.env.SPEECH_ENGINE_ID_CM7,
 };
 
 // Same regex-based tone heuristic already used client-side for Warmup/Practice
@@ -144,14 +167,21 @@ const assignedVoices = {
 };
 
 // ── Cold Open scenario voices — split by confirmed gender ──────────────────
+// This pool (and /api/coldopen-voice below) is no longer called by the
+// live app — Cold Open moved to the Speech Engine pipeline, which picks its
+// voice via pickColdOpenVoiceKey() in index.html from its own equivalent
+// pool. Left here rather than deleted in case anything still references it,
+// with the same gender fix applied for consistency: tIb1FHpzlwSiTGg6JxF0
+// ("Belle B - Conversational Chatbot Voice") was filed here as female but
+// is labeled male by ElevenLabs' own voice metadata (checked directly via
+// el.voices.get(), not assumed) — moved to the male list.
 const coldOpenVoicesFemale = [
   '4O1sYUnmtThcBoSBrri7', // Female 1
   '6fZce9LFNG3iEITDfqZZ', // Female 2
   'CICpbs1ZGqlhQNbQmCUP', // Female 3
-  'tIb1FHpzlwSiTGg6JxF0', // Female 4
-  'hod33eJyEU4TLqiYFttr', // Female 5
-  '8DzKSPdgEQPaK5vKG0Rs', // Female 6 (new)
-  'yj30vwTGJxSHezdAGsv9', // Female 7 (new)
+  'hod33eJyEU4TLqiYFttr', // Female 4
+  '8DzKSPdgEQPaK5vKG0Rs', // Female 5
+  'yj30vwTGJxSHezdAGsv9', // Female 6
 ];
 
 const coldOpenVoicesMale = [
@@ -161,6 +191,7 @@ const coldOpenVoicesMale = [
   'EitqXD7jgIy0K5Z1zGGp', // Male 4
   'Ib97zM6uFBc71OWgj75I', // Male 5
   'wAGzRVkxKEs8La0lmdrE', // Male 6 (new)
+  'tIb1FHpzlwSiTGg6JxF0', // Male 7 — reclassified from the female list above
 ];
 
 // Combined pool for backward compat
@@ -618,6 +649,11 @@ app.get('*', (req, res) => {
 });
 
 const httpServer = http.createServer(app);
+// Each Speech Engine attach() adds its own 'upgrade' listener to route its
+// own WS path — one per voice, legitimately (19 currently: 6 coaches + 13
+// Cold Open voices), comfortably past Node's default max-listeners warning
+// threshold of 10. Real, expected count here, not a leak.
+httpServer.setMaxListeners(Object.keys(SPEECH_ENGINES).length + 10);
 
 // Every engine shares this exact handler — the LLM/prompt logic doesn't
 // care which physical engine (i.e. which fixed voice) carried the
