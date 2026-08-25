@@ -11447,6 +11447,22 @@ const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 let sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 let currentUser = null;
 let authToken = null;
+// Supabase auto-refreshes the access token in the background (default
+// autoRefreshToken: true) well before its ~1hr JWT expiry — but that refresh
+// only updates sbClient's own internal session, not this `authToken`
+// variable, which every fetch() Authorization header actually reads. On web
+// that mismatch almost never surfaces: a tab is rarely left open past the
+// token's expiry without a reload, and a reload always re-syncs authToken
+// via initAuth() -> getSession(). Inside the Capacitor iOS app the WKWebView
+// stays resident across backgrounding for hours/days without ever
+// reloading, so authToken silently goes stale and every API call starts
+// failing with "invalid token" — while the exact same relative /api/ URLs
+// keep working fine on web, hitting the same server. This listener keeps
+// authToken in sync with every refresh so it's never stale.
+sbClient.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_OUT') { authToken = null; return; }
+  if (session) authToken = session.access_token;
+});
 // Guest mode — no Supabase account, no cloud sync. authToken stays null,
 // which is exactly the flag every loadUserData()/saveUserData()/
 // saveSessionToCloud() call already checks before touching Supabase, so a
