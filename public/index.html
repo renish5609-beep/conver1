@@ -9107,6 +9107,7 @@ function startDailyChallenge() {
   localStorage.setItem('conver_daily_done_' + today, 'true');
   dailyCompleted = true;
   navTo('practice');
+  switchPracticeTab('practice'); // same fix as practiceQBQuestion() — see its comment
   setTimeout(() => {
     document.getElementById('p-question').value = dailyChallenge.question;
     document.getElementById('p-text').focus();
@@ -11202,7 +11203,14 @@ function filterQBank() {
 }
 
 function practiceQBQuestion(question) {
+  // navTo('practice') only shows the Practice Lab PAGE — it doesn't touch
+  // which sub-tab is active. Clicking this from the Question Bank sub-tab
+  // (or Debate/AI Chat/etc) left the Lab's #p-question/#p-text fields
+  // getting filled in while still hidden behind whatever sub-tab was
+  // already showing — nothing visibly happened, looking exactly like a
+  // dead button. Explicitly switch to the 'practice' (Lab) sub-tab too.
   navTo('practice');
+  switchPracticeTab('practice');
   setTimeout(() => {
     document.getElementById('p-question').value = question;
     document.getElementById('p-text').focus();
