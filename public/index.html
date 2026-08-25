@@ -6835,11 +6835,18 @@ function updateSpeechEngineOverlayUI(status) {
 }
 
 class SpeechEngineSession {
-  constructor({ mode, systemPrompt, firstMessage, maxRounds, onStatus, onMessage, onError }) {
+  constructor({ mode, systemPrompt, firstMessage, maxRounds, voiceKey, onStatus, onMessage, onError }) {
     this.mode = mode;
     this.systemPrompt = systemPrompt;
     this.firstMessage = firstMessage;
     this.maxRounds = maxRounds;
+    // Which coach/character voice this session should speak as — Blaze,
+    // Echo, Sage, Nova, Rex, Luna, or coldopen_male/coldopen_female. Each
+    // is a SEPARATE Speech Engine resource with its own fixed voice (the
+    // engine itself doesn't support per-conversation voice overrides —
+    // confirmed directly against the live API, not just assumed), so this
+    // picks which one to request a token from.
+    this.voiceKey = voiceKey;
     this.onStatus = onStatus || (() => {});
     this.onMessage = onMessage || (() => {});
     this.onError = onError || console.error;
@@ -6858,7 +6865,7 @@ class SpeechEngineSession {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + (authToken || ''),
       },
-      body: JSON.stringify({ mode: this.mode, systemPrompt: this.systemPrompt, maxRounds: this.maxRounds }),
+      body: JSON.stringify({ mode: this.mode, systemPrompt: this.systemPrompt, maxRounds: this.maxRounds, voiceKey: this.voiceKey }),
     });
     if (!res.ok) {
       const e = await res.json().catch(() => ({ error: res.statusText }));
@@ -8580,6 +8587,7 @@ VOICE RULES — CRITICAL:
     mode: 'voice',
     systemPrompt,
     firstMessage: opening,
+    voiceKey: coach, // 'Blaze'/'Echo'/'Sage'/'Nova'/'Rex'/'Luna' — matches SPEECH_ENGINES on the server
     onStatus: updateSpeechEngineOverlayUI,
     onMessage(role, text) {
       const isUser = role === 'user';
@@ -9564,6 +9572,7 @@ async function startDebateVoice() {
     systemPrompt,
     firstMessage: opener,
     maxRounds,
+    voiceKey: debateCoachB, // the opponent's voice — debateCoachA (user's own coach) doesn't speak in this mode
     onStatus: updateSpeechEngineOverlayUI,
     onMessage(role, text) {
       const isUser = role === 'user';
@@ -10852,6 +10861,7 @@ async function startColdOpenVoice(scenario) {
     mode: 'coldopen',
     systemPrompt,
     firstMessage: scenario.opener,
+    voiceKey: 'coldopen_' + (coState.charGender === 'male' ? 'male' : 'female'),
     onStatus: updateSpeechEngineOverlayUI,
     onMessage(role, text) {
       const isUser = role === 'user';

@@ -18,12 +18,30 @@ const PORT = process.env.PORT || 3000;
 // session.sendResponse() needs a real streaming async-iterable to auto-parse.
 const el = new ElevenLabsClient({ apiKey: process.env.ELEVENLABS_API_KEY });
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const SPEECH_ENGINE_ID = process.env.SPEECH_ENGINE_ID;
 // conversationId -> { mode, systemPrompt, maxRounds }. Keyed by the REAL
 // conversationId that getWebrtcToken() already returns up front (see the
 // /api/speech-engine-token route) — not a guessed/pending key, so there's no
 // window where onInit can't find its own session's metadata.
 const sessionMeta = new Map();
+
+// One Speech Engine resource per voice, not one shared engine — confirmed
+// directly against the live API (not just the SDK's types) that Speech
+// Engine's client-override policy only supports overriding firstMessage,
+// nothing under tts/voiceId. There is no way to pick a different voice
+// per-conversation on a single engine, so coach/character voice variety
+// requires a separate fixed-voice engine per voice instead. Each key here
+// is also the token endpoint's voiceKey and the path segment engine.attach()
+// listens on below.
+const SPEECH_ENGINES = {
+  Blaze: process.env.SPEECH_ENGINE_ID_BLAZE || process.env.SPEECH_ENGINE_ID,
+  Echo: process.env.SPEECH_ENGINE_ID_ECHO,
+  Sage: process.env.SPEECH_ENGINE_ID_SAGE,
+  Nova: process.env.SPEECH_ENGINE_ID_NOVA,
+  Rex: process.env.SPEECH_ENGINE_ID_REX,
+  Luna: process.env.SPEECH_ENGINE_ID_LUNA,
+  coldopen_female: process.env.SPEECH_ENGINE_ID_COLDOPEN_FEMALE,
+  coldopen_male: process.env.SPEECH_ENGINE_ID_COLDOPEN_MALE,
+};
 
 // Same regex-based tone heuristic already used client-side for Warmup/Practice
 // Lab (kept there — out of scope for this migration). Ported here because the
@@ -510,16 +528,17 @@ app.get('/api/deepgram-token', requireAuth, async (req, res) => {
 // debate round) get layered on top server-side in augmentSystemPrompt() above,
 // recomputed fresh from the live transcript each turn.
 app.post('/api/speech-engine-token', requireAuth, async (req, res) => {
-  if (!SPEECH_ENGINE_ID) {
-    return res.status(500).json({ error: 'Speech Engine not configured (missing SPEECH_ENGINE_ID)' });
-  }
-  const { mode, systemPrompt, maxRounds } = req.body;
+  const { mode, systemPrompt, maxRounds, voiceKey } = req.body;
   if (!mode || !systemPrompt) {
     return res.status(400).json({ error: 'mode and systemPrompt are required' });
   }
+  const engineId = SPEECH_ENGINES[voiceKey] || SPEECH_ENGINES.Blaze;
+  if (!engineId) {
+    return res.status(500).json({ error: 'Speech Engine not configured' });
+  }
   try {
     const response = await el.conversationalAi.conversations.getWebrtcToken({
-      agentId: SPEECH_ENGINE_ID,
+      agentId: engineId,
       participantName: req.user.id,
     });
     // getWebrtcToken() already returns the conversationId this token will
@@ -600,63 +619,71 @@ app.get('*', (req, res) => {
 
 const httpServer = http.createServer(app);
 
-async function startServer() {
-  if (SPEECH_ENGINE_ID) {
+// Every engine shares this exact handler — the LLM/prompt logic doesn't
+// care which physical engine (i.e. which fixed voice) carried the
+// connection, only session.conversationId, which is unique regardless.
+const speechEngineHandler = {
+  debug: false,
+  onInit(conversationId, session) {
+    console.log('Speech Engine session started:', conversationId, sessionMeta.has(conversationId) ? '(meta found)' : '(NO META — token endpoint was skipped or meta already expired)');
+  },
+  async onTranscript(transcript, signal, session) {
+    const meta = sessionMeta.get(session.conversationId);
+    if (!meta) {
+      // No metadata means this connection didn't come through our own
+      // /api/speech-engine-token endpoint (or it expired) — nothing
+      // safe to do except decline to respond.
+      console.error('Speech Engine transcript with no session metadata:', session.conversationId);
+      return;
+    }
+    const messages = transcript.map(m => ({
+      role: m.role === 'agent' ? 'assistant' : 'user',
+      content: m.content,
+    }));
     try {
-      const engine = await el.speechEngine.get(SPEECH_ENGINE_ID);
-      engine.attach(httpServer, '/speech-engine/ws', {
-        debug: false,
-        onInit(conversationId, session) {
-          console.log('Speech Engine session started:', conversationId, sessionMeta.has(conversationId) ? '(meta found)' : '(NO META — token endpoint was skipped or meta already expired)');
-        },
-        async onTranscript(transcript, signal, session) {
-          const meta = sessionMeta.get(session.conversationId);
-          if (!meta) {
-            // No metadata means this connection didn't come through our own
-            // /api/speech-engine-token endpoint (or it expired) — nothing
-            // safe to do except decline to respond.
-            console.error('Speech Engine transcript with no session metadata:', session.conversationId);
-            return;
-          }
-          const messages = transcript.map(m => ({
-            role: m.role === 'agent' ? 'assistant' : 'user',
-            content: m.content,
-          }));
-          try {
-            const stream = await anthropic.messages.create({
-              model: 'claude-sonnet-4-5',
-              max_tokens: 1024,
-              system: augmentSystemPrompt(meta, transcript),
-              messages,
-              stream: true,
-            }, { signal });
-            await session.sendResponse(stream);
-          } catch (err) {
-            if (err?.name === 'AbortError') return; // user interrupted — expected, not an error
-            console.error('Speech Engine LLM error:', err);
-            await session.sendResponse('Sorry, I had trouble responding — could you say that again?');
-          }
-        },
-        onClose(session) {
-          sessionMeta.delete(session.conversationId);
-        },
-        onDisconnect(session) {
-          sessionMeta.delete(session.conversationId);
-        },
-        onError(err, session) {
-          console.error('Speech Engine error:', err);
-        },
-      });
-      console.log('Speech Engine attached at /speech-engine/ws');
+      const stream = await anthropic.messages.create({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 1024,
+        system: augmentSystemPrompt(meta, transcript),
+        messages,
+        stream: true,
+      }, { signal });
+      await session.sendResponse(stream);
     } catch (err) {
-      // App still starts — Voice Session/Cold Open/Debate's Speech Engine
-      // path will fail per-request (the token endpoint returns 500) rather
-      // than the whole server refusing to boot over one misconfigured
-      // integration.
-      console.error('Failed to attach Speech Engine:', err.message);
+      if (err?.name === 'AbortError') return; // user interrupted — expected, not an error
+      console.error('Speech Engine LLM error:', err);
+      await session.sendResponse('Sorry, I had trouble responding — could you say that again?');
+    }
+  },
+  onClose(session) {
+    sessionMeta.delete(session.conversationId);
+  },
+  onDisconnect(session) {
+    sessionMeta.delete(session.conversationId);
+  },
+  onError(err, session) {
+    console.error('Speech Engine error:', err);
+  },
+};
+
+async function startServer() {
+  const entries = Object.entries(SPEECH_ENGINES).filter(([, id]) => !!id);
+  if (entries.length) {
+    for (const [voiceKey, engineId] of entries) {
+      const wsPath = '/speech-engine/ws/' + voiceKey.toLowerCase();
+      try {
+        const engine = await el.speechEngine.get(engineId);
+        engine.attach(httpServer, wsPath, speechEngineHandler);
+        console.log(`Speech Engine attached: ${voiceKey} -> ${wsPath}`);
+      } catch (err) {
+        // App still starts — this one voice's Speech Engine path will fail
+        // per-request (the token endpoint returns 500) rather than the
+        // whole server refusing to boot over one misconfigured voice.
+        console.error(`Failed to attach Speech Engine for ${voiceKey}:`, err.message);
+      }
     }
   } else {
-    console.log('SPEECH_ENGINE_ID not set — Speech Engine not attached (Voice Session/Cold Open/Debate will report an error until this is configured)');
+    console.log('No SPEECH_ENGINE_ID_* env vars set — Speech Engine not attached (Voice Session/Cold Open/Debate will report an error until configured)');
   }
 
   httpServer.listen(PORT, () => {
