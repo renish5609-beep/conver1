@@ -22,7 +22,7 @@
       "resizeOnFullScreen": true
     },
     "SplashScreen": {
-      "launchShowDuration": 2000,
+      "launchAutoHide": false,
       "backgroundColor": "#08090d",
       "showSpinner": false
     }

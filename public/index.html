@@ -861,7 +861,10 @@ input:focus, select:focus, textarea:focus {
 
 
 /* FILLER WORD DETECTOR */
-.filler-overlay{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:500;display:flex;gap:8px;align-items:center;pointer-events:none}
+/* Fixed to the viewport (not a local card), so like every other fixed
+   element pinned near the top edge, a flat 20px sits under the status
+   bar/notch on iOS. */
+.filler-overlay{position:fixed;top:calc(20px + var(--safe-top, 0px));left:50%;transform:translateX(-50%);z-index:500;display:flex;gap:8px;align-items:center;pointer-events:none}
 .filler-badge-live{background:rgba(248,113,113,0.15);border:1px solid rgba(248,113,113,0.3);border-radius:20px;padding:6px 14px;font-size:12px;font-family:'DM Mono',monospace;color:var(--red);display:flex;align-items:center;gap:6px;transition:all 0.3s}
 .filler-badge-live.bump{transform:scale(1.15);background:rgba(248,113,113,0.25)}
 .filler-count-display{background:var(--bg1);border:1px solid var(--border2);border-radius:20px;padding:6px 14px;font-size:12px;font-family:'DM Mono',monospace;color:var(--muted2)}
@@ -2174,7 +2177,10 @@ body.compact-mode .page { padding: 20px 24px; }
 }
 .ob-overlay.hidden { display: none; }
 .ob-dots {
-  position: absolute; top: 28px; left: 50%; transform: translateX(-50%);
+  /* Positioned relative to .ob-overlay, which is itself position:fixed;
+     inset:0 spanning the full viewport — top:28px is relative to the
+     actual screen edge, same notch-overlap risk as .ob-skip below. */
+  position: absolute; top: calc(28px + var(--safe-top, 0px)); left: 50%; transform: translateX(-50%);
   display: flex; gap: 8px; z-index: 2;
 }
 .ob-dot {
@@ -2187,7 +2193,8 @@ body.compact-mode .page { padding: 20px 24px; }
   width: 20px; border-radius: 3px;
 }
 .ob-skip {
-  position: absolute; top: 20px; right: 28px;
+  /* Same fixed-viewport-relative positioning as .ob-dots above. */
+  position: absolute; top: calc(20px + var(--safe-top, 0px)); right: calc(28px + var(--safe-right, 0px));
   background: transparent; border: none;
   color: rgba(255,255,255,0.3); font-size: 13px;
   cursor: pointer; font-family: 'DM Mono', monospace;
@@ -2866,7 +2873,7 @@ h1, h2, h3 {
   .ob-title { font-size: 20px !important; }
   .ob-sub { font-size: 12px !important; }
   .ob-steps { padding: 0 10px !important; }
-  .ob-skip { top: 12px !important; right: 12px !important; font-size: 11px !important; }
+  .ob-skip { top: calc(12px + var(--safe-top, 0px)) !important; right: calc(12px + var(--safe-right, 0px)) !important; font-size: 11px !important; }
   .ob-btn-primary { font-size: 13px !important; padding: 12px 24px !important; }
   .ob-goal-card { padding: 10px 8px !important; }
   .ob-goal-icon { width: 20px !important; height: 20px !important; }
@@ -12122,7 +12129,30 @@ function handleBackBtn() {
 
 initUI(); updateChips(); setTimeout(initToneDetector, 500); loadSettings();
 if(window.speechSynthesis){window.speechSynthesis.onvoiceschanged=()=>window.speechSynthesis.getVoices();window.speechSynthesis.getVoices();}
-initAuth();
+
+// Native splash screen (iOS) — a no-op on the plain web version, since
+// window.Capacitor only exists inside the native shell. launchAutoHide is
+// off in capacitor.config.json specifically so this fires when the app is
+// actually ready instead of on a fixed timer — this app loads its content
+// from a remote URL (see capacitor.config.json's server.url), not bundled
+// locally, so a fixed timer could hide the splash before anything has
+// rendered on a slow connection, flashing a blank screen underneath.
+let _splashHidden = false;
+function hideNativeSplash() {
+  if (_splashHidden) return;
+  _splashHidden = true;
+  const SplashScreen = window.Capacitor?.Plugins?.SplashScreen;
+  if (SplashScreen) SplashScreen.hide().catch(()=>{});
+}
+// Also wait for a minimum ~1s so a fast session-restore doesn't just
+// flicker the splash for a couple hundred ms — the whole point is a
+// deliberate branded moment, not an accidental flash.
+const _splashMinDelay = new Promise(r => setTimeout(r, 1000));
+Promise.all([initAuth(), _splashMinDelay]).finally(hideNativeSplash);
+// Hard safety net, same pattern used everywhere else in this file
+// (VoiceEngine/ScribeSTT/callAI) — if initAuth() somehow never settles,
+// don't leave the user staring at the splash forever.
+setTimeout(hideNativeSplash, 6000);
 
 // ── Tab bar scroll affordance ────────────────────────────────
 // Hidden tabs (Coach Notes, Insights, History, Briefing, Profiles, Settings on
