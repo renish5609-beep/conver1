@@ -3021,6 +3021,23 @@ h1, h2, h3 {
   #co-transcript { font-size: 12px !important; }
   #co-mic-btn { width: 60px !important; height: 60px !important; font-size: 22px !important; }
 
+  /* ── QUESTION BANK ──────────────────────────────────────────
+     Only remaining fixed-pixel grid column left in the whole file — a
+     260px sidebar + 1fr content column that never collapses on mobile.
+     Confirmed by measurement: computed to 260px + 259px (519px total)
+     inside a 362px-wide container. .page has overflow-y:auto, which per
+     the CSS spec makes overflow-x compute to auto too (not visible) once
+     any overflow axis is set — so instead of a visible visual bug, the
+     whole Question Bank page silently became horizontally scrollable,
+     letting the categories sidebar and question cards scroll sideways
+     out of view. Not scoped to #page-qbank as a parent — this page's
+     content gets DOM-moved into #psub-qbank at load time by
+     migrateSubTabContent() below, so a parent-scoped selector stops
+     matching after that move happens (found this the hard way — verify
+     any future selector here against the POST-migration DOM, not the
+     source markup). */
+  div[style*="grid-template-columns:260px 1fr"] { grid-template-columns: 1fr !important; }
+
   /* ── COMPANION / AI CHAT ─────────────────────────────────── */
   .companion-layout { grid-template-columns: 1fr !important; }
   .chat-wrap { min-height: 300px !important; max-height: 50vh !important; }
@@ -3033,6 +3050,18 @@ h1, h2, h3 {
 
   /* ── WAVEFORM ────────────────────────────────────────────── */
   .wave-bar { width: 3px !important; }
+
+  /* ── SETTINGS ROWS ───────────────────────────────────────────
+     Never had a mobile treatment at all — .setting-row keeps label and
+     control side by side (justify-content:space-between) at any width,
+     so on a 390px phone a <select> next to a two-line label/description
+     gets squeezed into a sliver, truncating its own text (e.g.
+     "Intermediate — I know the basics" clipped mid-word). Stack them
+     instead — label above, control below at full width — the standard
+     mobile settings-list pattern. Affects all 43 rows on the page. */
+  .setting-row { flex-direction: column !important; align-items: flex-start !important; gap: 8px !important; }
+  .setting-control { width: 100% !important; flex-shrink: 1 !important; }
+  .setting-control select, .setting-control input, .setting-control textarea { width: 100% !important; }
 } /* end @media (max-width: 767px) */
 
 /* Back button — inline in the header now (see .back-btn above), just needs
@@ -4850,7 +4879,12 @@ const ScribeSTT = {
         if (settled) { stream.getTracks().forEach(t => t.stop()); return; }
 
         const url = 'wss://api.deepgram.com/v1/listen?' + new URLSearchParams({
-          model: 'nova-2',
+          // Nova-3 is meaningfully more accurate than Nova-2 in real-world/
+          // noisy conditions — exactly the scenario already being fought
+          // here (phone on speaker, background noise, per the
+          // echoCancellation/noiseSuppression/autoGainControl above). Same
+          // API/params, drop-in model swap.
+          model: 'nova-3',
           language: 'en-US',
           punctuate: 'true',
           interim_results: 'true',

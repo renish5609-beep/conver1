@@ -1,5 +1,6 @@
 import UIKit
 import Capacitor
+import AVFoundation
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -8,6 +9,27 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        //
+        // Without this, iOS mutes ALL HTML5 <audio> playback (every coach
+        // TTS response) whenever the phone's physical silent/ringer switch
+        // is flipped on — WKWebView audio respects that switch by default
+        // unless the app explicitly configures its own audio session. This
+        // is the documented, well-known cause of "the coach sometimes just
+        // doesn't say anything, then works again later" — it isn't random,
+        // it's the ringer switch position (or another app having changed
+        // the shared session) at the moment playback starts. .playAndRecord
+        // (not just .playback) because this app also records the mic in
+        // the same session; .defaultToSpeaker routes playback out the
+        // speaker instead of the tiny earpiece.
+        do {
+            try AVAudioSession.sharedInstance().setCategory(
+                .playAndRecord,
+                options: [.defaultToSpeaker, .allowBluetooth, .allowBluetoothA2DP]
+            )
+            try AVAudioSession.sharedInstance().setActive(true)
+        } catch {
+            print("Failed to configure AVAudioSession: \(error)")
+        }
         return true
     }
 
@@ -27,6 +49,21 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func applicationDidBecomeActive(_ application: UIApplication) {
         // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
+        //
+        // Re-assert the audio session config from launch — if another app
+        // (a phone call, Music, etc.) took over the shared audio session
+        // while this one was backgrounded, iOS doesn't hand it back
+        // automatically, and the next TTS playback could silently fail to
+        // route through the speaker until this runs again.
+        do {
+            try AVAudioSession.sharedInstance().setCategory(
+                .playAndRecord,
+                options: [.defaultToSpeaker, .allowBluetooth, .allowBluetoothA2DP]
+            )
+            try AVAudioSession.sharedInstance().setActive(true)
+        } catch {
+            print("Failed to re-activate AVAudioSession on resume: \(error)")
+        }
     }
 
     func applicationWillTerminate(_ application: UIApplication) {
