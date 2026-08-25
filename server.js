@@ -29,42 +29,17 @@ const sessionMeta = new Map();
 // Engine's client-override policy only supports overriding firstMessage,
 // nothing under tts/voiceId. There is no way to pick a different voice
 // per-conversation on a single engine, so coach/character voice variety
-// requires a separate fixed-voice engine per voice instead. Each key here
-// is also the token endpoint's voiceKey and the path segment engine.attach()
-// listens on below.
-// Cold Open originally had a 13-voice pool (7 "female" + 6 "male") for
-// real per-scenario variety, picked randomly client-side. First pass at
-// this migration collapsed that down to just 2 fixed voices (one per
-// gender) — every character of the same gender sounded identical, losing
-// the variety the old pipeline had. Fixed by provisioning one engine per
-// individual voice instead of per gender, same as coaches.
+// requires a separate fixed-voice engine per voice instead.
 //
-// Also: one of the original pool's "female" entries (tIb1FHpzlwSiTGg6JxF0,
-// "Belle B - Conversational Chatbot Voice") is actually labeled male by
-// ElevenLabs' own voice metadata — checked every voice ID directly via
-// el.voices.get() rather than trust the old pool's grouping, and moved it
-// to the male list (CM7) here.
-const SPEECH_ENGINES = {
-  Blaze: process.env.SPEECH_ENGINE_ID_BLAZE || process.env.SPEECH_ENGINE_ID,
-  Echo: process.env.SPEECH_ENGINE_ID_ECHO,
-  Sage: process.env.SPEECH_ENGINE_ID_SAGE,
-  Nova: process.env.SPEECH_ENGINE_ID_NOVA,
-  Rex: process.env.SPEECH_ENGINE_ID_REX,
-  Luna: process.env.SPEECH_ENGINE_ID_LUNA,
-  coldopen_cf1: process.env.SPEECH_ENGINE_ID_CF1,
-  coldopen_cf2: process.env.SPEECH_ENGINE_ID_CF2,
-  coldopen_cf3: process.env.SPEECH_ENGINE_ID_CF3,
-  coldopen_cf4: process.env.SPEECH_ENGINE_ID_CF4,
-  coldopen_cf5: process.env.SPEECH_ENGINE_ID_CF5,
-  coldopen_cf6: process.env.SPEECH_ENGINE_ID_CF6,
-  coldopen_cm1: process.env.SPEECH_ENGINE_ID_CM1,
-  coldopen_cm2: process.env.SPEECH_ENGINE_ID_CM2,
-  coldopen_cm3: process.env.SPEECH_ENGINE_ID_CM3,
-  coldopen_cm4: process.env.SPEECH_ENGINE_ID_CM4,
-  coldopen_cm5: process.env.SPEECH_ENGINE_ID_CM5,
-  coldopen_cm6: process.env.SPEECH_ENGINE_ID_CM6,
-  coldopen_cm7: process.env.SPEECH_ENGINE_ID_CM7,
-};
+// Previously required one SPEECH_ENGINE_ID_* env var per voice (19 of
+// them), set by hand on Render. Real, actually-hit failure mode: any one
+// missed or mistyped var silently fell back to a single shared voice for
+// everyone. Populated dynamically instead (see provisionSpeechEngines()
+// below, called from startServer()) — self-provisions every voice this app
+// needs from data already in this file, using nothing but
+// ELEVENLABS_API_KEY, which was already configured. Empty until
+// provisionSpeechEngines() runs at boot.
+let SPEECH_ENGINES = {};
 
 // Same regex-based tone heuristic already used client-side for Warmup/Practice
 // Lab (kept there — out of scope for this migration). Ported here because the
@@ -208,6 +183,84 @@ function getColdOpenVoiceForGender(gender) {
 
 console.log('Coach voices assigned:', assignedVoices);
 console.log('Cold Open voice pool:', coldOpenVoices.length, 'voices\n');
+
+// ── Speech Engine auto-provisioning ─────────────────────────────────────────
+// Every voice this app needs, derived from the data already above — no
+// separate list to keep in sync. keys match onto SPEECH_ENGINES, the token
+// endpoint's voiceKey, and the /speech-engine/ws/<key> path each engine
+// attaches on.
+const SPEECH_ENGINE_VOICE_DEFS = [
+  ...Object.entries(assignedVoices).map(([key, voiceId]) => ({ key, voiceId })),
+  ...coldOpenVoicesFemale.map((voiceId, i) => ({ key: `coldopen_cf${i + 1}`, voiceId })),
+  ...coldOpenVoicesMale.map((voiceId, i) => ({ key: `coldopen_cm${i + 1}`, voiceId })),
+];
+
+const SPEECH_ENGINE_TTS_DEFAULTS = {
+  modelId: 'eleven_v3_conversational', // expressive/natural, not the flatter-sounding flash models
+  expressiveMode: true,
+  suggestedAudioTags: [
+    { tag: 'warm', description: 'Genuine warmth when encouraging or acknowledging something well said' },
+    { tag: 'curious', description: 'Real curiosity when asking a follow-up question' },
+    { tag: 'thoughtful pause', description: 'A brief natural pause before a considered response' },
+    { tag: 'direct', description: 'Firm, matter-of-fact delivery for blunt feedback' },
+    { tag: 'encouraging', description: 'Light energy lift when the user does something well' },
+  ],
+  stability: 0.4,
+  similarityBoost: 0.78,
+  speed: 1,
+};
+
+// Fetches every existing Speech Engine resource and returns a name -> id
+// map. The API's list({search}) param does NOT actually filter server-side
+// (confirmed directly — querying with a search term that should obviously
+// match returns zero results even when matching resources exist), so this
+// pages through everything and matches names client-side instead of
+// trusting search to work.
+async function fetchAllSpeechEngineNames() {
+  const byName = new Map();
+  let cursor;
+  do {
+    const page = await el.speechEngine.list({ pageSize: 100, cursor });
+    for (const e of page.speechEngines) byName.set(e.name, e.speechEngineId);
+    cursor = page.hasMore ? page.nextCursor : undefined;
+  } while (cursor);
+  return byName;
+}
+
+async function provisionSpeechEngines() {
+  console.log(`Provisioning ${SPEECH_ENGINE_VOICE_DEFS.length} Speech Engine voices (first boot after a change takes longer — creates what's missing, reuses what already exists)...`);
+  let existingByName;
+  try {
+    existingByName = await fetchAllSpeechEngineNames();
+  } catch (err) {
+    console.error('Failed to list existing Speech Engines, will attempt to create all as new:', err.message);
+    existingByName = new Map();
+  }
+
+  const next = {};
+  for (const { key, voiceId } of SPEECH_ENGINE_VOICE_DEFS) {
+    const name = 'Conver Speech Engine — ' + key;
+    const wsUrl = 'wss://conver.services/speech-engine/ws/' + key.toLowerCase();
+    try {
+      const existingId = existingByName.get(name);
+      if (existingId) {
+        next[key] = existingId;
+        continue;
+      }
+      const created = await el.speechEngine.create({
+        name,
+        speechEngine: { wsUrl },
+        tts: { voiceId, ...SPEECH_ENGINE_TTS_DEFAULTS },
+        overrides: { firstMessage: true },
+      });
+      next[key] = created.speechEngineId || created.engineId;
+    } catch (err) {
+      console.error(`Failed to provision Speech Engine for ${key}:`, err.message);
+    }
+  }
+  SPEECH_ENGINES = next;
+  console.log('Speech Engine voices ready:', Object.keys(SPEECH_ENGINES).length, '/', SPEECH_ENGINE_VOICE_DEFS.length);
+}
 
 // ── Text cleaning for TTS ─────────────────────────────────────────────────────
 // Strips markdown, stage directions, and action text so TTS sounds natural
@@ -650,10 +703,13 @@ app.get('*', (req, res) => {
 
 const httpServer = http.createServer(app);
 // Each Speech Engine attach() adds its own 'upgrade' listener to route its
-// own WS path — one per voice, legitimately (19 currently: 6 coaches + 13
-// Cold Open voices), comfortably past Node's default max-listeners warning
-// threshold of 10. Real, expected count here, not a leak.
-httpServer.setMaxListeners(Object.keys(SPEECH_ENGINES).length + 10);
+// own WS path — one per voice, legitimately (SPEECH_ENGINE_VOICE_DEFS.length
+// currently: one per coach + one per Cold Open pool voice), comfortably past
+// Node's default max-listeners warning threshold of 10. Real, expected count
+// here, not a leak. Sized off SPEECH_ENGINE_VOICE_DEFS (fixed at file load)
+// rather than SPEECH_ENGINES (still empty here — populated later, async, at
+// the top of startServer()) so this is correct on the very first boot.
+httpServer.setMaxListeners(SPEECH_ENGINE_VOICE_DEFS.length + 10);
 
 // Every engine shares this exact handler — the LLM/prompt logic doesn't
 // care which physical engine (i.e. which fixed voice) carried the
@@ -703,6 +759,12 @@ const speechEngineHandler = {
 };
 
 async function startServer() {
+  if (process.env.ELEVENLABS_API_KEY) {
+    await provisionSpeechEngines();
+  } else {
+    console.log('ELEVENLABS_API_KEY not set — Speech Engine voices not provisioned (Voice Session/Cold Open/Debate will report an error until configured)');
+  }
+
   const entries = Object.entries(SPEECH_ENGINES).filter(([, id]) => !!id);
   if (entries.length) {
     for (const [voiceKey, engineId] of entries) {
@@ -718,8 +780,6 @@ async function startServer() {
         console.error(`Failed to attach Speech Engine for ${voiceKey}:`, err.message);
       }
     }
-  } else {
-    console.log('No SPEECH_ENGINE_ID_* env vars set — Speech Engine not attached (Voice Session/Cold Open/Debate will report an error until configured)');
   }
 
   httpServer.listen(PORT, () => {
