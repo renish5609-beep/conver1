@@ -3,10 +3,63 @@ const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
 const path = require('path');
+const http = require('http');
 const { createClient } = require('@supabase/supabase-js');
+const { ElevenLabsClient } = require('@elevenlabs/elevenlabs-js');
+const Anthropic = require('@anthropic-ai/sdk');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// ── ElevenLabs Speech Engine (Voice Session / Cold Open / Debate) ──────────────
+// Bridges ElevenLabs' STT+TTS to our own Claude call — see the engine.attach()
+// block near the bottom of this file. anthropic here is a real SDK client
+// (unlike /api/chat below, which is a raw-fetch proxy) because
+// session.sendResponse() needs a real streaming async-iterable to auto-parse.
+const el = new ElevenLabsClient({ apiKey: process.env.ELEVENLABS_API_KEY });
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const SPEECH_ENGINE_ID = process.env.SPEECH_ENGINE_ID;
+// conversationId -> { mode, systemPrompt, maxRounds }. Keyed by the REAL
+// conversationId that getWebrtcToken() already returns up front (see the
+// /api/speech-engine-token route) — not a guessed/pending key, so there's no
+// window where onInit can't find its own session's metadata.
+const sessionMeta = new Map();
+
+// Same regex-based tone heuristic already used client-side for Warmup/Practice
+// Lab (kept there — out of scope for this migration). Ported here because the
+// Speech Engine's onTranscript handler runs server-side now, where the
+// equivalent per-turn tone-aware system prompt needs to be built.
+function detectTone(text) {
+  if (!text) return null;
+  const t = text.toLowerCase();
+  if (/\b(haha|lol|hehe|lmao|funny|laugh|hilarious|cracking up)\b/.test(t)) return 'amused and laughing';
+  if (/\b(frustrat|annoyed|pissed|angry|damn|ugh|argh|ridiculous|stupid|hate)\b/.test(t)) return 'frustrated';
+  if (/\b(nervous|anxious|scared|worried|not sure|i think|maybe|kind of|sort of|i guess|honestly)\b/.test(t) || (t.match(/\b(um|uh|er)\b/g) || []).length >= 2) return 'nervous or uncertain';
+  if (/\b(definitely|absolutely|clearly|i know|for sure|certain|confident|strong|exactly)\b/.test(t)) return 'confident';
+  if (/\b(excited|amazing|incredible|awesome|love it|can't wait|pumped|thrilled)\b/.test(t)) return 'excited';
+  if (/\b(tired|exhausted|drained|burned out|slow|struggling|hard time)\b/.test(t)) return 'tired or low energy';
+  if (/\b(i think|i believe|in my opinion|from my perspective|reflecting|considering|actually)\b/.test(t)) return 'thoughtful and reflective';
+  return null;
+}
+
+// Appends the same per-turn dynamic context the old client-side prompts used
+// to compute fresh each turn (tone, and for Debate, round number/"final
+// round" wording) onto the static base prompt the client sent once at
+// session start. Recomputed from the transcript Speech Engine hands us each
+// turn, so this stays accurate without the client needing to resend anything.
+function augmentSystemPrompt(meta, transcript) {
+  const userTurns = transcript.filter(m => m.role === 'user');
+  const lastUserText = userTurns.length ? userTurns[userTurns.length - 1].content : '';
+  const tone = detectTone(lastUserText);
+  let extra = tone ? ` The person sounds ${tone}.` : '';
+  if (meta.mode === 'debate' && meta.maxRounds) {
+    const round = userTurns.length;
+    extra += round >= meta.maxRounds
+      ? ' This is the final round — give your strongest closing argument.'
+      : ` Round ${round} of ${meta.maxRounds}. Push back hard on their point with a direct counter-argument.`;
+  }
+  return meta.systemPrompt + extra;
+}
 
 app.use(cors());
 app.use(express.json());
@@ -448,6 +501,40 @@ app.get('/api/deepgram-token', requireAuth, async (req, res) => {
   }
 });
 
+// ── ElevenLabs Speech Engine token (Voice Session / Cold Open / Debate) ────────
+// The client builds the same mode-appropriate system prompt it already knows
+// how to build (coach persona, scenario, briefing, framework — all the logic
+// already in index.html for these 3 modes) and sends the rendered text here
+// once per session, rather than this endpoint trying to duplicate that
+// client-side prompt-construction logic server-side. Per-turn dynamics (tone,
+// debate round) get layered on top server-side in augmentSystemPrompt() above,
+// recomputed fresh from the live transcript each turn.
+app.post('/api/speech-engine-token', requireAuth, async (req, res) => {
+  if (!SPEECH_ENGINE_ID) {
+    return res.status(500).json({ error: 'Speech Engine not configured (missing SPEECH_ENGINE_ID)' });
+  }
+  const { mode, systemPrompt, maxRounds } = req.body;
+  if (!mode || !systemPrompt) {
+    return res.status(400).json({ error: 'mode and systemPrompt are required' });
+  }
+  try {
+    const response = await el.conversationalAi.conversations.getWebrtcToken({
+      agentId: SPEECH_ENGINE_ID,
+      participantName: req.user.id,
+    });
+    // getWebrtcToken() already returns the conversationId this token will
+    // resolve to — store metadata under that real ID now, so onInit/
+    // onTranscript (which only ever see conversationId, not this token) can
+    // look it up directly. No guessing, no "pending:" placeholder key.
+    sessionMeta.set(response.conversationId, { mode, systemPrompt, maxRounds });
+    setTimeout(() => sessionMeta.delete(response.conversationId), 30 * 60 * 1000);
+    res.json({ token: response.token, conversationId: response.conversationId });
+  } catch (err) {
+    console.error('Speech Engine token error:', err);
+    res.status(500).json({ error: 'Failed to generate token' });
+  }
+});
+
 // ── Contact Form ─────────────────────────────────────────────
 const { Resend } = require('resend');
 
@@ -511,7 +598,71 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`\nConver running at http://localhost:${PORT}\n`);
-  console.log('ElevenLabs voices loaded\n');
-});
+const httpServer = http.createServer(app);
+
+async function startServer() {
+  if (SPEECH_ENGINE_ID) {
+    try {
+      const engine = await el.speechEngine.get(SPEECH_ENGINE_ID);
+      engine.attach(httpServer, '/speech-engine/ws', {
+        debug: false,
+        onInit(conversationId, session) {
+          console.log('Speech Engine session started:', conversationId, sessionMeta.has(conversationId) ? '(meta found)' : '(NO META — token endpoint was skipped or meta already expired)');
+        },
+        async onTranscript(transcript, signal, session) {
+          const meta = sessionMeta.get(session.conversationId);
+          if (!meta) {
+            // No metadata means this connection didn't come through our own
+            // /api/speech-engine-token endpoint (or it expired) — nothing
+            // safe to do except decline to respond.
+            console.error('Speech Engine transcript with no session metadata:', session.conversationId);
+            return;
+          }
+          const messages = transcript.map(m => ({
+            role: m.role === 'agent' ? 'assistant' : 'user',
+            content: m.content,
+          }));
+          try {
+            const stream = await anthropic.messages.create({
+              model: 'claude-sonnet-4-5',
+              max_tokens: 1024,
+              system: augmentSystemPrompt(meta, transcript),
+              messages,
+              stream: true,
+            }, { signal });
+            await session.sendResponse(stream);
+          } catch (err) {
+            if (err?.name === 'AbortError') return; // user interrupted — expected, not an error
+            console.error('Speech Engine LLM error:', err);
+            await session.sendResponse('Sorry, I had trouble responding — could you say that again?');
+          }
+        },
+        onClose(session) {
+          sessionMeta.delete(session.conversationId);
+        },
+        onDisconnect(session) {
+          sessionMeta.delete(session.conversationId);
+        },
+        onError(err, session) {
+          console.error('Speech Engine error:', err);
+        },
+      });
+      console.log('Speech Engine attached at /speech-engine/ws');
+    } catch (err) {
+      // App still starts — Voice Session/Cold Open/Debate's Speech Engine
+      // path will fail per-request (the token endpoint returns 500) rather
+      // than the whole server refusing to boot over one misconfigured
+      // integration.
+      console.error('Failed to attach Speech Engine:', err.message);
+    }
+  } else {
+    console.log('SPEECH_ENGINE_ID not set — Speech Engine not attached (Voice Session/Cold Open/Debate will report an error until this is configured)');
+  }
+
+  httpServer.listen(PORT, () => {
+    console.log(`\nConver running at http://localhost:${PORT}\n`);
+    console.log('ElevenLabs voices loaded\n');
+  });
+}
+
+startServer();

@@ -8,6 +8,20 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@11labs/client@latest/dist/index.umd.js"></script>
+<!-- Separate package from the one above (@11labs/client is ElevenLabs' old
+     pre-rebrand name, pinned at 0.2.0 and — checked directly — its UMD build
+     attaches to window.client when loaded via a plain <script> tag, not
+     window.ElevenLabsClient like the code above assumes; that pre-existing
+     assumption was already dead, so this doesn't newly conflict with
+     anything). @elevenlabs/client is the current, actively developed
+     package with real WebRTC/conversationToken support, needed for the
+     Speech Engine integration below. Its dist/lib.iife.js is a genuinely
+     self-contained bundle (livekit-client and everything else inlined, ~1MB)
+     built for exactly this no-bundler <script>-tag use case — verified by
+     inspecting the published package, not assumed. If this CDN ever fails
+     to load inside the iOS WKWebView, the fix is to download this exact
+     file and inline it here instead of loading it remotely. -->
+<script src="https://cdn.jsdelivr.net/npm/@elevenlabs/client/dist/lib.iife.js"></script>
 <!-- MediaPipe Face Mesh — runs in browser via WebAssembly -->
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
@@ -6782,6 +6796,101 @@ function _veUnlockAudio() {
   } catch(e) { /* non-fatal */ }
 }
 
+// ── ELEVENLABS SPEECH ENGINE (Voice Session / Cold Open / Debate only) ────────
+// True speech-to-speech: one WebRTC connection to ElevenLabs replaces the old
+// Deepgram(STT) -> callAI(LLM) -> /api/speak(TTS) chain for these 3 modes.
+// Warmup still uses VoiceEngine below (it genuinely uses voice, despite the
+// migration spec's assumption otherwise — confirmed by reading its actual
+// code before touching anything) and Practice Lab is text-only; neither is
+// touched here.
+//
+// window.ElevenLabsClient here is the @elevenlabs/client package loaded
+// above (script tag right after the older @11labs/client one) — verified
+// against the actual published package, not assumed from the migration spec,
+// which had several concrete inaccuracies (wrong CDN file, wrong global name,
+// wrong field casing) corrected here.
+
+// Same overlay-targeting pattern as VoiceEngine._updateUI() below — kept as
+// its own function with its own status vocabulary ('connected'/'speaking'/
+// etc, the Speech Engine's own terms) rather than overloading VoiceEngine's
+// ('coach-speaking'/'user-speaking') to avoid two callers with different
+// state names fighting over one translation table.
+function updateSpeechEngineOverlayUI(status) {
+  const statusEl = document.getElementById('ve-status');
+  const stateEl = document.getElementById('ve-state-label');
+  const states = {
+    connected:    { status: 'Connected',            orb: 'idle',       label: 'Starting...' },
+    speaking:     { status: 'Coach speaking',        orb: 'speaking',  label: 'Coach is speaking' },
+    listening:    { status: 'Your turn — speak freely', orb: 'listening', label: 'Listening to you' },
+    disconnected: { status: '',                      orb: 'idle',       label: '' },
+  };
+  const s = states[status] || states.disconnected;
+  if (statusEl) statusEl.textContent = s.status;
+  if (stateEl) stateEl.textContent = s.label;
+  const overlayOrb = document.querySelector('#ve-coach-avatar-container .coach-orb');
+  if (overlayOrb) {
+    overlayOrb.classList.remove('speaking', 'listening', 'processing');
+    if (s.orb !== 'idle') overlayOrb.classList.add(s.orb);
+  }
+}
+
+class SpeechEngineSession {
+  constructor({ mode, systemPrompt, firstMessage, maxRounds, onStatus, onMessage, onError }) {
+    this.mode = mode;
+    this.systemPrompt = systemPrompt;
+    this.firstMessage = firstMessage;
+    this.maxRounds = maxRounds;
+    this.onStatus = onStatus || (() => {});
+    this.onMessage = onMessage || (() => {});
+    this.onError = onError || console.error;
+    this.conv = null;
+    this.active = false;
+  }
+
+  async start() {
+    // Triggers the iOS mic permission prompt if not yet granted, same as
+    // every other voice mode in this app.
+    await navigator.mediaDevices.getUserMedia({ audio: true });
+
+    const res = await fetch('/api/speech-engine-token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + (authToken || ''),
+      },
+      body: JSON.stringify({ mode: this.mode, systemPrompt: this.systemPrompt, maxRounds: this.maxRounds }),
+    });
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(e.error || 'Failed to start speech session');
+    }
+    const { token } = await res.json();
+
+    const ElevenLabs = window.ElevenLabsClient;
+    if (!ElevenLabs || !ElevenLabs.Conversation) {
+      throw new Error('Voice engine failed to load — check your connection and try again.');
+    }
+
+    this.conv = await ElevenLabs.Conversation.startSession({
+      conversationToken: token,
+      overrides: this.firstMessage ? { agent: { firstMessage: this.firstMessage } } : undefined,
+      onConnect: () => { this.active = true; this.onStatus('connected'); },
+      onDisconnect: () => { this.active = false; this.onStatus('disconnected'); },
+      onMessage: ({ role, message }) => this.onMessage(role, message),
+      onModeChange: ({ mode }) => this.onStatus(mode), // 'speaking' or 'listening'
+      onError: (message) => this.onError(new Error(message)),
+    });
+  }
+
+  async stop() {
+    if (this.conv) { await this.conv.endSession(); this.conv = null; }
+    this.active = false;
+    this.onStatus('disconnected');
+  }
+
+  get isActive() { return this.active; }
+}
+
 const VoiceEngine = {
   active: false,
   mode: null,           // 'voice' | 'coldopen' | 'debate' | 'warmup'
@@ -8406,7 +8515,12 @@ let isListeningVoice = false;
 // pre-session picker.)
 
 // ── VOICE-NATIVE: fully immersive Voice Session (VoiceEngine-driven) ──────────
-function startVoiceSession() {
+// The single active SpeechEngineSession across Voice/Cold Open/Debate — set
+// here, read by endVoiceNativeSession() below to know a Speech Engine session
+// (not a VoiceEngine one — Warmup still uses that) is what needs stopping.
+let activeSpeechEngineSession = null;
+
+async function startVoiceSession() {
   const coach = currentVoiceCoach || S.coach || 'Blaze';
   const coachData = COACH_DATA?.[coach] || { emoji:'', subtitle:'Your Coach', color:'#7c6fff' };
 
@@ -8424,7 +8538,7 @@ function startVoiceSession() {
   if (avatarContainer && typeof createCoachOrb === 'function') {
     avatarContainer.innerHTML = createCoachOrb(coach, 'xl', false);
   }
-  VoiceEngine._currentCoach = coach;
+  VoiceEngine._currentCoach = coach; // still used by setOrbState()/UI helpers shared with Warmup
   document.getElementById('ve-coach-name').textContent = coach;
   document.getElementById('ve-coach-role').textContent = coachData.subtitle || '';
 
@@ -8432,16 +8546,14 @@ function startVoiceSession() {
   document.getElementById('ve-history').innerHTML = '';
   S.voiceChatHistory = [];
 
-  // Build coach system prompt
+  // Build coach system prompt — identical to the prompt this mode has always
+  // used, just sent to our server once via the token request instead of
+  // passed to callAI() directly on every turn.
   const c = COACHES?.[coach] || {};
   const briefCtx = S.briefing
     ? `User is preparing for "${S.briefing.preparing}". Background: "${S.briefing.role}". Wants to improve: "${S.briefing.improve}".`
     : 'Ask the user what they want to work on.';
   const extras = typeof buildSystemPromptExtras === 'function' ? buildSystemPromptExtras() : '';
-  // Just the framework's one-line summary, not the full rubric block — this
-  // prompt drives a live back-and-forth voice conversation capped at 2-3
-  // sentences per turn, so the full multi-paragraph framework would dominate
-  // the prompt for no benefit the model could actually act on out loud.
   const voiceFrameworkLine = getFrameworkForScenario(S.scenario).split('\n')[1] || '';
   const systemPrompt = `You are ${coach}, a conversation coach on Conver. ${c.style || ''} ${briefCtx} ${extras}
 Session type: ${S.scenario}. ${voiceFrameworkLine}
@@ -8454,28 +8566,6 @@ VOICE RULES — CRITICAL:
 - Be direct, engaging, alive — not robotic or formal.
 - You are having a real spoken conversation, not writing an essay.`;
 
-  // Start VoiceEngine
-  VoiceEngine.start('voice', async (userText, tone) => {
-    // Add user message to history display
-    _veAddHistory('You', userText, true);
-    S.voiceChatHistory.push({ role: 'user', content: userText });
-
-    // Build tone-aware prompt
-    const toneNote = tone ? `The user sounds ${tone} right now — acknowledge this naturally in your response.` : '';
-    const fullSystem = systemPrompt + (toneNote ? ' ' + toneNote : '');
-
-    try {
-      const reply = await callAI(S.voiceChatHistory, fullSystem);
-      S.voiceChatHistory.push({ role: 'assistant', content: reply });
-      _veAddHistory(coach, reply, false);
-      // Speak then auto-listen
-      await VoiceEngine.speakThenListen(reply, null, coach);
-    } catch(e) {
-      _veHandleError(e);
-    }
-  });
-
-  // Coach speaks first
   const openings = {
     Blaze: "Alright. No warm-up. What are we fixing today?",
     Echo: "Hey. I'm here. What's on your mind — let's talk it through.",
@@ -8485,9 +8575,37 @@ VOICE RULES — CRITICAL:
     Luna: "Take your time. What would be most helpful right now?"
   };
   const opening = openings[coach] || openings.Blaze;
-  S.voiceChatHistory.push({ role: 'assistant', content: opening });
-  _veAddHistory(coach, opening, false);
-  VoiceEngine.speakThenListen(opening, null, coach);
+
+  const session = new SpeechEngineSession({
+    mode: 'voice',
+    systemPrompt,
+    firstMessage: opening,
+    onStatus: updateSpeechEngineOverlayUI,
+    onMessage(role, text) {
+      const isUser = role === 'user';
+      _veAddHistory(isUser ? 'You' : coach, text, isUser);
+      // Same field every existing Voice Session code (scoreVoiceSession,
+      // Insights, History) already reads — keeping this unchanged means
+      // none of that downstream code needs to know the audio pipeline
+      // underneath it changed at all.
+      S.voiceChatHistory.push({ role: isUser ? 'user' : 'assistant', content: text });
+    },
+    onError(err) {
+      console.error('Voice Session (Speech Engine) error:', err);
+      showToast('', 'Voice connection lost — try again.');
+      endVoiceNativeSession();
+    },
+  });
+  activeSpeechEngineSession = session;
+  try {
+    await session.start();
+  } catch (e) {
+    console.error('Failed to start Voice Session:', e);
+    showToast('', e.message || 'Could not start voice session.');
+    activeSpeechEngineSession = null;
+    overlay.classList.remove('active');
+    overlay.style.display = 'none';
+  }
 }
 
 function _veAddHistory(who, text, isUser, variant) {
@@ -8522,26 +8640,41 @@ function _veHandleError(err) {
 // not just closing the overlay and leaving coState.running / debateRunning stuck
 // true, which would leave the page behind the overlay in a stale, confusing state.
 // If the user made real progress, score what they did rather than discarding it.
-function endVoiceNativeSession() {
+async function endVoiceNativeSession() {
+  // Voice Session / Cold Open / Debate now run on SpeechEngineSession, not
+  // VoiceEngine — check for that first. Warmup is the only mode still on
+  // VoiceEngine, handled by the branch below exactly as before.
+  if (activeSpeechEngineSession) {
+    const mode = activeSpeechEngineSession.mode;
+    await activeSpeechEngineSession.stop();
+    activeSpeechEngineSession = null;
+    const overlay = document.getElementById('voice-immersive-overlay');
+    overlay.classList.remove('active');
+    overlay.style.display = 'none';
+
+    if (mode === 'coldopen') {
+      if (coState.turns >= 1) endColdOpen(); else resetColdOpen();
+    } else if (mode === 'debate') {
+      if (debateRound >= 1) scoreDebate(); else resetDebate();
+    } else if (mode === 'voice') {
+      showBackBtn(false);
+      const realTurns = S.voiceChatHistory.filter(m => m.role === 'user').length;
+      if (realTurns >= 1) scoreVoiceSession(); else {
+        const p = document.getElementById('voice-score-panel');
+        if (p) p.style.display = 'none';
+      }
+    }
+    return;
+  }
+
   const mode = VoiceEngine.mode;
   VoiceEngine.stop();
   const overlay = document.getElementById('voice-immersive-overlay');
   overlay.classList.remove('active');
   overlay.style.display = 'none';
 
-  if (mode === 'coldopen') {
-    if (coState.turns >= 1) endColdOpen(); else resetColdOpen();
-  } else if (mode === 'debate') {
-    if (debateRound >= 1) scoreDebate(); else resetDebate();
-  } else if (mode === 'warmup') {
+  if (mode === 'warmup') {
     resetWarmup();
-  } else if (mode === 'voice') {
-    showBackBtn(false);
-    const realTurns = S.voiceChatHistory.filter(m => m.role === 'user').length;
-    if (realTurns >= 1) scoreVoiceSession(); else {
-      const p = document.getElementById('voice-score-panel');
-      if (p) p.style.display = 'none';
-    }
   }
 }
 
@@ -9394,7 +9527,7 @@ async function startDebate() {
 
 // ── VOICE-NATIVE: fully immersive Live Debate (VoiceEngine-driven) ────────────
 // Opponent = debateCoachB (the coach the user picked to challenge them in setup)
-function startDebateVoice() {
+async function startDebateVoice() {
   const overlay = document.getElementById('voice-immersive-overlay');
   overlay.classList.add('active');
   overlay.style.display = 'flex';
@@ -9408,52 +9541,57 @@ function startDebateVoice() {
   document.getElementById('ve-coach-role').textContent = 'Live Debate · ' + (debateTopic || 'Open Topic');
   document.getElementById('ve-history').innerHTML = '';
 
-  const debateVoiceHistory = [];
   const maxRounds = S.debateRounds || 3;
-
-  VoiceEngine.start('debate', async (userText, tone) => {
-    debateRound++;
-    debateUserArgs.push(userText);
-    debateVoiceHistory.push({ role: 'user', content: userText });
-    _veAddHistory('You', userText, true);
-    updateDebateRound();
-
-    const toneNote = tone ? ` The opponent sounds ${tone}.` : '';
-    const isLast = debateRound >= maxRounds;
-    const sys = `You are ${debateCoachB}, a sharp debate opponent on the topic: "${debateTopic || 'the assigned topic'}". ${toneNote} ${isLast ? 'This is the final round — give your strongest closing argument.' : `Round ${debateRound} of ${maxRounds}. Push back hard on their point with a direct counter-argument.`} 2-3 sentences max. No asterisks or stage directions. Speak like you are actually debating live.`;
-    // Your own coach checks in on the side each round — this isn't just a 1v1
-    // against the opponent; the coach the user picked in setup should stay
-    // present, reacting to what was just said and coaching them for next round.
-    // Runs in parallel with the opponent's reply so it doesn't add latency, and
-    // renders as a quiet text aside rather than interrupting the opponent's TTS.
-    const tipSys = isLast ? null : `You are ${debateCoachA}, the user's own debate coach watching from the side. Topic: "${debateTopic || 'the assigned topic'}". They just argued: "${userText}". In ONE short sentence, give them a quick tactical tip or encouragement for the next round. No asterisks or stage directions, plain spoken words only.`;
-
-    try {
-      const [reply, tip] = await Promise.all([
-        callAI(debateVoiceHistory, sys),
-        tipSys ? callAI([{role:'user', content: userText}], tipSys).catch(() => null) : Promise.resolve(null)
-      ]);
-      debateVoiceHistory.push({ role: 'assistant', content: reply });
-      debateOppResponses.push(reply);
-      if (tip) _veAddHistory(debateCoachA, tip.trim(), false, 'tip');
-      _veAddHistory(debateCoachB, reply, false);
-
-      if (isLast) {
-        await VoiceEngine._playTTS(reply, null, debateCoachB);
-        VoiceEngine.stop();
-        overlay.classList.remove('active');
-        overlay.style.display = 'none';
-        await scoreDebate();
-      } else {
-        await VoiceEngine.speakThenListen(reply, null, debateCoachB);
-      }
-    } catch(e) { _veHandleError(e); }
-  });
-
-  // Opponent opens with the topic position
+  // Round-aware wording ("Round N of M" / "final round — closing argument")
+  // is appended server-side each turn (see augmentSystemPrompt in server.js),
+  // computed from maxRounds sent below plus the live transcript's user-turn
+  // count — same per-round escalation as before, just computed on the other
+  // side of the wire now.
+  const systemPrompt = `You are ${debateCoachB}, a sharp debate opponent on the topic: "${debateTopic || 'the assigned topic'}". 2-3 sentences max. No asterisks or stage directions. Speak like you are actually debating live.`;
   const opener = `Let's debate: ${debateTopic || 'today\'s topic'}. I'll take the opposing position. You go first — make your opening argument.`;
-  _veAddHistory(debateCoachB, opener, false);
-  VoiceEngine.speakThenListen(opener, null, debateCoachB);
+
+  // KNOWN SIMPLIFICATION: the old pipeline ran a second, parallel LLM call
+  // each round for debateCoachA (the user's own coach) to chime in with a
+  // text-only tactical tip alongside the opponent's spoken reply. Speech
+  // Engine's session.sendResponse() speaks exactly one reply per turn — there's
+  // no clean way to inject a second, independent voice/text aside into that
+  // single-response model. Dropped for the Speech Engine debate path rather
+  // than force-fit it; flagged here and in the handoff notes, not silently
+  // lost.
+  const session = new SpeechEngineSession({
+    mode: 'debate',
+    systemPrompt,
+    firstMessage: opener,
+    maxRounds,
+    onStatus: updateSpeechEngineOverlayUI,
+    onMessage(role, text) {
+      const isUser = role === 'user';
+      _veAddHistory(isUser ? 'You' : debateCoachB, text, isUser);
+      if (isUser) {
+        debateRound++;
+        debateUserArgs.push(text);
+        updateDebateRound();
+      } else {
+        debateOppResponses.push(text);
+        if (debateRound >= maxRounds) endVoiceNativeSession(); // same final-round auto-end as before
+      }
+    },
+    onError(err) {
+      console.error('Debate (Speech Engine) error:', err);
+      showToast('', 'Voice connection lost — try again.');
+      endVoiceNativeSession();
+    },
+  });
+  activeSpeechEngineSession = session;
+  try {
+    await session.start();
+  } catch (e) {
+    console.error('Failed to start Debate voice:', e);
+    showToast('', e.message || 'Could not start voice session.');
+    activeSpeechEngineSession = null;
+    overlay.classList.remove('active');
+    overlay.style.display = 'none';
+  }
 }
 
 function updateDebateRound() {
@@ -10687,7 +10825,7 @@ async function startColdOpen() {
 }
 
 // ── VOICE-NATIVE: fully immersive Cold Open (VoiceEngine-driven) ──────────────
-function startColdOpenVoice(scenario) {
+async function startColdOpenVoice(scenario) {
   const overlay = document.getElementById('voice-immersive-overlay');
   overlay.classList.add('active');
   overlay.style.display = 'flex';
@@ -10704,40 +10842,45 @@ function startColdOpenVoice(scenario) {
   document.getElementById('ve-coach-role').textContent = scenario.role;
   document.getElementById('ve-history').innerHTML = '';
 
-  const conversationHistory = [];
+  // Base prompt is static for the whole session (tone is the only per-turn
+  // dynamic — the server recomputes and appends that fresh each turn, same
+  // as before just relocated).
+  const systemPrompt = `You are ${scenario.person}, ${scenario.role}. Context: ${scenario.setup} Stay completely in character as a real human. 1-2 short sentences. No feedback, no coaching — just react like a real person would. Never use asterisks, brackets, or stage directions of any kind. Express all reactions through spoken words only.`;
 
-  VoiceEngine.start('coldopen', async (userText, tone) => {
-    conversationHistory.push({ role: 'user', content: userText });
-    coState.history.push({ role: 'user', content: userText });
-    coState.turns++;
-    _veAddHistory('You', userText, true);
-
-    const toneNote = tone ? ` The person sounds ${tone}.` : '';
-    const sys = `You are ${scenario.person}, ${scenario.role}. Context: ${scenario.setup}${toneNote} Stay completely in character as a real human. 1-2 short sentences. No feedback, no coaching — just react like a real person would. Never use asterisks, brackets, or stage directions of any kind. Express all reactions through spoken words only.`;
-
-    try {
-      const reply = await callAI(conversationHistory, sys);
-      conversationHistory.push({ role: 'assistant', content: reply });
-      coState.history.push({ role: 'assistant', content: reply });
-      _veAddHistory(scenario.person, reply, false);
-
-      if (coState.turns >= 5) {
-        // End session and score it
-        await VoiceEngine.speakThenListen(reply, coState.voiceId, S.coach);
-        VoiceEngine.stop();
-        overlay.classList.remove('active');
-        overlay.style.display = 'none';
-        endColdOpen();
-      } else {
-        await VoiceEngine.speakThenListen(reply, coState.voiceId, S.coach);
+  const session = new SpeechEngineSession({
+    mode: 'coldopen',
+    systemPrompt,
+    firstMessage: scenario.opener,
+    onStatus: updateSpeechEngineOverlayUI,
+    onMessage(role, text) {
+      const isUser = role === 'user';
+      _veAddHistory(isUser ? 'You' : scenario.person, text, isUser);
+      // Same fields endColdOpen()/scoring already reads.
+      coState.history.push({ role: isUser ? 'user' : 'assistant', content: text });
+      if (isUser) {
+        coState.turns++;
+        if (coState.turns >= 5) endVoiceNativeSession(); // same 5-exchange auto-end as before
       }
-    } catch(e) { _veHandleError(e); }
+    },
+    onError(err) {
+      console.error('Cold Open (Speech Engine) error:', err);
+      showToast('', 'Voice connection lost — try again.');
+      endVoiceNativeSession();
+    },
   });
-
-  // Scenario person speaks the opener first
-  _veAddHistory(scenario.person, scenario.opener, false);
-  coState.history.push({ role: 'assistant', content: scenario.opener });
-  VoiceEngine.speakThenListen(scenario.opener, coState.voiceId, S.coach);
+  activeSpeechEngineSession = session;
+  // Opener isn't pushed to coState.history here — the Speech Engine speaks
+  // firstMessage itself and reports it back through onMessage like any other
+  // turn, so it lands in history exactly once either way.
+  try {
+    await session.start();
+  } catch (e) {
+    console.error('Failed to start Cold Open voice:', e);
+    showToast('', e.message || 'Could not start voice session.');
+    activeSpeechEngineSession = null;
+    overlay.classList.remove('active');
+    overlay.style.display = 'none';
+  }
 }
 
 function drawCOFace(){
