@@ -1,6 +1,7 @@
 import UIKit
 import Capacitor
 import AVFoundation
+import WebKit
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -8,6 +9,32 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        // capacitor.config.json points server.url at the live
+        // https://conver.services/app — this app is really just a thin
+        // native shell around that remote page, so every deploy to the
+        // server is supposed to reach it automatically on next launch. But
+        // WKWebView's on-disk HTTP cache persists across app updates (it
+        // lives in the app container, which TestFlight/App Store updates
+        // don't wipe), so it can go on serving an old cached copy of
+        // index.html indefinitely with no visible error — confirmed via
+        // server-side request logging: TestFlight requests were arriving
+        // without even the debug instrumentation's own request header,
+        // meaning the JS actually running predated that commit entirely.
+        // Clearing the disk/memory HTTP cache (NOT cookies or localStorage
+        // — that's where Supabase persists the signed-in session, and
+        // wiping it would force a re-login on every single launch) before
+        // this runs, in every launch, guarantees the webview always fetches
+        // index.html fresh from conver.services instead of from its cache.
+        let cacheTypes: Set<String> = [
+            WKWebsiteDataTypeDiskCache,
+            WKWebsiteDataTypeMemoryCache,
+            WKWebsiteDataTypeOfflineWebApplicationCache
+        ]
+        WKWebsiteDataStore.default().removeData(
+            ofTypes: cacheTypes,
+            modifiedSince: Date(timeIntervalSince1970: 0)
+        ) {}
+
         // Override point for customization after application launch.
         //
         // Without this, iOS mutes ALL HTML5 <audio> playback (every coach
