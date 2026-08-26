@@ -4658,6 +4658,45 @@ h1, h2, h3 {
 </div>
 
 <script>
+// ── Build/cache diagnostics (temporary — iOS "invalid token" investigation) ───
+// Stamped by hand at edit time; bump this string whenever index.html
+// changes. Sent as X-Client-Build on every /api request so Render's logs
+// show exactly which build actually issued a given request. If the
+// TestFlight app is serving a stale WKWebView-cached copy of this file, API
+// calls will keep showing up server-side carrying an OLD build id even
+// after a new version is deployed — that's the tell that distinguishes
+// "iOS is running stale JS" from "iOS is running current JS but the token
+// itself is bad." Also logged to the console on load so it's visible via
+// Safari's remote Web Inspector if the device is connected to a Mac.
+const CLIENT_BUILD = '2026-08-26-authdebug-1';
+console.log('[Conver] index.html build:', CLIENT_BUILD);
+
+// Wraps every fetch() call app-wide — no call sites touched — to: (a) stamp
+// X-Client-Build, (b) log the first 10 chars of any Bearer token right at
+// the point it's attached to a /api/ request (never the full token), and
+// (c) log 401s with that same prefix + endpoint, so an "invalid token"
+// failure is traceable from the console alone. Safe to remove once the iOS
+// token issue is confirmed fixed.
+(function instrumentFetchForAuthDebug() {
+  const nativeFetch = window.fetch.bind(window);
+  window.fetch = async function (input, init) {
+    const url = typeof input === 'string' ? input : (input && input.url) || '';
+    const isApi = url.startsWith('/api/');
+    if (!isApi) return nativeFetch(input, init);
+    const opts = init ? { ...init } : {};
+    opts.headers = new Headers(opts.headers || (input && typeof input !== 'string' && input.headers) || {});
+    opts.headers.set('X-Client-Build', CLIENT_BUILD);
+    const authHeader = opts.headers.get('Authorization') || '';
+    const tokenPrefix = authHeader.startsWith('Bearer ') ? authHeader.slice(7, 17) : '';
+    console.log('[Conver Auth] ->', url, '| token:', tokenPrefix ? tokenPrefix + '…' : '(empty)', '| build:', CLIENT_BUILD);
+    const res = await nativeFetch(input, opts);
+    if (res.status === 401) {
+      console.warn('[Conver Auth] 401 <-', url, '| token was:', tokenPrefix ? tokenPrefix + '…' : '(empty)', '| build:', CLIENT_BUILD);
+    }
+    return res;
+  };
+})();
+
 // ── ELEVENLABS SCRIBE STT MANAGER ────────────────────────────
 // Replaces webkitSpeechRecognition across all modes
 // Uses Scribe v2 Realtime: ~150ms latency, filler word removal, 90+ languages

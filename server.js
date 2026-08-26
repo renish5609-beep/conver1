@@ -305,11 +305,37 @@ app.post('/api/auth/signout', async (req, res) => {
 });
 
 // ── User data routes ──────────────────────────────────────────────────────────
+// Temporary debug instrumentation for the iOS "invalid token" investigation
+// (v1.2.2 TestFlight) — logs the token prefix (never the full token) plus
+// the client's build stamp (X-Client-Build, set by the fetch wrapper in
+// index.html) and the *specific* Supabase error, not just "invalid token".
+// This is what tells the three failure modes apart from Render's logs alone,
+// without needing physical access to the device:
+//   - no X-Client-Build header at all / an OLD build id -> the WKWebView is
+//     serving a stale cached copy of index.html, not the deployed one.
+//   - current build id + empty token prefix -> client never attached a
+//     token (authToken was null/undefined when the request fired).
+//   - current build id + a token prefix + a Supabase error -> the token was
+//     genuinely sent but Supabase rejected it (expired/malformed/wrong
+//     project) — the error field says which.
+// Safe to strip once the root cause is confirmed.
 async function requireAuth(req, res, next) {
   const token = req.headers.authorization?.replace('Bearer ', '');
-  if (!token) return res.status(401).json({ error: 'Not authenticated' });
+  const build = req.headers['x-client-build'] || '(no build header — pre-fix client or non-browser caller)';
+  const tokenPrefix = token ? token.slice(0, 10) + '…' : '(none)';
+  if (!token) {
+    console.warn('[authDebug] no token on', req.method, req.path, '| client build:', build);
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
   const { data: { user }, error } = await freshAuthClient().auth.getUser(token);
-  if (error || !user) return res.status(401).json({ error: 'Invalid token' });
+  if (error || !user) {
+    console.warn('[authDebug] rejected on', req.method, req.path,
+      '| client build:', build,
+      '| token:', tokenPrefix,
+      '| supabase error:', error?.message || '(no user returned, no error)',
+      '| server clock:', new Date().toISOString());
+    return res.status(401).json({ error: 'Invalid token' });
+  }
   req.user = user;
   req.token = token;
   next();
