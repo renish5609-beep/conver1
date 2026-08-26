@@ -11486,6 +11486,19 @@ const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 let sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 let currentUser = null;
 let authToken = null;
+// Every assignment to authToken goes through this so the console always
+// shows exactly which code path set it and to what (first 10 chars only) —
+// added to trace a persisting iOS "invalid JWT: token contains an invalid
+// number of segments" error even after confirming the client is running
+// fresh JS. A non-JWT value landing in authToken can only come from here,
+// so if the malformed-token error keeps happening, whichever `source` logs
+// right before it is the one assigning the bad value. Temporary — safe to
+// fold back into plain `authToken = x` once the root cause is confirmed.
+function setAuthToken(value, source) {
+  authToken = value;
+  console.log('[Conver Auth] authToken set from', source, ':',
+    value ? String(value).slice(0, 10) + '…' : '(empty/null)');
+}
 // Supabase auto-refreshes the access token in the background (default
 // autoRefreshToken: true) well before its ~1hr JWT expiry — but that refresh
 // only updates sbClient's own internal session, not this `authToken`
@@ -11499,8 +11512,9 @@ let authToken = null;
 // keep working fine on web, hitting the same server. This listener keeps
 // authToken in sync with every refresh so it's never stale.
 sbClient.auth.onAuthStateChange((event, session) => {
-  if (event === 'SIGNED_OUT') { authToken = null; return; }
-  if (session) authToken = session.access_token;
+  console.log('[Conver Auth] onAuthStateChange event:', event, '| session present:', !!session);
+  if (event === 'SIGNED_OUT') { setAuthToken(null, 'onAuthStateChange:' + event); return; }
+  if (session) setAuthToken(session.access_token, 'onAuthStateChange:' + event);
 });
 // Guest mode — no Supabase account, no cloud sync. authToken stays null,
 // which is exactly the flag every loadUserData()/saveUserData()/
@@ -11526,7 +11540,7 @@ async function checkEmailVerification() {
   try {
     const { data: { session } } = await sbClient.auth.getSession();
     if (!session) return false;
-    authToken = session.access_token;
+    setAuthToken(session.access_token, 'checkEmailVerification');
     currentUser = session.user;
     await afterSignIn(true);
     setTimeout(() => {
@@ -11544,7 +11558,7 @@ async function initAuth() {
   // Try to get token from localStorage (set by OAuth callback)
   const storedToken = localStorage.getItem('conver_token');
   if (storedToken) {
-    authToken = storedToken;
+    setAuthToken(storedToken, 'initAuth:conver_token localStorage');
     localStorage.removeItem('conver_token');
   }
   if (authToken) {
@@ -11555,7 +11569,7 @@ async function initAuth() {
     // Ensure the profile row exists before touching stats, same as
     // afterSignIn() does for the normal sign-in path.
     await fetch('/api/user/profile', {
-      method: 'POST', headers: {'Content-Type':'application/json','Authorization':'Bearer '+authToken}
+      method: 'POST', headers: {'Content-Type':'application/json','Authorization':'Bearer '+(authToken||'')}
     });
     await loadUserData();
     applyAvatarPhoto();
@@ -11570,7 +11584,7 @@ async function initAuth() {
   // ran on refresh.
   const { data: { session } } = await sbClient.auth.getSession();
   if (session) {
-    authToken = session.access_token;
+    setAuthToken(session.access_token, 'initAuth:getSession restore');
     currentUser = session.user;
     await afterSignIn();
   } else {
@@ -11672,7 +11686,7 @@ async function signIn() {
       btn.disabled = false; btn.textContent = 'Sign In';
       return;
     }
-    authToken = data.session.access_token;
+    setAuthToken(data.session.access_token, 'signIn:/api/auth/signin response');
     currentUser = data.user;
     // This goes through our own /api/auth/signin route (not sbClient directly),
     // so the browser's Supabase client never sees this session on its own —
@@ -11791,7 +11805,7 @@ async function afterSignIn(freshLogin = false) {
   currentUser = currentUser || {};
   // Create profile
   await fetch('/api/user/profile', {
-    method: 'POST', headers: {'Content-Type':'application/json','Authorization':'Bearer '+authToken}
+    method: 'POST', headers: {'Content-Type':'application/json','Authorization':'Bearer '+(authToken||'')}
   });
   // Now that currentUser.id is known, bring this account's own settings/
   // accent/avatar in from their namespaced keys (migrating from the old
@@ -11855,7 +11869,7 @@ async function loadUserData() {
   try {
     // Load stats
     const statsRes = await fetchWithRetry('/api/user/stats', {
-      headers: {'Authorization':'Bearer '+authToken}
+      headers: {'Authorization':'Bearer '+(authToken||'')}
     });
     if (statsRes.ok) {
       const { stats } = await statsRes.json();
@@ -11973,7 +11987,7 @@ async function loadUserData() {
     }
     // Load sessions
     const sessRes = await fetch('/api/user/sessions', {
-      headers: {'Authorization':'Bearer '+authToken}
+      headers: {'Authorization':'Bearer '+(authToken||'')}
     });
     if (sessRes.ok) {
       const { sessions } = await sessRes.json();
@@ -12057,7 +12071,7 @@ async function saveUserData(allowDecrease) {
       // keepalive lets the browser finish this specific request even after
       // the page that started it unloads.
       keepalive: true,
-      headers: {'Content-Type':'application/json','Authorization':'Bearer '+authToken},
+      headers: {'Content-Type':'application/json','Authorization':'Bearer '+(authToken||'')},
       body: JSON.stringify({
         allowDecrease: !!allowDecrease,
         stats: {
@@ -12110,7 +12124,7 @@ async function saveSessionToCloud(session) {
   try {
     await fetch('/api/user/session', {
       method: 'POST',
-      headers: {'Content-Type':'application/json','Authorization':'Bearer '+authToken},
+      headers: {'Content-Type':'application/json','Authorization':'Bearer '+(authToken||'')},
       body: JSON.stringify({
         session: {
           scenario: session.scenario, coach: session.coach,
