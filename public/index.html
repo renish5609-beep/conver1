@@ -11652,10 +11652,12 @@ async function checkEmailVerification() {
     if (!session) return false;
     setAuthToken(session.access_token, 'checkEmailVerification');
     currentUser = session.user;
-    await afterSignIn(true);
-    setTimeout(() => {
-      showToast('✓', 'Email verified! Welcome to Conver.');
-    }, 800);
+    // This is the FIRST time this account has ever actually landed in the
+    // app (signUp() only gets them as far as "check your email") — say so
+    // explicitly instead of afterSignIn()'s default "Welcome back!", which
+    // was previously shown here too for a jarring ~800ms before this same
+    // toast overwrote it right after.
+    await afterSignIn(true, 'Email verified! Welcome to Conver.');
     history.replaceState(null, '', window.location.pathname);
     return true;
   } catch (e) {
@@ -11911,7 +11913,7 @@ async function resendVerificationEmail(email) {
   }
 }
 
-async function afterSignIn(freshLogin = false) {
+async function afterSignIn(freshLogin = false, welcomeMsg = null) {
   currentUser = currentUser || {};
   // Create profile
   await fetch('/api/user/profile', {
@@ -11955,7 +11957,7 @@ async function afterSignIn(freshLogin = false) {
     if (lastPage && lastPage !== 'home') navTo(lastPage);
   }
   hideAuthScreen();
-  showToast('', 'Welcome back!');
+  showToast('', welcomeMsg || 'Welcome back!');
 }
 
 // Mobile networks drop/stall requests far more often than the loopback
