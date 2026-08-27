@@ -664,6 +664,34 @@ app.post('/api/speech-engine-token', requireAuth, async (req, res) => {
   }
 });
 
+// ── ElevenLabs Speech Engine token (Guest mode) ─────────────────────────────
+// Same mechanism as /api/speech-engine-token above, but reachable with no
+// Supabase session at all — guest mode never has an authToken to send, so
+// requireAuth would reject every request. Unlike the authed route, this one
+// does NOT trust the client for mode/systemPrompt/voiceKey: a fixed guest
+// prompt and Blaze (the default coach voice) are hardcoded server-side, so an
+// unauthenticated caller can't use this endpoint to make an arbitrary Speech
+// Engine agent talk under a different persona.
+const GUEST_SYSTEM_PROMPT = "You are Blaze, an energetic, encouraging conversation coach. You're talking with a guest who hasn't created an account yet, so keep things light, welcoming, and low-pressure — this is a quick taste of what Conver can do, not a full coaching session. Ask questions, listen actively, and give short, warm, practical feedback on how they communicate. Keep your responses concise and conversational.";
+app.post('/api/speech-engine-token-guest', async (req, res) => {
+  const engineId = SPEECH_ENGINES.Blaze;
+  if (!engineId) {
+    return res.status(500).json({ error: 'Speech Engine not configured' });
+  }
+  try {
+    const response = await el.conversationalAi.conversations.getWebrtcToken({
+      agentId: engineId,
+      participantName: 'guest-' + Math.random().toString(36).slice(2, 10),
+    });
+    sessionMeta.set(response.conversationId, { mode: 'guest', systemPrompt: GUEST_SYSTEM_PROMPT, maxRounds: undefined });
+    setTimeout(() => sessionMeta.delete(response.conversationId), 30 * 60 * 1000);
+    res.json({ token: response.token, conversationId: response.conversationId });
+  } catch (err) {
+    console.error('Speech Engine guest token error:', err);
+    res.status(500).json({ error: 'Failed to generate token' });
+  }
+});
+
 // ── Contact Form ─────────────────────────────────────────────
 const { Resend } = require('resend');
 
