@@ -92,6 +92,71 @@
   }
 })();
 
+// Branded transitions for account state, application pages, and full-page routes.
+(() => {
+  const layer = document.createElement('div');
+  layer.className = 'studio-route-transition';
+  layer.setAttribute('aria-hidden', 'true');
+  layer.innerHTML = '<div class="studio-transition-core"><span class="studio-transition-mark"><img src="/brand-mark.svg" alt=""></span><span class="studio-transition-word">conver<i>.</i></span><span class="studio-transition-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><span class="studio-transition-status">opening your studio</span></div>';
+  document.body.append(layer);
+  const status = layer.querySelector('.studio-transition-status');
+  let closeTimer = 0;
+  function pulse(label = 'opening your studio', duration = 620) {
+    clearTimeout(closeTimer);
+    status.textContent = label;
+    layer.classList.remove('leaving');
+    layer.classList.add('active');
+    layer.setAttribute('aria-hidden', 'false');
+    closeTimer = setTimeout(() => {
+      layer.classList.add('leaving');
+      setTimeout(() => {
+        layer.classList.remove('active', 'leaving');
+        layer.setAttribute('aria-hidden', 'true');
+      }, 250);
+    }, duration);
+  }
+  window.studioTransition = pulse;
+
+  const originalNavTo = window.navTo;
+  if (typeof originalNavTo === 'function') {
+    window.navTo = function(page) {
+      const destination = typeof PAGE_TITLES === 'object' ? PAGE_TITLES[page] : page;
+      pulse(destination ? 'opening ' + String(destination).toLowerCase() : 'opening your studio');
+      return originalNavTo.apply(this, arguments);
+    };
+  }
+  const originalShowView = window.showView;
+  if (typeof originalShowView === 'function') {
+    window.showView = function(view) {
+      pulse(view === 'signup' ? 'creating your space' : 'opening sign in');
+      return originalShowView.apply(this, arguments);
+    };
+  }
+
+  const auth = document.getElementById('auth-screen');
+  if (auth) {
+    let wasHidden = auth.classList.contains('hidden');
+    new MutationObserver(() => {
+      const hidden = auth.classList.contains('hidden');
+      if (hidden === wasHidden || document.getElementById('boot-splash')) return;
+      pulse(hidden ? 'opening your studio' : 'returning to sign in', 720);
+      wasHidden = hidden;
+    }).observe(auth, {attributes:true, attributeFilter:['class']});
+  }
+
+  document.addEventListener('click', event => {
+    const link = event.target.closest('a[href]');
+    if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || link.target || link.hasAttribute('download')) return;
+    const raw = link.getAttribute('href');
+    if (!raw || raw.startsWith('#') || raw.startsWith('mailto:') || raw.startsWith('tel:')) return;
+    const url = new URL(link.href, location.href);
+    if (url.origin !== location.origin || url.href === location.href) return;
+    event.preventDefault();
+    pulse(url.pathname === '/' || url.pathname === '/landing.html' ? 'returning to conver' : 'opening your studio', 1100);
+    setTimeout(() => location.assign(url.href), 390);
+  }, true);
+})();
+
 // Port the approved concept's actual overview markup. No demo state or mock APIs.
 (() => {
   'use strict';

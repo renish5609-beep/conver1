@@ -33,6 +33,14 @@
  setInterval(()=>{if(paused||hovered||changing||document.hidden||root.classList.contains('at-less-motion')||root.querySelector('[data-public-view="landing"]').hidden||card.contains(document.activeElement))return;advance();},6000);
 })();
 
+// Carry the same Conver transition from the public site into authentication.
+(()=>{
+ const layer=document.createElement('div');layer.className='studio-public-transition';layer.setAttribute('aria-hidden','true');
+ layer.innerHTML='<div><span class="studio-public-transition-mark"><img src="/brand-mark.svg" alt=""></span><strong>conver<i>.</i></strong><span class="studio-public-transition-wave" aria-hidden="true"><b></b><b></b><b></b><b></b><b></b></span><small>OPENING YOUR STUDIO</small></div>';
+ document.body.append(layer);
+ document.addEventListener('click',event=>{const link=event.target.closest('a[href]');if(!link||event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey||link.target||link.hasAttribute('download'))return;const raw=link.getAttribute('href');if(!raw||raw.startsWith('#')||raw.startsWith('mailto:')||raw.startsWith('tel:'))return;const url=new URL(link.href,location.href);if(url.origin!==location.origin||url.href===location.href)return;event.preventDefault();layer.classList.add('active');layer.setAttribute('aria-hidden','false');setTimeout(()=>location.assign(url.href),390);},true);
+})();
+
 (()=>{
  const root=document.getElementById('conver-atelier');
  const media=matchMedia('(prefers-reduced-motion: reduce)');

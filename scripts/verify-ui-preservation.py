@@ -21,7 +21,7 @@ for file in ['public/index.html','public/contact.html','public/privacy.html','pu
     before=original(file);after=(ROOT/file).read_text()
     original_scripts = scripts(before)
     updated_scripts = scripts(after)
-    presentation_script = '<script src="/studio-ui.js?v=5" defer></script>'
+    presentation_script = '<script src="/studio-ui.js?v=6" defer></script>'
     if file == 'public/index.html':
         assert updated_scripts.count(presentation_script) == 1, 'Presentation script must load exactly once'
         updated_scripts.remove(presentation_script)

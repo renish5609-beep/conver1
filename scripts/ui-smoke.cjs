@@ -2,7 +2,7 @@ const {JSDOM,VirtualConsole}=require('jsdom');
 const fs=require('fs');
 let source=fs.readFileSync(process.argv[2],'utf8');
 const path=require('path');
-source=source.replace('<script src="/studio-ui.js?v=5" defer></script>',()=>'<script>'+fs.readFileSync(path.resolve(path.dirname(process.argv[2]),'studio-ui.js'),'utf8')+'</script>');
+source=source.replace('<script src="/studio-ui.js?v=6" defer></script>',()=>'<script>'+fs.readFileSync(path.resolve(path.dirname(process.argv[2]),'studio-ui.js'),'utf8')+'</script>');
 const issues=[];const requests=[];
 const vc=new VirtualConsole();vc.on('jsdomError',e=>issues.push(e.message));
 const noop=()=>{};
@@ -19,6 +19,11 @@ setTimeout(async()=>{
  const w=dom.window,d=w.document,out=[];
  function check(name,action){try{action();out.push({name,pass:true})}catch(e){out.push({name,pass:false,error:e.message})}}
  check('Guest entry',()=>{d.querySelector('.auth-btn-guest').click();if(!d.querySelector('#auth-screen').classList.contains('hidden'))throw Error('Auth overlay remains')});
+ check('Branded route transition is present',()=>{const layer=d.querySelector('.studio-route-transition');if(!layer||!layer.querySelector('.studio-transition-word')||!layer.querySelector('.studio-transition-wave'))throw Error('Transition layer incomplete');});
+ check('In-app navigation triggers transition',()=>{w.navTo('warmup');if(!d.querySelector('.studio-route-transition').classList.contains('active'))throw Error('Transition did not activate');});
+ check('Top bar keeps distinct control groups',()=>{const header=d.querySelector('.app-header');if(!header.querySelector('.app-header-left .back-btn')||header.querySelectorAll('.app-header-center .chip').length!==3||!header.querySelector('.app-header-right .user-menu'))throw Error('Header grouping changed');});
+ check('Shared page headings remain complete',()=>{for(const page of ['warmup','practice','voice','coldopen','insights','settings','contact']){const head=d.querySelector('#page-'+page+' .section-head');if(!head?.querySelector('h2')||!head.querySelector('p'))throw Error('Incomplete heading '+page);}});
+ check('Primary responsive grids retain every item',()=>{if(d.querySelectorAll('#scenario-cards .sc-card').length!==6)throw Error('Practice scenarios lost');if(d.querySelectorAll('#voice-coach-picker .cp-btn').length!==6)throw Error('Voice coaches lost');if(d.querySelectorAll('.scenario-cat-btn').length!==6)throw Error('Cold Open categories lost');});
  for(const name of ['Blaze','Echo','Sage','Nova','Rex','Luna']){
   const button=d.querySelector('#vcp-'+name.toLowerCase());button.click();
   await new Promise(resolve=>setTimeout(resolve,0));
