@@ -3223,6 +3223,7 @@ h1, h2, h3 {
   }
 }
 </style>
+<link rel="stylesheet" href="/studio.css?v=1"/>
 </head>
 <body>
 
@@ -3300,6 +3301,11 @@ h1, h2, h3 {
 
 <!-- AUTH SCREEN -->
 <div class="auth-screen hidden" id="auth-screen">
+  <aside class="studio-auth-story" aria-label="Welcome to Conver">
+    <div><a class="studio-auth-home" href="/">← Back to Conver</a><h2>A little practice.<br>A different<br><em>presence.</em></h2><small>YOUR VOICE HAS PLACES TO GO.</small></div>
+    <div class="studio-auth-ring" aria-hidden="true"></div>
+    <p>For the interview. The big idea.<br>The moment that matters.</p>
+  </aside>
   <div class="auth-box">
     <div class="auth-logo">
       <div class="auth-logo-icon"><img src="/logo.png" alt="Conver" style="width:100%;height:100%;object-fit:contain;border-radius:inherit"/></div>
@@ -3330,9 +3336,9 @@ h1, h2, h3 {
       <div class="auth-sub">Sign in to continue improving.</div>
       <div id="signin-error" class="auth-error hidden"></div>
       <div id="signin-success" class="auth-success hidden"></div>
-      <label class="auth-label">Email</label>
+      <label class="auth-label" for="signin-email">Email</label>
       <input type="email" id="signin-email" class="auth-input" placeholder="your@email.com" onkeydown="if(event.key==='Enter')signIn()"/>
-      <label class="auth-label">Password</label>
+      <label class="auth-label" for="signin-password">Password</label>
       <input type="password" id="signin-password" class="auth-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')signIn()"/>
       <button class="auth-btn" id="signin-btn" onclick="signIn()">Sign In</button>
       <div class="auth-link">Don't have an account? <a onclick="showView('signup')">Sign up free</a></div>
@@ -3345,9 +3351,9 @@ h1, h2, h3 {
       <div class="auth-sub">Free to start. No credit card required.</div>
       <div id="signup-error" class="auth-error hidden"></div>
       <div id="signup-success" class="auth-success hidden"></div>
-      <label class="auth-label">Email</label>
+      <label class="auth-label" for="signup-email">Email</label>
       <input type="email" id="signup-email" class="auth-input" placeholder="your@email.com" onkeydown="if(event.key==='Enter')signUp()"/>
-      <label class="auth-label">Password <span style="color:var(--muted);font-size:10px;font-weight:400">(min 6 characters)</span></label>
+      <label class="auth-label" for="signup-password">Password <span style="color:var(--muted);font-size:10px;font-weight:400">(min 6 characters)</span></label>
       <input type="password" id="signup-password" class="auth-input" placeholder="Create a password" onkeydown="if(event.key==='Enter')signUp()"/>
       <button class="auth-btn" id="signup-btn" onclick="signUp()">Create Account</button>
       <div class="auth-link">Already have an account? <a onclick="showView('signin')">Sign in</a></div>
@@ -3748,7 +3754,7 @@ h1, h2, h3 {
             <!-- Left: camera + live transcript -->
             <div>
               <!-- Camera feed -->
-              <div style="position:relative;border-radius:16px;overflow:hidden;background:#000;aspect-ratio:16/9;max-width:440px;margin:0 auto 16px">
+              <div class="studio-camera-surface" style="position:relative;border-radius:16px;overflow:hidden;background:#000;aspect-ratio:16/9;max-width:440px;margin:0 auto 16px">
                 <video id="rt-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1);will-change:transform;backface-visibility:hidden"></video>
                 <canvas id="rt-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;transform:scaleX(-1);will-change:contents;backface-visibility:hidden"></canvas>
                 <!-- Hidden composite canvas for recording — camera + overlay burned together -->
@@ -12840,5 +12846,6 @@ document.head.appendChild(rippleStyle);
   </div>
 </div>
 
+<script src="/studio-ui.js?v=1" defer></script>
 </body>
 </html>
