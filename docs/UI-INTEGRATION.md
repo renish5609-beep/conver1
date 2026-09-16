@@ -21,7 +21,7 @@ This is **not a verified 1:1 match of every screen**. Functional pages, tabs, se
 ## Evidence
 
 - 30 source checks: original scripts except one exact reviewed auth-entry block; original IDs, inline handlers and form contracts retained. Backend, production dependencies, Capacitor configuration and build workflow unchanged. Only the launcher image may differ under `ios/`.
-- 86 stubbed UI checks: guest entry, navigation, practice/insight tabs, six coaches, preferences, original feedback/report renderers, overview actions, live-button binding and synchronized coach presentation. No captured runtime errors.
+- 98 stubbed UI checks: guest entry, navigation, practice/insight tabs, six coaches, preferences, original feedback/report renderers, overview actions, live-button binding and synchronized coach presentation. Includes all six SVG picker actions and all six Cold Open category/character selections. No captured runtime errors.
 - 12 entry checks run the actual `initAuth` with fake dependencies: direct paths, auth choices, invalid query, saved session, OAuth token, verification callback and Vercel mappings.
 - Landing checks cover SVG card/detail updates, links, typing progression, all-six-coach quote shuffle and pause/resume.
 - All four app/landing stylesheets parse. Presentation scripts pass syntax checks.

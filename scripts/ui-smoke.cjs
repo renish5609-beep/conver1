@@ -2,7 +2,7 @@ const {JSDOM,VirtualConsole}=require('jsdom');
 const fs=require('fs');
 let source=fs.readFileSync(process.argv[2],'utf8');
 const path=require('path');
-source=source.replace('<script src="/studio-ui.js?v=3" defer></script>',()=>'<script>'+fs.readFileSync(path.resolve(path.dirname(process.argv[2]),'studio-ui.js'),'utf8')+'</script>');
+source=source.replace('<script src="/studio-ui.js?v=5" defer></script>',()=>'<script>'+fs.readFileSync(path.resolve(path.dirname(process.argv[2]),'studio-ui.js'),'utf8')+'</script>');
 const issues=[];const requests=[];
 const vc=new VirtualConsole();vc.on('jsdomError',e=>issues.push(e.message));
 const noop=()=>{};
@@ -19,6 +19,16 @@ setTimeout(async()=>{
  const w=dom.window,d=w.document,out=[];
  function check(name,action){try{action();out.push({name,pass:true})}catch(e){out.push({name,pass:false,error:e.message})}}
  check('Guest entry',()=>{d.querySelector('.auth-btn-guest').click();if(!d.querySelector('#auth-screen').classList.contains('hidden'))throw Error('Auth overlay remains')});
+ for(const name of ['Blaze','Echo','Sage','Nova','Rex','Luna']){
+  const button=d.querySelector('#vcp-'+name.toLowerCase());button.click();
+  await new Promise(resolve=>setTimeout(resolve,0));
+  check('SVG picker retains coach action '+name,()=>{const image=button.querySelector('.cp-init img');if(image?.getAttribute('src')!=='/coach-'+name.toLowerCase()+'.svg')throw Error('Wrong artwork');if(button.getAttribute('aria-pressed')!=='true'||d.querySelectorAll('#voice-coach-picker .active').length!==1)throw Error('Selection not exclusive');if(!d.querySelector('#voice-coach-avatar').classList.contains('coach-'+name.toLowerCase()))throw Error('Real avatar did not update');});
+ }
+ w.navTo('coldopen');
+ for(const button of d.querySelectorAll('.scenario-cat-btn')){
+  button.click();await new Promise(resolve=>setTimeout(resolve,0));
+  check('Cold Open selection retains character '+button.dataset.cat,()=>{if(!d.querySelector('#coldopen-character-display #scenario-char-'+button.dataset.cat))throw Error('Character not rendered');if(button.getAttribute('aria-pressed')!=='true'||d.querySelectorAll('.scenario-cat-btn[aria-pressed=true]').length!==1)throw Error('Selection not exclusive');});
+ }
  check('Approved overview replaces old hero',()=>{if(!d.querySelector('.studio-overview .at-liquid-ring'))throw Error('Preview ring missing');if(d.querySelector('#page-home>.home-hero'))throw Error('Old hero remains');if(d.querySelectorAll('.studio-overview .at-launch').length!==3)throw Error('Missing launch cards');});
  check('Real counters and score retained',()=>{for(const id of ['anim-sessions','anim-streak','anim-xp','anim-level','home-conver-score','score-ring'])if(d.querySelectorAll('#'+id).length!==1)throw Error('Missing or duplicate '+id);});
  for(const button of d.querySelectorAll('.studio-overview [data-studio-page]'))check('Concept action '+button.dataset.studioPage,()=>{button.click();const target=button.dataset.studioPage==='coaches'?'practice':button.dataset.studioPage;if(!d.querySelector('#page-'+target).classList.contains('active'))throw Error('Wrong destination');if(button.dataset.studioPage==='coaches'&&d.querySelector('#psub-coaches').style.display!=='block')throw Error('Coach tab not selected');});

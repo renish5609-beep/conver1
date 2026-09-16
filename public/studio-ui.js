@@ -155,7 +155,7 @@
   brand.className = 'at-brand';
   brand.href = '/';
   brand.setAttribute('aria-label', 'Conver introduction');
-  brand.innerHTML = '<img src="/conver-mic.svg?v=3" alt="" width="34" height="34">conver<span class="at-brand-period">.</span>';
+  brand.innerHTML = '<span class="at-brandmark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>conver<span class="at-brand-period">.</span>';
   const label = document.createElement('div');
   label.className = 'at-sidebar-label';
   label.textContent = 'YOUR WORKSPACE';
@@ -245,4 +245,55 @@
   }
   updateBrand(document.body);
   new MutationObserver(records => records.forEach(record => record.addedNodes.forEach(updateBrand))).observe(document.body, {childList:true,subtree:true});
+})();
+
+// Shared coach artwork and accessible selection styling; original callbacks own state.
+(() => {
+  const coaches = new Set(['blaze', 'echo', 'sage', 'nova', 'rex', 'luna']);
+  function decorateCoach(card) {
+    if (!card.matches('.cp-btn,.ob-coach-card')) return;
+    const name = (card.dataset.coach || card.id.replace('vcp-', '')).toLowerCase();
+    if (!coaches.has(name)) return;
+    const slot = card.querySelector('.cp-init,.ob-coach-orb');
+    if (!slot) return;
+    card.dataset.studioCoach = name;
+    if (!slot.querySelector('.studio-picker-symbol')) {
+      const image = document.createElement('img');
+      image.className = 'studio-picker-symbol';
+      image.src = '/coach-' + name + '.svg';
+      image.alt = '';
+      image.setAttribute('aria-hidden', 'true');
+      slot.replaceChildren(image);
+    }
+    if (card.matches('.cp-btn')) card.setAttribute('aria-pressed', String(card.classList.contains('active')));
+  }
+  function decorateWithin(scope) {
+    if (scope.nodeType !== 1) return;
+    if (scope.matches('.cp-btn,.ob-coach-card')) decorateCoach(scope);
+    scope.querySelectorAll('.cp-btn,.ob-coach-card').forEach(decorateCoach);
+  }
+  decorateWithin(document.body);
+  // Onboarding may be inserted after authentication. Ignore our own image nodes.
+  new MutationObserver(records => records.forEach(record => {
+    if (record.type === 'attributes') decorateCoach(record.target);
+    else record.addedNodes.forEach(decorateWithin);
+  })).observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:['class']});
+
+  const categories = [...document.querySelectorAll('.scenario-cat-btn')];
+  function syncCategory(card) {
+    // selectColdOpenCategory already sets this exact selection indicator.
+    card.setAttribute('aria-pressed', String(card.style.borderWidth === '2px'));
+  }
+  const observer = new MutationObserver(records => records.forEach(record => syncCategory(record.target)));
+  categories.forEach(card => {
+    card.setAttribute('role', 'button');
+    card.tabIndex = 0;
+    syncCategory(card);
+    observer.observe(card, {attributes:true, attributeFilter:['style']});
+    card.addEventListener('keydown', event => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      card.click();
+    });
+  });
 })();
