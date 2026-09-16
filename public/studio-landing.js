@@ -5,21 +5,29 @@
  const quote=card.querySelector('p'),byline=card.querySelector(':scope > span');
  const samples=[
   ['Blaze','Interview Coach','Strong opening. Your confidence is there — now sharpen the close.'],
+  ['Blaze','Interview Coach','Own the first sentence. Make the room catch up to your certainty.'],
+  ['Blaze','Interview Coach','You have the proof. Deliver it earlier and let the result do the work.'],
   ['Echo','Conversation Coach','That felt honest. Leave a little space after your question and let them in.'],
+  ['Echo','Conversation Coach','You listened for the words. Now listen for what changed underneath them.'],
+  ['Echo','Conversation Coach','Keep that warmth. A shorter response will give the other person room to meet it.'],
   ['Sage','Communication Coach','Your reasoning is clear. One concrete example will make the idea land.'],
+  ['Sage','Communication Coach','Lead with the principle, then use one detail to make it undeniable.'],
+  ['Sage','Communication Coach','The thought is strong. Slow the middle so every step feels inevitable.'],
   ['Nova','Pitch Coach','There’s energy in that idea. Lead with the boldest part, then show us why.'],
+  ['Nova','Pitch Coach','The vision is alive. Give it one vivid image people can repeat tomorrow.'],
+  ['Nova','Pitch Coach','Raise the stakes sooner. Let them feel why this idea has to exist now.'],
   ['Rex','Interview Coach','Cut the setup. State what you did, give the result, then stop.'],
-  ['Luna','Conversation Coach','Take a breath. You don’t need a perfect answer — start with what you mean.']
+  ['Rex','Interview Coach','Drop the qualifier. You earned the outcome — say it cleanly.'],
+  ['Rex','Interview Coach','Answer the question in ten words first. Everything after that has to earn its place.'],
+  ['Luna','Conversation Coach','Take a breath. You don’t need a perfect answer — start with what you mean.'],
+  ['Luna','Conversation Coach','Your pause is not empty. Use it to choose the honest sentence.'],
+  ['Luna','Conversation Coach','Stay with the feeling for one beat longer, then say what you need.']
  ];
- const controls=document.createElement('div');controls.className='at-quote-controls';
- const pause=document.createElement('button'),next=document.createElement('button');
- for(const button of [pause,next]){button.type='button';button.className='cursor-interaction';controls.append(button);}
- next.textContent='Next coach';card.append(controls);
  const preference=window.matchMedia('(prefers-reduced-motion: reduce)');
- let paused=preference.matches,current=0,bag=[],changing=false,hovered=false;
- const updatePause=()=>{pause.textContent=paused?'Play quotes':'Pause quotes';pause.setAttribute('aria-pressed',String(paused));};updatePause();
+ let current=0,bag=[],changing=false;
+ card.setAttribute('aria-live','polite');
  function refill(){bag=samples.map((_,i)=>i).filter(i=>i!==current);for(let i=bag.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[bag[i],bag[j]]=[bag[j],bag[i]];}}
- function advance(manual=false){
+ function advance(){
   if(changing)return;
   if(!bag.length)refill();
   const chosen=bag.shift();changing=true;
@@ -27,10 +35,7 @@
   if(!noMotion)card.classList.add('at-quote-changing');
   setTimeout(()=>{current=chosen;quote.textContent='“'+samples[current][2]+'”';byline.textContent=samples[current][0]+' · '+samples[current][1];card.classList.remove('at-quote-changing');changing=false;},noMotion?0:220);
  }
- pause.addEventListener('click',()=>{paused=!paused;updatePause();});next.addEventListener('click',()=>advance(true));
- card.addEventListener('mouseenter',()=>hovered=true);card.addEventListener('mouseleave',()=>hovered=false);
- if(preference.addEventListener)preference.addEventListener('change',event=>{if(event.matches){paused=true;updatePause();}});
- setInterval(()=>{if(paused||hovered||changing||document.hidden||root.classList.contains('at-less-motion')||root.querySelector('[data-public-view="landing"]').hidden||card.contains(document.activeElement))return;advance();},6000);
+ setInterval(()=>{if(changing||document.hidden)return;advance();},5200);
 })();
 
 // Carry the same Conver transition from the public site into authentication.
@@ -38,7 +43,8 @@
  const layer=document.createElement('div');layer.className='studio-public-transition';layer.setAttribute('aria-hidden','true');
  layer.innerHTML='<div><span class="studio-public-transition-mark"><img src="/brand-mark.svg" alt=""></span><strong>conver<i>.</i></strong><span class="studio-public-transition-wave" aria-hidden="true"><b></b><b></b><b></b><b></b><b></b></span><small>OPENING YOUR STUDIO</small></div>';
  document.body.append(layer);
- document.addEventListener('click',event=>{const link=event.target.closest('a[href]');if(!link||event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey||link.target||link.hasAttribute('download'))return;const raw=link.getAttribute('href');if(!raw||raw.startsWith('#')||raw.startsWith('mailto:')||raw.startsWith('tel:'))return;const url=new URL(link.href,location.href);if(url.origin!==location.origin||url.href===location.href)return;event.preventDefault();layer.classList.add('active');layer.setAttribute('aria-hidden','false');setTimeout(()=>location.assign(url.href),390);},true);
+ const status=layer.querySelector('small');
+ document.addEventListener('click',event=>{const link=event.target.closest('a[href]');if(!link||event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey||link.target||link.hasAttribute('download'))return;const raw=link.getAttribute('href');if(!raw||raw.startsWith('#')||raw.startsWith('mailto:')||raw.startsWith('tel:'))return;const url=new URL(link.href,location.href);if(url.origin!==location.origin||url.href===location.href)return;event.preventDefault();status.textContent=url.pathname==='/app'?'OPENING SIGN IN':'OPENING DETAILS';layer.classList.add('active');layer.setAttribute('aria-hidden','false');setTimeout(()=>location.assign(url.href),390);},true);
 })();
 
 (()=>{

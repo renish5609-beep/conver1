@@ -247,14 +247,11 @@
 #conver-atelier .at-example-feedback{position:absolute;bottom:43px;left:22px;right:22px;padding:17px 20px;background:#f4f3e9;border:1px solid #ffffff99;border-radius:13px;box-shadow:0 15px 25px #0002;animation:at-example-float 7s ease-in-out infinite alternate}
 #conver-atelier .at-example-feedback>div:first-child{display:flex;gap:6px;align-items:center;font-size:7px;letter-spacing:1.4px;color:#919e7f}
 #conver-atelier .at-example-dot{width:4px;height:4px;background:#91a174;border-radius:50%;box-shadow:0 0 6px #92b46a66}
-#conver-atelier .at-example-feedback p{font-size:12px;line-height:1.7;letter-spacing:-.1px;color:#5e6a50;margin:9px 0;min-height:5.1em}
+#conver-atelier .at-example-feedback p{font-size:12px;line-height:1.7;letter-spacing:-.1px;color:#5e6a50;margin:9px 0;min-height:5.1em;text-wrap:balance}
 #conver-atelier .at-example-feedback p,#conver-atelier .at-example-feedback>span{transition:opacity .22s ease,transform .22s ease}
 #conver-atelier .at-example-feedback.at-quote-changing p,#conver-atelier .at-example-feedback.at-quote-changing>span{opacity:0;transform:translateY(5px)}
-#conver-atelier .at-quote-controls{display:flex;gap:6px;margin-top:10px}
-#conver-atelier .at-quote-controls button{font:inherit;font-size:11px;color:#5e6a50;background:transparent;border:1px solid #919e7f55;border-radius:6px;min-height:32px;padding:5px 9px}
-@media(pointer:coarse){#conver-atelier .at-quote-controls button{min-height:44px}}
 @media(prefers-reduced-motion:reduce){#conver-atelier .at-example-feedback p,#conver-atelier .at-example-feedback>span{transition:none}}
-#conver-atelier .at-example-feedback>span{font-size:9px;color:#919f7e}
+#conver-atelier .at-example-feedback>span{display:block;min-height:20px;padding-right:90px;font-size:9px;line-height:1.5;color:#919f7e}
 #conver-atelier .at-example-wave{display:flex;align-items:center;gap:3px;height:20px;position:absolute;bottom:16px;right:20px}
 #conver-atelier .at-example-wave i{height:5px;width:2px;background:#a2b18e;border-radius:2px;animation:at-wave 1.5s infinite alternate}
 #conver-atelier .at-example-wave i:nth-child(2n){height:12px;animation-delay:-.5s}#conver-atelier .at-example-wave i:nth-child(3n){height:17px;animation-delay:-.9s}

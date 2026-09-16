@@ -100,14 +100,14 @@ body.reducemotion .studio-concept *,body.reducemotion .studio-concept *:before,b
 
 /* Shared spacing pass: one rhythm across the connected application. */
 .studio-connected{--ui-1:4px;--ui-2:8px;--ui-3:12px;--ui-4:16px;--ui-5:20px;--ui-6:24px;--ui-8:32px}
-.studio-connected .app-header{gap:var(--ui-4)}
-.studio-connected .app-header-left{gap:var(--ui-3)}
-.studio-connected .app-header-center{gap:var(--ui-2);min-width:0;padding-inline:var(--ui-1)}
-.studio-connected .app-header-right{gap:var(--ui-2)}
+.studio-connected .app-header{box-sizing:border-box;width:100%;max-width:100%;min-width:0;gap:var(--ui-4);overflow:hidden}
+.studio-connected .app-header-left{flex:0 1 auto;min-width:0;gap:var(--ui-3)}
+.studio-connected .app-header-center{flex:1 1 auto;gap:var(--ui-2);min-width:0;padding-inline:var(--ui-1);overflow:hidden}
+.studio-connected .app-header-right{flex:0 1 auto;min-width:0;gap:var(--ui-2);overflow:hidden}
 .studio-connected .back-btn,.studio-connected .chip,.studio-connected .feedback-btn,.studio-connected .user-menu{min-height:38px;display:inline-flex;align-items:center;justify-content:center;line-height:1.2}
-.studio-connected .back-btn{padding:0 15px;gap:7px;white-space:nowrap;border-radius:11px}
+.studio-connected .back-btn{max-width:min(240px,24vw);overflow:hidden;text-overflow:ellipsis;padding:0 15px;gap:7px;white-space:nowrap;border-radius:11px}
 .studio-connected .chip{padding:0 16px;border-radius:999px;white-space:nowrap}
-.studio-connected .feedback-btn{padding:0 13px}.studio-connected .user-menu{padding:4px 10px}
+.studio-connected .feedback-btn{flex:none;padding:0 13px}.studio-connected .user-menu{min-width:0;max-width:min(230px,24vw);padding:4px 10px;overflow:hidden}.studio-connected .user-avatar{flex:none}.studio-connected .user-email{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .studio-connected .page>.section-head{margin-bottom:var(--ui-6)}
 .studio-connected .section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--ui-5);min-width:0}
 .studio-connected .section-head>div,.studio-connected .section-head h2,.studio-connected .section-head p{min-width:0}
@@ -126,6 +126,7 @@ body.reducemotion .studio-concept *,body.reducemotion .studio-concept *:before,b
 .studio-connected .sc-card{padding:var(--ui-4);min-width:0;min-height:118px;display:flex;flex-direction:column;justify-content:flex-start}
 .studio-connected .sc-icon{margin-bottom:10px}.studio-connected .sc-name{margin-bottom:5px;line-height:1.35}.studio-connected .sc-hint{line-height:1.55}
 .studio-connected .settings-section-title{margin:0 0 var(--ui-2);padding-bottom:var(--ui-3);line-height:1.35}
+.studio-connected .settings-about-title{display:flex;align-items:center;gap:8px}.studio-connected .settings-about-title svg{display:block;flex:none;width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}.studio-connected .settings-about-copy p{margin:0}.studio-connected .settings-about-copy>div{flex-wrap:wrap;row-gap:4px}
 .studio-connected .setting-row{min-height:68px;padding:var(--ui-4) 0;gap:var(--ui-5);align-items:center}
 .studio-connected .setting-info{min-width:0;flex:1}.studio-connected .setting-info h4{margin:0 0 4px;line-height:1.35}.studio-connected .setting-info p{margin:0;line-height:1.55}
 .studio-connected .setting-control{margin-left:auto;display:flex;align-items:center;justify-content:flex-end;gap:var(--ui-2);min-width:0}
@@ -138,8 +139,12 @@ body.reducemotion .studio-concept *,body.reducemotion .studio-concept *:before,b
 .studio-connected .modal-box,.studio-connected .report-modal,.studio-connected .share-modal{max-width:calc(100vw - 32px)}
 .studio-connected .rm-actions{display:flex;align-items:center;gap:var(--ui-2);padding:var(--ui-4);flex-wrap:wrap}
 .studio-connected .toast{max-width:min(440px,calc(100vw - 32px));line-height:1.45}
-@media(max-width:1100px) and (min-width:761px){
+@media(max-width:1400px) and (min-width:761px){
  .studio-connected .app-header{gap:var(--ui-2);padding-inline:20px}.studio-connected .app-header-left{gap:var(--ui-2)}.studio-connected .app-header-center{gap:6px}.studio-connected .chip{padding-inline:12px;font-size:11px}.studio-connected .feedback-btn-label{display:none}
+ .studio-connected .user-menu{max-width:145px}.studio-connected .user-email{max-width:92px!important}
+}
+@media(max-width:1100px) and (min-width:761px){
+ .studio-connected .app-header-center .streak-chip{display:none}.studio-connected .back-btn{max-width:170px}
  .studio-connected .practice-layout,.studio-connected .companion-layout{grid-template-columns:minmax(0,1fr)}
  .studio-connected .scenario-cards{grid-template-columns:repeat(3,minmax(0,1fr))}
 }

@@ -1,4 +1,14 @@
 /* Presentation enhancements only. Existing app callbacks own state and persistence. */
+// A deliberate visit from the public site already has a route transition. Remove
+// the older boot splash before auth is revealed so the visitor sees one branded
+// moment, never two stacked animations.
+(() => {
+  const authView = new URLSearchParams(location.search).get('auth');
+  if (!['signin', 'signup'].includes(authView)) return;
+  document.documentElement.classList.add('studio-auth-entry');
+  document.getElementById('boot-splash')?.remove();
+})();
+
 (() => {
   'use strict';
   const settings = document.getElementById('page-settings');
@@ -14,7 +24,7 @@
     Feedback: ['Analysis & Feedback'],
     Progress: ['Gamification'],
     Appearance: ['Appearance'],
-    Account: ['Account', 'Data & Privacy', 'Danger Zone', 'ℹ About']
+    Account: ['Account', 'Data & Privacy', 'Danger Zone', 'About']
   };
   const navigation = document.createElement('nav');
   navigation.className = 'studio-settings-nav';
@@ -92,7 +102,8 @@
   }
 })();
 
-// Branded transitions for account state, application pages, and full-page routes.
+// Branded transitions are reserved for real context boundaries. In-app pages,
+// sub-tabs, settings controls, and ordinary actions stay immediate.
 (() => {
   const layer = document.createElement('div');
   layer.className = 'studio-route-transition';
@@ -117,28 +128,19 @@
   }
   window.studioTransition = pulse;
 
-  const originalNavTo = window.navTo;
-  if (typeof originalNavTo === 'function') {
-    window.navTo = function(page) {
-      const destination = typeof PAGE_TITLES === 'object' ? PAGE_TITLES[page] : page;
-      pulse(destination ? 'opening ' + String(destination).toLowerCase() : 'opening your studio');
-      return originalNavTo.apply(this, arguments);
-    };
-  }
-  const originalShowView = window.showView;
-  if (typeof originalShowView === 'function') {
-    window.showView = function(view) {
-      pulse(view === 'signup' ? 'creating your space' : 'opening sign in');
-      return originalShowView.apply(this, arguments);
-    };
-  }
-
   const auth = document.getElementById('auth-screen');
   if (auth) {
+    const explicitAuthEntry = ['signin', 'signup'].includes(new URLSearchParams(location.search).get('auth'));
     let wasHidden = auth.classList.contains('hidden');
+    let suppressInitialReveal = explicitAuthEntry && wasHidden;
     new MutationObserver(() => {
       const hidden = auth.classList.contains('hidden');
       if (hidden === wasHidden || document.getElementById('boot-splash')) return;
+      if (!hidden && suppressInitialReveal) {
+        suppressInitialReveal = false;
+        wasHidden = hidden;
+        return;
+      }
       pulse(hidden ? 'opening your studio' : 'returning to sign in', 720);
       wasHidden = hidden;
     }).observe(auth, {attributes:true, attributeFilter:['class']});
@@ -151,8 +153,13 @@
     if (!raw || raw.startsWith('#') || raw.startsWith('mailto:') || raw.startsWith('tel:')) return;
     const url = new URL(link.href, location.href);
     if (url.origin !== location.origin || url.href === location.href) return;
+    const publicRoutes = new Set(['/','/landing.html','/privacy.html','/terms.html','/cookies.html','/contact.html','/support.html']);
+    const isAuthBoundary = url.pathname === '/app' && ['signin','signup'].includes(url.searchParams.get('auth'));
+    if (!publicRoutes.has(url.pathname) && !isAuthBoundary) return;
     event.preventDefault();
-    pulse(url.pathname === '/' || url.pathname === '/landing.html' ? 'returning to conver' : 'opening your studio', 1100);
+    const returningHome = url.pathname === '/' || url.pathname === '/landing.html';
+    const openingLegal = ['/privacy.html','/terms.html','/cookies.html','/contact.html','/support.html'].includes(url.pathname);
+    pulse(returningHome ? 'returning to conver' : openingLegal ? 'opening details' : 'opening sign in', 1100);
     setTimeout(() => location.assign(url.href), 390);
   }, true);
 })();
