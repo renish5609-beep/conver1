@@ -2,11 +2,11 @@ const {JSDOM,VirtualConsole}=require('jsdom');
 const fs=require('fs');
 let source=fs.readFileSync(process.argv[2],'utf8');
 const path=require('path');
-source=source.replace('<script src="/studio-ui.js?v=1" defer></script>',()=>'<script>'+fs.readFileSync(path.resolve(path.dirname(process.argv[2]),'studio-ui.js'),'utf8')+'</script>');
+source=source.replace('<script src="/studio-ui.js?v=3" defer></script>',()=>'<script>'+fs.readFileSync(path.resolve(path.dirname(process.argv[2]),'studio-ui.js'),'utf8')+'</script>');
 const issues=[];const requests=[];
 const vc=new VirtualConsole();vc.on('jsdomError',e=>issues.push(e.message));
 const noop=()=>{};
-const dom=new JSDOM(source,{url:'http://localhost:3000/app',runScripts:'dangerously',pretendToBeVisual:true,virtualConsole:vc,beforeParse(w){
+const dom=new JSDOM(source,{url:'http://localhost:3000/app?auth=signin',runScripts:'dangerously',pretendToBeVisual:true,virtualConsole:vc,beforeParse(w){
  w.matchMedia=()=>({matches:false,addListener:noop,removeListener:noop,addEventListener:noop});
  w.HTMLElement.prototype.scrollIntoView=noop;
  w.HTMLCanvasElement.prototype.getContext=()=>new Proxy({measureText:()=>({width:30}),createLinearGradient:()=>({addColorStop:noop})},{get:(o,k)=>o[k]||noop,set:(o,k,v)=>(o[k]=v,true)});
@@ -19,6 +19,11 @@ setTimeout(async()=>{
  const w=dom.window,d=w.document,out=[];
  function check(name,action){try{action();out.push({name,pass:true})}catch(e){out.push({name,pass:false,error:e.message})}}
  check('Guest entry',()=>{d.querySelector('.auth-btn-guest').click();if(!d.querySelector('#auth-screen').classList.contains('hidden'))throw Error('Auth overlay remains')});
+ check('Approved overview replaces old hero',()=>{if(!d.querySelector('.studio-overview .at-liquid-ring'))throw Error('Preview ring missing');if(d.querySelector('#page-home>.home-hero'))throw Error('Old hero remains');if(d.querySelectorAll('.studio-overview .at-launch').length!==3)throw Error('Missing launch cards');});
+ check('Real counters and score retained',()=>{for(const id of ['anim-sessions','anim-streak','anim-xp','anim-level','home-conver-score','score-ring'])if(d.querySelectorAll('#'+id).length!==1)throw Error('Missing or duplicate '+id);});
+ for(const button of d.querySelectorAll('.studio-overview [data-studio-page]'))check('Concept action '+button.dataset.studioPage,()=>{button.click();const target=button.dataset.studioPage==='coaches'?'practice':button.dataset.studioPage;if(!d.querySelector('#page-'+target).classList.contains('active'))throw Error('Wrong destination');if(button.dataset.studioPage==='coaches'&&d.querySelector('#psub-coaches').style.display!=='block')throw Error('Coach tab not selected');});
+ check('Sidebar coaches uses real selection screen',()=>{d.querySelector('.at-sidebar [data-page=profiles]').click();if(d.querySelector('#psub-coaches').style.display!=='block')throw Error('Coach screen missing');});
+ check('Voice stage retains original start handler',()=>{const button=d.querySelector('.studio-voice-stage button[onclick="startVoiceSession()"]');if(!button)throw Error('Live-session button missing');const original=w.startVoiceSession;let invoked=0;try{w.startVoiceSession=()=>invoked++;button.click();if(invoked!==1)throw Error('Handler not called');}finally{w.startVoiceSession=original;}});
  for(const page of ['home','warmup','practice','voice','coldopen','insights','settings','contact'])check('Navigate '+page,()=>{w.navTo(page);if(!d.querySelector('#page-'+page).classList.contains('active'))throw Error('Page not active')});
  for(const page of ['debate','qbank','companion','realtime','coaches','practice'])check('Practice tab '+page,()=>{w.navTo('practice');w.switchPracticeTab(page);if(d.querySelector('#psub-'+page).style.display!=='block')throw Error('Tab panel hidden')});
  for(const page of ['skills','history','briefing','coachnotes'])check('Insights tab '+page,()=>{w.navTo('insights');w.switchInsightsTab(page);if(d.querySelector('#insights-tab-'+page).style.display!=='block')throw Error('Tab panel hidden')});
@@ -61,6 +66,7 @@ setTimeout(async()=>{
  if(d.querySelector('.studio-settings-nav'))check('Dynamic coach cards support keyboard',()=>{const card=d.querySelector('#coach-profiles-grid .coach-profile-card');if(card.tabIndex!==0||card.getAttribute('role')!=='button')throw Error('Keyboard affordance missing');card.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Enter',bubbles:true}));if(!d.querySelector('#chip-coach').textContent.includes('Blaze'))throw Error('Keyboard did not select coach');});
  check('Share progress dialog',()=>{w.openShareModal();if(d.querySelector('#share-modal').classList.contains('hidden'))throw Error('Dialog hidden')});
  await new Promise(resolve=>setTimeout(resolve,100));
- const actionableIssues=[...new Set(issues)].filter(issue=>!issue.includes('Not implemented: navigation to another Document'));
+ check('Overview coach tracks real selection',()=>{if(d.querySelector('.studio-overview .at-selected-name').textContent!==d.querySelector('#home-coach').textContent)throw Error('Coach name diverged');});
+ const actionableIssues=[...new Set(issues)];
  console.log(JSON.stringify({checks:out,issues:actionableIssues,requests:[...new Set(requests)]},null,2));w.close(); if(out.some(test=>!test.pass)||actionableIssues.length)process.exitCode=1;
 },250);

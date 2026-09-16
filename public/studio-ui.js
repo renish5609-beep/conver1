@@ -91,3 +91,158 @@
     observer.observe(target, {childList: true, subtree: true, attributes: true, attributeFilter: ['class']});
   }
 })();
+
+// Port the approved concept's actual overview markup. No demo state or mock APIs.
+(() => {
+  'use strict';
+  const app = document.querySelector('.app');
+  const page = document.getElementById('page-home');
+  const tabs = document.getElementById('app-tabs-wrap');
+  if (!app || !page || !tabs) return;
+  const iconPaths = {
+    'arrow-up-right': '<path d="M7 17 17 7M7 7h10v10"/>',
+    'arrow-right': '<path d="M4 12h16m-6-6 6 6-6 6"/>',
+    'square-pen': '<path d="M12 20h9M16 3l5 5L7 22l-5 1 1-5Z"/>',
+    'audio-lines': '<path d="M3 10v4m4-7v10m5-14v18m5-14v10m4-7v4"/>',
+    'messages-square': '<path d="M21 15H7l-4 4V3h18Zm-10 4h6l4 3v-3"/>',
+    'zap': '<path d="m13 2-9 12h7l-1 8 10-13h-8Z"/>',
+    'layout-grid': '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+    'chart': '<path d="M4 20V10m8 10V4m8 16v-6"/>',
+    'users': '<circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3m1-16a3 3 0 0 1 0 6m3 10v-3a6 6 0 0 0-2-4"/>',
+    'settings': '<circle cx="12" cy="12" r="3"/><path d="m9 3-1 3-3 1v3l-2 2 2 2v3l3 1 1 3h6l1-3 3-1v-3l2-2-2-2V7l-3-1-1-3Z"/>',
+    'help': '<circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 0 1 6 0c0 2-3 2-3 5m0 3h.01"/>'
+  };
+  function icon(name) {
+    const wrapper = document.createElement('span');
+    wrapper.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (iconPaths[name] || iconPaths['arrow-up-right']) + '</svg>';
+    return wrapper.firstElementChild;
+  }
+  function navigate(destination) {
+    window.navTo(destination === 'coaches' ? 'profiles' : destination);
+  }
+  const overview = document.createElement('section');
+  overview.className = 'studio-concept studio-overview';
+  overview.setAttribute('aria-label', 'Your studio');
+  overview.innerHTML = "\n          <div class=\"at-heading\"><div><div class=\"at-overline\">A LITTLE PRACTICE. A DIFFERENT PRESENCE.</div><h1>Your studio.</h1></div><button class=\"at-text-button cursor-interaction\" data-studio-page=\"insights\">Your progress <i data-lucide=\"arrow-up-right\" aria-hidden=\"true\"></i></button></div>\n          <div class=\"at-hero at-shine\">\n            <div class=\"at-hero-grain\" aria-hidden=\"true\"></div><div class=\"at-hero-art\" aria-hidden=\"true\"><div class=\"at-orbit at-orbit-back\"></div><div class=\"at-liquid-ring\"></div><div class=\"at-orbit at-orbit-front\"></div><span class=\"at-star at-star-one\"></span><span class=\"at-star at-star-two\"></span><span class=\"at-star at-star-three\"></span><span class=\"at-art-caption\">POTENTIAL, IN MOTION.</span></div>\n            <div class=\"at-hero-copy\"><div class=\"at-hero-kicker\"><span></span>THE CONVERSATION IS YOURS.</div><h2>Find your voice.<br><span>Own the room.</span></h2><p>For the interview. The big idea.<br>The moment that matters.</p><button class=\"at-button at-button-cream cursor-interaction\" data-studio-page=\"voice\">Enter the studio <span><i data-lucide=\"arrow-up-right\" aria-hidden=\"true\"></i></span></button><div class=\"at-hero-foot\"><span class=\"at-mini-wave\" aria-hidden=\"true\"><i></i><i></i><i></i><i></i><i></i></span>YOUR VOICE. ONLY STRONGER.</div></div>\n          </div>\n          <div class=\"at-section-heading\"><h3>Make your next move.</h3><span>Choose your practice</span></div>\n          <div class=\"at-launch-grid\">\n            <button class=\"at-launch cursor-interaction\" data-studio-page=\"practice\"><span class=\"at-launch-top\"><span class=\"at-launch-icon\"><i data-lucide=\"square-pen\" aria-hidden=\"true\"></i></span><i class=\"at-launch-arrow\" data-lucide=\"arrow-up-right\" aria-hidden=\"true\"></i></span><strong>Practice Lab</strong><span class=\"at-launch-desc\">Sharper answers.<br>Stronger first impressions.</span><span class=\"at-launch-bottom\">WRITE · REFINE · REPEAT</span></button>\n            <button class=\"at-launch at-launch-dark cursor-interaction\" data-studio-page=\"voice\"><span class=\"at-launch-top\"><span class=\"at-launch-icon\"><i data-lucide=\"audio-lines\" aria-hidden=\"true\"></i></span><i class=\"at-launch-arrow\" data-lucide=\"arrow-up-right\" aria-hidden=\"true\"></i></span><strong>Voice Studio</strong><span class=\"at-launch-desc\">A real conversation.<br>A little more confidence.</span><span class=\"at-voice-wave\" aria-hidden=\"true\"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></button>\n            <button class=\"at-launch at-launch-peach cursor-interaction\" data-studio-page=\"coldopen\"><span class=\"at-launch-top\"><span class=\"at-launch-icon\"><i data-lucide=\"messages-square\" aria-hidden=\"true\"></i></span><i class=\"at-launch-arrow\" data-lucide=\"arrow-up-right\" aria-hidden=\"true\"></i></span><strong>Cold Open</strong><span class=\"at-launch-desc\">Think on your feet.<br>Connect in the moment.</span><span class=\"at-launch-bottom\">EXPECT THE UNEXPECTED</span></button>\n          </div>\n          <div class=\"at-lower-grid\"><div class=\"at-coach-strip\"><div class=\"at-coach-art at-art-blaze\"><img class=\"studio-coach-symbol\" src=\"/coach-blaze.svg\" alt=\"\" aria-hidden=\"true\"></div><div><span class=\"at-overline\">IN YOUR CORNER</span><h3 class=\"at-selected-name\">Blaze</h3><p class=\"at-selected-description\">Direct. Energetic. In your corner.</p></div><button class=\"at-circle cursor-interaction\" data-studio-page=\"coaches\" aria-label=\"Choose your coach\"><i data-lucide=\"arrow-up-right\" aria-hidden=\"true\"></i></button></div><button class=\"at-warmup-strip cursor-interaction\" data-studio-page=\"warmup\"><span class=\"at-warmup-symbol\"><i data-lucide=\"zap\" aria-hidden=\"true\"></i></span><span><strong>Start small. Build momentum.</strong><small>A quick warmup goes a long way.</small></span><i data-lucide=\"arrow-right\" aria-hidden=\"true\"></i></button></div>\n        ";
+  overview.querySelectorAll('[data-lucide]').forEach(placeholder => {
+    const svg = icon(placeholder.dataset.lucide);
+    svg.setAttribute('class', placeholder.className);
+    placeholder.replaceWith(svg);
+  });
+  overview.querySelectorAll('[data-studio-page]').forEach(button => {
+    button.type = 'button';
+    button.addEventListener('click', () => navigate(button.dataset.studioPage));
+  });
+  // Move the real counters and score rather than copying or inventing data.
+  const progress = document.createElement('section');
+  progress.className = 'studio-progress-row';
+  progress.setAttribute('aria-label', 'Your progress');
+  progress.append(page.querySelector('.hero-stats'), page.querySelector('.conver-score-card'));
+  const oldHero = page.querySelector('.home-hero');
+  oldHero.replaceWith(overview);
+  const shortcuts = document.createElement('details');
+  shortcuts.className = 'studio-more-tools';
+  const summary = document.createElement('summary');
+  summary.textContent = 'More practice shortcuts';
+  shortcuts.append(summary, page.querySelector('.home-grid'));
+  page.append(progress, shortcuts);
+
+  // Keep the original navigation nodes, IDs and handlers. Only their layout changes.
+  tabs.classList.add('studio-concept');
+  const sidebar = document.createElement('div');
+  sidebar.className = 'at-sidebar';
+  const brand = document.createElement('a');
+  brand.className = 'at-brand';
+  brand.href = '/';
+  brand.setAttribute('aria-label', 'Conver introduction');
+  brand.innerHTML = '<img src="/conver-mic.svg?v=3" alt="" width="34" height="34">conver<span class="at-brand-period">.</span>';
+  const label = document.createElement('div');
+  label.className = 'at-sidebar-label';
+  label.textContent = 'YOUR WORKSPACE';
+  const nav = document.getElementById('app-tabs');
+  const group = nav.querySelector('.tabs-group');
+  const coaches = document.createElement('button');
+  coaches.type = 'button';
+  coaches.className = 'tab-item';
+  coaches.dataset.page = 'profiles';
+  coaches.textContent = 'Your coaches';
+  coaches.addEventListener('click', () => navigate('coaches'));
+  group.append(coaches);
+  const config = [['home','layout-grid'],['practice','square-pen'],['voice','audio-lines'],['coldopen','messages-square'],['warmup','zap'],['profiles','users'],['insights','chart'],['settings','settings'],['contact','help']];
+  config.forEach(([name,symbol]) => {
+    const button = group.querySelector('[data-page="' + name + '"]');
+    if (!button) return;
+    const text = document.createElement('span');
+    text.textContent = name === 'voice' ? 'Voice Studio' : button.textContent;
+    button.replaceChildren(icon(symbol), text);
+    button.classList.add('at-nav');
+    group.append(button);
+  });
+  group.classList.add('at-navigation');
+  const footer = document.createElement('div');
+  footer.className = 'at-sidebar-bottom';
+  footer.innerHTML = '<div class="at-sidebar-art" aria-hidden="true">' + '<span></span>'.repeat(9) + '</div><p>Great conversations<br>start with practice.</p>';
+  sidebar.append(brand, label, nav, footer);
+  tabs.append(sidebar);
+  app.classList.add('studio-connected');
+
+  // Use the preview's stage/options composition, with the real live-session controls.
+  const voiceControls = document.querySelector('.voice-controls-side');
+  const voiceAvatar = document.getElementById('voice-coach-avatar');
+  if (voiceControls && voiceAvatar) {
+    const stage = document.createElement('section');
+    stage.className = 'studio-voice-stage';
+    stage.setAttribute('aria-label', 'Voice session');
+    const caption = document.createElement('p');
+    caption.className = 'studio-stage-label';
+    caption.textContent = 'YOUR VOICE. ONLY STRONGER.';
+    const hint = document.createElement('p');
+    hint.className = 'studio-stage-hint';
+    hint.textContent = 'Space to try. Permission to stumble. That’s how better begins.';
+    stage.append(caption, voiceAvatar, hint, voiceControls.querySelector('button[onclick="startVoiceSession()"]'));
+    const options = document.createElement('div');
+    options.className = 'studio-voice-options';
+    options.append(...voiceControls.querySelectorAll(':scope>.vc-card'));
+    voiceControls.append(stage, options);
+  }
+
+  const descriptions = {Blaze:'Direct. Energetic. In your corner.',Echo:'Warm feedback. Room to find your rhythm.',Sage:'A thoughtful perspective. A clearer path.',Nova:'Bold ideas. Fresh energy. Forward motion.',Rex:'Clear standards. Deliberate progress.',Luna:'Space to experiment. Permission to grow.'};
+  const homeCoach = document.getElementById('home-coach');
+  function syncCoach() {
+    const name = homeCoach.textContent.trim();
+    if (!Object.hasOwn(descriptions, name)) return;
+    overview.querySelector('.at-selected-name').textContent = name;
+    overview.querySelector('.at-selected-description').textContent = descriptions[name];
+    const image = overview.querySelector('.studio-coach-symbol');
+    image.src = '/coach-' + name.toLowerCase() + '.svg';
+    image.parentElement.dataset.coach = name.toLowerCase();
+  }
+  new MutationObserver(syncCoach).observe(homeCoach, {childList:true,subtree:true,characterData:true});
+  syncCoach();
+  // Original navTo remains authoritative; observe its active state for aria-current.
+  function syncNavigation() {
+    group.querySelectorAll('.tab-item').forEach(button => {
+      if (button.classList.contains('active')) button.setAttribute('aria-current', 'page');
+      else button.removeAttribute('aria-current');
+    });
+  }
+  new MutationObserver(syncNavigation).observe(group, {subtree:true,attributes:true,attributeFilter:['class']});
+  syncNavigation();
+  // A subtle pointer response uses only the ported hero, and honors saved/system motion.
+  const hero = overview.querySelector('.at-hero');
+  hero.addEventListener('pointermove', event => {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches || document.body.classList.contains('reducemotion') || event.pointerType === 'touch') return;
+    const rect = hero.getBoundingClientRect();
+    hero.style.setProperty('--at-mx', ((event.clientX-rect.left)/rect.width-.5)*12+'px');
+    hero.style.setProperty('--at-my', ((event.clientY-rect.top)/rect.height-.5)*10+'px');
+  });
+  hero.addEventListener('pointerleave', () => {hero.style.setProperty('--at-mx','0px');hero.style.setProperty('--at-my','0px');});
+  // Onboarding is rendered by the original code after sign-in; update only its image.
+  function updateBrand(scope) {
+    if (scope.nodeType !== 1) return;
+    const images = scope.matches('img[src="/logo.png"]') ? [scope] : scope.querySelectorAll('img[src="/logo.png"]');
+    images.forEach(image => { image.src = '/conver-mic.svg?v=3'; });
+  }
+  updateBrand(document.body);
+  new MutationObserver(records => records.forEach(record => record.addedNodes.forEach(updateBrand))).observe(document.body, {childList:true,subtree:true});
+})();

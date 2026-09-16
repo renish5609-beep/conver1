@@ -1,67 +1,56 @@
-# Conver Studio integration — draft, not deployed
+# Conver Studio integration — preview review required
 
-Branch: `ui/conver-studio-redesign`
-Baseline: `56d4b025609047386bc3acb3996090ee47c78f74`
+Branch: `ui/conver-studio-redesign`.
+Functionality baseline: `56d4b025609047386bc3acb3996090ee47c78f74`.
 
-## Implemented
+This follow-up applies after the user's `ff3f934` patch (equivalent local tree `528ca2e`). It is not a substitute for the initial redesign.
 
-- Replaced the marketing landing page with the approved pearl, olive and copper design, responsive layout, animated sculpture, rotating example coach quotes, feature explanations, four-step walkthrough and six-coach selector.
-- Converted preview navigation into real `/app`, section, contact and legal links. Landing quotes are authored examples, not live API responses. Coach selection on the marketing page previews coach descriptions; the app retains its existing coach-selection flow.
-- Added the new visual system to the original functional app through `public/studio.css`: typography, surfaces, desktop sidebar layout, home, cards, practice tabs, coaches, settings controls, dialogs, onboarding, auth and mobile navigation.
-- Added the split-layout authentication presentation around the existing sign-in/sign-up/guest controls. Existing validation, password reset, Supabase and guest behavior are unchanged.
-- Styled the existing contact, support and legal pages without changing their text or submission logic.
-- Kept existing accent preferences and their saved values. This pass deliberately does not migrate preferences or replace existing screens with mockup behavior.
+## Implemented corrections
 
-This is the first integration pass, not a claim of complete visual parity with every mockup or release readiness. The app still uses the original functional screen structure underneath the shared styling. Screen-by-screen visual refinement remains necessary, especially dynamically generated session results, camera overlays, dialogs, charts, long content and narrow layouts.
+- Explicit Vercel rewrites serve the animated marketing intro at `/` and the original functional app at `/app`. Express already uses those routes. No API rewrites are added.
+- Unsigned app entry redirects to `/landing.html`. Intro sign-in/signup links use `/app?auth=signin` and `/app?auth=signup`, fixing the previous circular redirect. Email verification, OAuth tokens and saved sessions are handled first.
+- The intro retains the approved pearl/olive/brass hero, moving rings, typing line, rotating example quotes and explanations. All six coach letters are replaced by personality SVG symbols. Quotes are authored examples, not live AI responses.
+- The supplied PNG is preserved in `app-icon.png`. An SVG viewBox wraps its exact pixels and removes equal outer padding for the visible brand and SVG favicon. PNG/ICO fallbacks and Apple touch links use the same identity.
+- The iOS launcher is packaged as an opaque 1024-square PNG. No native code/configuration changes are made. A new native build/install is required to see its launcher change.
+- Actual approved overview markup/styles are ported from the original concept: studio heading, animated copper ring, launch cards, coach strip and warmup strip. Buttons call original navigation; no mock sessions or sample account data are imported.
+- Desktop sidebar reuses original navigation nodes/handlers. Mobile retains all real destinations. Original live score/stat nodes remain connected below the overview; redundant shortcuts remain reachable in a disclosure.
+- Auth uses the concept's paired animated rings and responsive story/form layout around the real forms. Voice setup uses the stage/options composition around the real live-session button, coach picker and conversation log.
 
-## Preservation evidence
+This is **not a verified 1:1 match of every screen**. Functional pages, tabs, settings, session overlays, dialogs and long-content/error states remain to be visually checked. Do not treat source reuse as visual sign-off.
 
-`python scripts/verify-ui-preservation.py` passes 30 checks against the baseline commit:
+## Evidence
 
-- All original app/contact/legal inline and external script tags are unchanged.
-- Original element IDs, inline event handlers and form contracts remain unchanged.
-- `server.js`, runtime dependencies, lockfile, Capacitor configuration, Codemagic workflow and native iOS files are unchanged.
+- 30 source checks: original scripts except one exact reviewed auth-entry block; original IDs, inline handlers and form contracts retained. Backend, production dependencies, Capacitor configuration and build workflow unchanged. Only the launcher image may differ under `ios/`.
+- 86 stubbed UI checks: guest entry, navigation, practice/insight tabs, six coaches, preferences, original feedback/report renderers, overview actions, live-button binding and synchronized coach presentation. No captured runtime errors.
+- 12 entry checks run the actual `initAuth` with fake dependencies: direct paths, auth choices, invalid query, saved session, OAuth token, verification callback and Vercel mappings.
+- Landing checks cover SVG card/detail updates, links, typing progression, all-six-coach quote shuffle and pause/resume.
+- All four app/landing stylesheets parse. Presentation scripts pass syntax checks.
 
-The DOM smoke harness passes the same 20 checks before and after: guest entry, eight app pages, six Practice Lab tabs, four Insights tabs and the share dialog. Captured requests are identical; there are no captured runtime errors. Network, Supabase and media dependencies are stubbed in these tests. They do not prove live service correctness or visual correctness.
+No live credentials were retrieved, changed or embedded. No production database or remote deployment was changed here.
 
-The landing harness checks feature/step counts, all six coach selectors, quote shuffle and pause/resume, section anchors and local page links. All three new stylesheets parse successfully.
+## Reproduce
 
-## Reproduce checks
-
-The preservation check uses Python's standard library. The smoke checks require `jsdom` in a separate test environment; it is not a production dependency.
+Use a separate test-only `jsdom@30.0.1` installation; it is not a production dependency.
 
 ```sh
 python scripts/verify-ui-preservation.py
+node scripts/entry-smoke.cjs
 npm install --prefix /tmp/conver-ui-checks --no-save jsdom@30.0.1
 NODE_PATH=/tmp/conver-ui-checks/node_modules node scripts/ui-smoke.cjs public/index.html
 NODE_PATH=/tmp/conver-ui-checks/node_modules node scripts/landing-smoke.cjs
+node --check public/studio-ui.js
 node --check public/studio-landing.js
 git diff --check
 ```
 
-## Baseline startup and outstanding gates
+## Release gates
 
-`npm ci --ignore-scripts` succeeds. Unmodified `npm start` fails because `ELEVENLABS_API_KEY` is absent in this workspace. No production secrets were retrieved or changed. Use a securely configured development/staging environment for real-service testing. Do not put secrets into commits or chat.
+The unmodified backend cannot start here without `ELEVENLABS_API_KEY`. The cloud browser rejected localhost, so fresh viewport screenshots/geometry measurements were not obtained. DOM tests do not prove visual or live-service correctness.
 
-The available cloud browser rejected localhost with `ERR_BLOCKED_BY_CLIENT`; visual screenshots and viewport measurements were not obtained. The static frontend can be served locally for review with:
+1. Push this review branch and open the newest ready preview. Confirm its commit. Check `/`, `/landing.html`, `/app?auth=signin` and `/app?auth=signup`.
+2. Compare the preview at 390/768/1440px, plus 320px overflow, keyboard and reduced-motion checks. Review login, signed-in app, all six coaches, every settings group, reports, errors and long content.
+3. With securely configured staging services, verify signup/verification/reset/sign-in, settings persistence, history/stats, feedback and reports. A static Vercel preview may not have Render's API environment; a green static build alone is insufficient.
+4. Verify ElevenLabs, microphone/camera permissions, MediaPipe, interruption/reconnect and native safe areas on web/iOS.
+5. Confirm Render's connected branch and auto-deploy settings before merging. This patch does not itself deploy `conver.services`. Rebuild/install iOS for the launcher asset.
 
-```sh
-python -m http.server 4173 --directory public
-```
-
-This static server serves `/landing.html` and `/index.html` for visual review only; it does not implement Express routes, auth or APIs. Use the actual configured Node server for functional review.
-
-Before production deployment:
-
-- Review landing, sign-in/signup/reset, onboarding and every app page at 320/390/768/1440px, with keyboard focus and reduced motion.
-- Review all six coaches, settings toggles, saved accents, compact mode, mobile navigation, empty/loading/error states, generated feedback and session reports. Check text contrast on legacy inline dark backgrounds and camera overlays.
-- Verify account lifecycle, guest-to-account transition, settings persistence, session history/stats and all authenticated endpoints using a staging account.
-- Verify voice, ElevenLabs streaming/reconnect, transcription, mic/camera permission denial, MediaPipe, reports/export and contact submission.
-- Verify Capacitor/iOS safe areas, keyboard, foreground/background transitions and native permissions on device. The native app currently loads the hosted `/app` URL, so a web deployment can affect it.
-- Check Render's connected branch and auto-deploy setting, then use a preview/staging deployment before merging.
-
-## GitHub / deployment status
-
-A push dry-run failed because this workspace has no GitHub write credentials. No remote branch, PR, merge or deployment was created. Authenticate Git with permission for this repository, then push this review branch. Do not push directly to `main` as a substitute for staging verification.
-
-Rollback is a normal Git revert of the integration commit followed by deployment of the previous working version. No database migration is included.
+No database migration. Roll back with a Git revert and redeployment of the previous working revision.
