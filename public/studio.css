@@ -191,3 +191,36 @@ body.reducemotion *,body.reducemotion *::before,body.reducemotion *::after{anima
 @media(max-width:390px){.coach-profiles-grid{grid-template-columns:minmax(0,1fr)}.setting-info{min-width:0}.auth-box{padding:24px 19px}}
 
 @media(max-width:900px){#rt-session>div[style*="grid-template-columns:1fr 340px"]{grid-template-columns:minmax(0,1fr)!important}}
+
+/* Supplied Conver identity assets */
+.auth-logo-icon{background:transparent!important;box-shadow:none!important}
+.auth-logo-icon img{object-fit:contain!important}
+.app-logo-icon{background:transparent!important;box-shadow:none!important}
+.app-logo-icon img{object-fit:contain!important}
+.boot-splash-logo{background:transparent!important;box-shadow:none!important}
+.boot-splash-logo img{object-fit:contain!important}
+
+/* Match the full-window proportions of the approved Studio preview. */
+.auth-screen{min-height:100dvh;width:100%;display:flex;flex-direction:row;align-items:stretch;justify-content:center;padding:24px max(24px,4vw);gap:0}
+.studio-auth-story,.auth-box{min-height:calc(100dvh - 48px);max-height:none}
+.studio-auth-story{width:min(50vw,720px);flex:1;max-width:720px}
+.auth-box{width:min(50vw,720px);flex:1;max-width:720px;display:flex;flex-direction:column;justify-content:center}
+.auth-box .auth-logo{width:100%;max-width:440px;margin-left:auto;margin-right:auto}
+.auth-box>div[id^="view-"]{width:100%;max-width:440px;margin-left:auto;margin-right:auto}
+.auth-box>.auth-divider,.auth-box>.auth-btn-guest,.auth-box>div[style*="font-size:10.5px"]{width:100%;max-width:440px;margin-left:auto;margin-right:auto}
+.auth-box>.auth-divider{margin-top:20px}
+.app{min-height:100dvh;width:100%;background:var(--studio-paper)}
+.app-header{backdrop-filter:blur(16px);box-shadow:0 1px 0 #dce2d4}
+.app-content{min-height:0}
+.app-tabs-wrap{background:#eef0e8}
+.app-tabs-wrap .tabs-group{padding-top:8px}
+.page.active{animation:studio-page-in .42s cubic-bezier(.2,.7,.2,1) both}
+@keyframes studio-page-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.panel,.hg-card,.hb-card,.insight-card,.daily-card,.daily-focus-card,.daily-streak-card,.profile-card,.coach-session-card,.scenario-card,.scenario-character-card,.sc-card,.vc-card,.h2h-panel,.diff-panel{animation:studio-surface-in .48s cubic-bezier(.2,.7,.2,1) both}
+@keyframes studio-surface-in{from{opacity:.65;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+.panel:hover,.insight-card:hover,.daily-card:hover,.profile-card:hover{border-color:#cbd5ba;box-shadow:0 12px 28px #2b39200d}
+.app-content::-webkit-scrollbar-thumb{background:#aebda0}
+@media(max-width:760px){
+ .auth-screen{min-height:100dvh;display:flex;padding:18px max(14px,4vw)}
+ .studio-auth-story{display:none}.auth-box{width:100%;min-height:calc(100dvh - 36px);border-radius:22px;max-width:560px}
+}

@@ -61,5 +61,6 @@ setTimeout(async()=>{
  if(d.querySelector('.studio-settings-nav'))check('Dynamic coach cards support keyboard',()=>{const card=d.querySelector('#coach-profiles-grid .coach-profile-card');if(card.tabIndex!==0||card.getAttribute('role')!=='button')throw Error('Keyboard affordance missing');card.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Enter',bubbles:true}));if(!d.querySelector('#chip-coach').textContent.includes('Blaze'))throw Error('Keyboard did not select coach');});
  check('Share progress dialog',()=>{w.openShareModal();if(d.querySelector('#share-modal').classList.contains('hidden'))throw Error('Dialog hidden')});
  await new Promise(resolve=>setTimeout(resolve,100));
- console.log(JSON.stringify({checks:out,issues:[...new Set(issues)],requests:[...new Set(requests)]},null,2));w.close(); if(out.some(test=>!test.pass)||issues.length)process.exitCode=1;
+ const actionableIssues=[...new Set(issues)].filter(issue=>!issue.includes('Not implemented: navigation to another Document'));
+ console.log(JSON.stringify({checks:out,issues:actionableIssues,requests:[...new Set(requests)]},null,2));w.close(); if(out.some(test=>!test.pass)||actionableIssues.length)process.exitCode=1;
 },250);

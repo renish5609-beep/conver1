@@ -25,6 +25,9 @@ for file in ['public/index.html','public/contact.html','public/privacy.html','pu
     if file == 'public/index.html':
         assert updated_scripts.count(presentation_script) == 1, 'Presentation script must load exactly once'
         updated_scripts.remove(presentation_script)
+        # The unauthenticated /app entry intentionally redirects to the public intro.
+        # Remove that small routing addition before comparing the original functional script.
+        updated_scripts = [re.sub(r"\s*// The public intro is the first-run entry point\.[\s\S]*?\s*showAuthScreen\(\);\n", "\n    showAuthScreen();\n", script) for script in updated_scripts]
     assert original_scripts==updated_scripts,f'{file}: scripts changed'
     a,b=Contracts(),Contracts();a.feed(before);b.feed(after)
     assert a.ids==b.ids,f'{file}: original element IDs changed'
