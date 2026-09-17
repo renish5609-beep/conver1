@@ -28,6 +28,13 @@ setTimeout(async()=>{
  check('In-app navigation uses lightweight slide motion',()=>{if(!d.querySelector('#page-warmup').classList.contains('studio-slide-forward'))throw Error('Page did not slide in');});
  check('Sign-in and sign-up controls stay immediate',()=>{w.showView('signup');if(d.querySelector('.studio-route-transition').classList.contains('active'))throw Error('Auth control was blocked by transition');w.showView('signin');});
  check('Top bar keeps distinct control groups',()=>{const header=d.querySelector('.app-header');if(!header.querySelector('.app-header-left .back-btn')||header.querySelectorAll('.app-header-center .chip').length!==3||!header.querySelector('.app-header-right .user-menu'))throw Error('Header grouping changed');});
+ check('Only the primary header persists while scrolling',()=>{
+  const connectedCss=fs.readFileSync(path.resolve(path.dirname(process.argv[2]),'studio-connected.css'),'utf8');
+  const plasmaCss=fs.readFileSync(path.resolve(path.dirname(process.argv[2]),'studio-plasma.css'),'utf8');
+  if(!d.querySelector('.app-header')||plasmaCss.includes('position:sticky'))throw Error('Internal sticky chrome remains');
+  if(!connectedCss.includes('.studio-connected .feedback-btn{display:none!important}')||!connectedCss.includes('.studio-connected .app-footer{display:none!important}'))throw Error('Redundant header/footer chrome remains visible');
+  if(!connectedCss.includes('#user-avatar:not([style*="background-image"])'))throw Error('Olive account identity missing');
+ });
  check('Header Back returns to the previous page',()=>{w.navTo('home');w.navTo('settings');d.getElementById('back-btn').click();if(!d.getElementById('page-home').classList.contains('active'))throw Error('Back did not restore Home');});
  check('Header Back exits a nested Practice workspace',()=>{w.navTo('practice');w.switchPracticeTab('debate');d.getElementById('back-btn').click();if(d.getElementById('psub-practice').style.display!=='block')throw Error('Back did not restore Practice Lab');});
  check('About title uses a stable vector icon',()=>{const title=d.querySelector('.settings-about-title');if(title?.textContent.trim()!=='About'||!title.querySelector('svg circle'))throw Error('About icon or label malformed');});

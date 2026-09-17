@@ -108,6 +108,11 @@ body.reducemotion .studio-concept *,body.reducemotion .studio-concept *:before,b
 .studio-connected .back-btn{max-width:min(240px,24vw);overflow:hidden;text-overflow:ellipsis;padding:0 15px;gap:7px;white-space:nowrap;border-radius:11px}
 .studio-connected .chip{padding:0 16px;border-radius:999px;white-space:nowrap}
 .studio-connected .feedback-btn{flex:none;padding:0 13px}.studio-connected .user-menu{min-width:0;max-width:min(230px,24vw);padding:4px 10px;overflow:hidden}.studio-connected .user-avatar{flex:none}.studio-connected .user-email{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Keep the primary header quiet: Help remains reachable from navigation, while the account identity stays on-brand. */
+.studio-connected .feedback-btn{display:none!important}
+.studio-connected #user-avatar:not([style*="background-image"]){background-image:linear-gradient(145deg,#82966d,#536744)!important;background-color:#647a52!important;color:#fbfaf2!important;box-shadow:inset 0 0 0 1px #ffffff38,0 3px 9px #34422b20}
+/* Legal/help links already live in Settings and Help; the persistent in-app footer only consumed viewport space. */
+.studio-connected .app-footer{display:none!important}
 .studio-connected .page>.section-head{margin-bottom:var(--ui-6)}
 .studio-connected .section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--ui-5);min-width:0}
 .studio-connected .section-head>div,.studio-connected .section-head h2,.studio-connected .section-head p{min-width:0}
