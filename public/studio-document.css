@@ -1,0 +1,13 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Manrope:wght@500;600;700&display=swap');
+body{background:#f7f6f2;color:#333d2b;font-family:'DM Sans',sans-serif}
+h1,h2,h3,.logo,.panel-title,.faq-q{font-family:'Manrope',sans-serif;color:#303b28}
+h1{font-size:clamp(30px,5vw,46px);font-weight:600;letter-spacing:-1.5px}
+.logo{background:none;-webkit-text-fill-color:currentColor;letter-spacing:-1px;text-transform:lowercase}
+a,.header a,.footer a{color:#647b4a}.header,.footer,.faq-item{border-color:#dce2d2}
+.container{max-width:1000px;padding:54px 32px}.panel{background:#fff;border-color:#e0e5d8;border-radius:18px;box-shadow:0 7px 25px #2b392007}
+p,li,.meta,.faq-a,.info-line,.legal-links a,label,.footer{color:#6b7760}
+input,textarea,select{background:#fff;border-color:#d6dfca;color:#35422c;font-family:'DM Sans',sans-serif;font-size:16px;min-height:44px}
+.btn-primary{background:linear-gradient(120deg,#303b27,#52633f);color:#fff;font-family:'DM Sans',sans-serif;min-height:46px}
+.error-box{color:#a9313a;background:#fff0f0;border-color:#ebbdc2}.success-box{color:#326346;background:#eff7ee;border-color:#c9dcc0}
+:focus-visible{outline:2px solid #a36d49!important;outline-offset:3px}
+@media(max-width:600px){.container{padding:32px 18px}.header{padding:20px}.panel{padding:20px}.footer{padding:24px 12px}.footer a{display:inline-block;margin:6px}}

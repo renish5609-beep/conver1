@@ -4,7 +4,8 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover"/>
 <title>Conver — AI Conversation Intelligence</title>
-<link rel="icon" type="image/png" href="/favicon.png"/>
+<link rel="icon" type="image/svg+xml" href="/conver-mic.svg?v=3"/>
+<link rel="apple-touch-icon" href="/app-icon.png?v=3">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@11labs/client@latest/dist/index.umd.js"></script>
@@ -3223,13 +3224,17 @@ h1, h2, h3 {
   }
 }
 </style>
+<link rel="stylesheet" href="/studio.css?v=3"/>
+<link rel="stylesheet" href="/studio-concept.css?v=3"/>
+<link rel="stylesheet" href="/studio-connected.css?v=8"/>
+<link rel="stylesheet" href="/studio-plasma.css?v=9"/>
 </head>
 <body>
 
 <!-- BOOT SPLASH -->
 <div class="boot-splash" id="boot-splash" aria-hidden="true">
-  <div class="boot-splash-logo"><img src="/logo.png" alt="" onerror="this.remove()"/></div>
-  <div class="boot-splash-text">Conver</div>
+  <div class="boot-splash-logo"><img src="/brand-mark.svg" alt="" onerror="this.remove()"/></div>
+  <div class="boot-splash-text">conver.</div>
 </div>
 
 <!-- SHARE MODAL -->
@@ -3300,9 +3305,14 @@ h1, h2, h3 {
 
 <!-- AUTH SCREEN -->
 <div class="auth-screen hidden" id="auth-screen">
+  <aside class="studio-auth-story" aria-label="Welcome to Conver">
+    <div><a class="studio-auth-home" href="/">← Back to Conver</a><small>YOUR VOICE HAS PLACES TO GO.</small><h2>A little practice.<br>A different<br><em>presence.</em></h2></div>
+    <div class="studio-auth-art" aria-hidden="true"><div></div><div></div></div>
+    <p>For the interview. The big idea.<br>The moment that matters.</p>
+  </aside>
   <div class="auth-box">
     <div class="auth-logo">
-      <div class="auth-logo-icon"><img src="/logo.png" alt="Conver" style="width:100%;height:100%;object-fit:contain;border-radius:inherit"/></div>
+      <div class="auth-logo-icon"><img src="/brand-mark.svg" alt="Conver" style="width:100%;height:100%;object-fit:contain;border-radius:inherit"/></div>
       <div class="auth-logo-text">Conver</div>
     </div>
 
@@ -3330,9 +3340,9 @@ h1, h2, h3 {
       <div class="auth-sub">Sign in to continue improving.</div>
       <div id="signin-error" class="auth-error hidden"></div>
       <div id="signin-success" class="auth-success hidden"></div>
-      <label class="auth-label">Email</label>
+      <label class="auth-label" for="signin-email">Email</label>
       <input type="email" id="signin-email" class="auth-input" placeholder="your@email.com" onkeydown="if(event.key==='Enter')signIn()"/>
-      <label class="auth-label">Password</label>
+      <label class="auth-label" for="signin-password">Password</label>
       <input type="password" id="signin-password" class="auth-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')signIn()"/>
       <button class="auth-btn" id="signin-btn" onclick="signIn()">Sign In</button>
       <div class="auth-link">Don't have an account? <a onclick="showView('signup')">Sign up free</a></div>
@@ -3345,9 +3355,9 @@ h1, h2, h3 {
       <div class="auth-sub">Free to start. No credit card required.</div>
       <div id="signup-error" class="auth-error hidden"></div>
       <div id="signup-success" class="auth-success hidden"></div>
-      <label class="auth-label">Email</label>
+      <label class="auth-label" for="signup-email">Email</label>
       <input type="email" id="signup-email" class="auth-input" placeholder="your@email.com" onkeydown="if(event.key==='Enter')signUp()"/>
-      <label class="auth-label">Password <span style="color:var(--muted);font-size:10px;font-weight:400">(min 6 characters)</span></label>
+      <label class="auth-label" for="signup-password">Password <span style="color:var(--muted);font-size:10px;font-weight:400">(min 6 characters)</span></label>
       <input type="password" id="signup-password" class="auth-input" placeholder="Create a password" onkeydown="if(event.key==='Enter')signUp()"/>
       <button class="auth-btn" id="signup-btn" onclick="signUp()">Create Account</button>
       <div class="auth-link">Already have an account? <a onclick="showView('signin')">Sign in</a></div>
@@ -3368,7 +3378,7 @@ h1, h2, h3 {
   <header class="app-header">
     <div class="app-header-left">
       <a class="app-logo" href="/" style="text-decoration:none;color:inherit">
-        <div class="app-logo-icon"><img src="/logo.png" alt="Conver" style="width:100%;height:100%;object-fit:contain;border-radius:inherit"/></div>
+        <div class="app-logo-icon"><img src="/brand-mark.svg" alt="Conver" style="width:100%;height:100%;object-fit:contain;border-radius:inherit"/></div>
         <span class="app-logo-text">Conver</span>
       </a>
       <button class="back-btn" id="back-btn" onclick="handleBackBtn()">← Back</button>
@@ -3748,7 +3758,7 @@ h1, h2, h3 {
             <!-- Left: camera + live transcript -->
             <div>
               <!-- Camera feed -->
-              <div style="position:relative;border-radius:16px;overflow:hidden;background:#000;aspect-ratio:16/9;max-width:440px;margin:0 auto 16px">
+              <div class="studio-camera-surface" style="position:relative;border-radius:16px;overflow:hidden;background:#000;aspect-ratio:16/9;max-width:440px;margin:0 auto 16px">
                 <video id="rt-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1);will-change:transform;backface-visibility:hidden"></video>
                 <canvas id="rt-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;transform:scaleX(-1);will-change:contents;backface-visibility:hidden"></canvas>
                 <!-- Hidden composite canvas for recording — camera + overlay burned together -->
@@ -4616,8 +4626,8 @@ h1, h2, h3 {
             </div>
 
             <div class="panel">
-              <div class="settings-section-title">ℹ About</div>
-              <div style="font-size:13px;color:var(--muted2);line-height:2">
+              <div class="settings-section-title settings-about-title"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 10.75v5.25"></path><circle cx="12" cy="7.5" r=".75" fill="currentColor" stroke="none"></circle></svg><span>About</span></div>
+              <div class="settings-about-copy" style="font-size:13px;color:var(--muted2);line-height:2">
                 <p><strong style="color:var(--text)">Conver v2.0</strong> — AI Conversation Intelligence</p>
                 <p>AI powered by <strong style="color:var(--accent3)">Claude (claude-sonnet-4-5)</strong></p>
                 <p>Voice by <strong style="color:var(--accent2)">ElevenLabs</strong></p>
@@ -11700,7 +11710,15 @@ async function initAuth() {
     currentUser = session.user;
     await afterSignIn();
   } else {
+    // Studio entry: show the intro unless a visitor explicitly chose authentication.
+    // Session restoration and email-verification handling above remain unchanged.
+    const studioAuthView = new URLSearchParams(window.location.search).get('auth');
+    if (!['signin', 'signup'].includes(studioAuthView)) {
+      window.location.replace('/landing.html');
+      return;
+    }
     showAuthScreen();
+    showView(studioAuthView);
   }
 }
 
@@ -12840,5 +12858,6 @@ document.head.appendChild(rippleStyle);
   </div>
 </div>
 
+<script src="/studio-ui.js?v=12" defer></script>
 </body>
 </html>

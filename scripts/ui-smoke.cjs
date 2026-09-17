@@ -1,0 +1,126 @@
+const {JSDOM,VirtualConsole}=require('jsdom');
+const fs=require('fs');
+let source=fs.readFileSync(process.argv[2],'utf8');
+const path=require('path');
+source=source.replace('<script src="/studio-ui.js?v=12" defer></script>',()=>'<script>'+fs.readFileSync(path.resolve(path.dirname(process.argv[2]),'studio-ui.js'),'utf8')+'</script>');
+const issues=[];const requests=[];
+const vc=new VirtualConsole();vc.on('jsdomError',e=>issues.push(e.message));
+const noop=()=>{};
+const dom=new JSDOM(source,{url:'http://localhost:3000/app?auth=signin',runScripts:'dangerously',pretendToBeVisual:true,virtualConsole:vc,beforeParse(w){
+ w.matchMedia=()=>({matches:false,addListener:noop,removeListener:noop,addEventListener:noop});
+ w.HTMLElement.prototype.scrollIntoView=noop;
+ w.HTMLCanvasElement.prototype.getContext=()=>new Proxy({measureText:()=>({width:30}),createLinearGradient:()=>({addColorStop:noop})},{get:(o,k)=>o[k]||noop,set:(o,k,v)=>(o[k]=v,true)});
+ w.ResizeObserver=class {observe(){} unobserve(){} disconnect(){}};
+ w.IntersectionObserver=class {observe(){} unobserve(){} disconnect(){}};
+ w.fetch=async(url)=>{requests.push(String(url));return {ok:false,status:503,json:async()=>({error:'Test environment: no live backend'}),text:async()=>''}};
+ w.supabase={createClient:()=>({auth:{onAuthStateChange:noop,getSession:async()=>({data:{session:null}})}})};
+}});
+setTimeout(async()=>{
+ const w=dom.window,d=w.document,out=[];
+ function check(name,action){try{action();out.push({name,pass:true})}catch(e){out.push({name,pass:false,error:e.message})}}
+ check('Intentional auth entry skips the duplicate boot splash',()=>{if(d.getElementById('boot-splash'))throw Error('Second splash remains')});
+ check('Guest entry',()=>{d.querySelector('.auth-btn-guest').click();if(!d.querySelector('#auth-screen').classList.contains('hidden'))throw Error('Auth overlay remains')});
+ await new Promise(resolve=>setTimeout(resolve,0));
+ check('Conversation route transition uses clean profile silhouettes',()=>{const layer=d.querySelector('.studio-route-transition'),speakers=layer&&layer.querySelectorAll('.studio-speaker');if(!layer||!layer.querySelector('.studio-transition-word')||speakers.length!==2||!layer.querySelector('.studio-dialogue-signal'))throw Error('Conversation transition incomplete');for(const speaker of speakers){if(speaker.querySelectorAll('.studio-head-silhouette').length!==1||speaker.querySelector('.studio-speaker-frame,.studio-head-eye,.studio-head-mouth'))throw Error('Abstract face details remain');}});
+ check('Account entry triggers one transition',()=>{if(!d.querySelector('.studio-route-transition').classList.contains('active'))throw Error('Account boundary transition missing');});
+ d.querySelector('.studio-route-transition').classList.remove('active','leaving');
+ check('In-app navigation stays immediate',()=>{w.navTo('warmup');if(d.querySelector('.studio-route-transition').classList.contains('active'))throw Error('Routine navigation was blocked by transition');});
+ check('In-app navigation uses lightweight slide motion',()=>{if(!d.querySelector('#page-warmup').classList.contains('studio-slide-forward'))throw Error('Page did not slide in');});
+ check('Sign-in and sign-up controls stay immediate',()=>{w.showView('signup');if(d.querySelector('.studio-route-transition').classList.contains('active'))throw Error('Auth control was blocked by transition');w.showView('signin');});
+ check('Top bar keeps distinct control groups',()=>{const header=d.querySelector('.app-header');if(!header.querySelector('.app-header-left .back-btn')||header.querySelectorAll('.app-header-center .chip').length!==3||!header.querySelector('.app-header-right .user-menu'))throw Error('Header grouping changed');});
+ check('Only the primary header persists while scrolling',()=>{
+  const connectedCss=fs.readFileSync(path.resolve(path.dirname(process.argv[2]),'studio-connected.css'),'utf8');
+  const plasmaCss=fs.readFileSync(path.resolve(path.dirname(process.argv[2]),'studio-plasma.css'),'utf8');
+  if(!d.querySelector('.app-header')||plasmaCss.includes('position:sticky'))throw Error('Internal sticky chrome remains');
+  if(!connectedCss.includes('.studio-connected .feedback-btn{display:none!important}')||!connectedCss.includes('.studio-connected .app-footer{display:none!important}'))throw Error('Redundant header/footer chrome remains visible');
+  if(!connectedCss.includes('#user-avatar:not([style*="background-image"])'))throw Error('Olive account identity missing');
+ });
+ check('Header Back returns to the previous page',()=>{w.navTo('home');w.navTo('settings');d.getElementById('back-btn').click();if(!d.getElementById('page-home').classList.contains('active'))throw Error('Back did not restore Home');});
+ check('Header Back exits a nested Practice workspace',()=>{w.navTo('practice');w.switchPracticeTab('debate');d.getElementById('back-btn').click();if(d.getElementById('psub-practice').style.display!=='block')throw Error('Back did not restore Practice Lab');});
+ check('About title uses a stable vector icon',()=>{const title=d.querySelector('.settings-about-title');if(title?.textContent.trim()!=='About'||!title.querySelector('svg circle'))throw Error('About icon or label malformed');});
+ check('Shared page headings remain complete',()=>{for(const page of ['warmup','practice','voice','coldopen','insights','settings','contact']){const head=d.querySelector('#page-'+page+' .section-head');if(!head?.querySelector('h2')||!head.querySelector('p'))throw Error('Incomplete heading '+page);}});
+ check('Primary responsive grids retain every item',()=>{if(d.querySelectorAll('#scenario-cards .sc-card').length!==6)throw Error('Practice scenarios lost');if(d.querySelectorAll('#voice-coach-picker .cp-btn').length!==6)throw Error('Voice coaches lost');if(d.querySelectorAll('.scenario-cat-btn').length!==6)throw Error('Cold Open categories lost');});
+ for(const name of ['Blaze','Echo','Sage','Nova','Rex','Luna']){
+  const button=d.querySelector('#vcp-'+name.toLowerCase());button.click();
+  await new Promise(resolve=>setTimeout(resolve,0));
+  check('SVG picker retains coach action '+name,()=>{const image=button.querySelector('.cp-init img');if(image?.getAttribute('src')!=='/coach-'+name.toLowerCase()+'.svg')throw Error('Wrong artwork');if(button.getAttribute('aria-pressed')!=='true'||d.querySelectorAll('#voice-coach-picker .active').length!==1)throw Error('Selection not exclusive');if(!d.querySelector('#voice-coach-avatar').classList.contains('coach-'+name.toLowerCase()))throw Error('Real avatar did not update');});
+ }
+ w.navTo('coldopen');
+ for(const button of d.querySelectorAll('.scenario-cat-btn')){
+  button.click();await new Promise(resolve=>setTimeout(resolve,0));
+  check('Cold Open selection retains character '+button.dataset.cat,()=>{if(!d.querySelector('#coldopen-character-display #scenario-char-'+button.dataset.cat))throw Error('Character not rendered');if(button.getAttribute('aria-pressed')!=='true'||d.querySelectorAll('.scenario-cat-btn[aria-pressed=true]').length!==1)throw Error('Selection not exclusive');});
+ }
+ check('Approved overview replaces old hero',()=>{if(!d.querySelector('.studio-overview .at-liquid-ring'))throw Error('Preview ring missing');if(d.querySelector('#page-home>.home-hero'))throw Error('Old hero remains');if(d.querySelectorAll('.studio-overview .at-launch').length!==3)throw Error('Missing launch cards');});
+ check('Real counters and score retained',()=>{for(const id of ['anim-sessions','anim-streak','anim-xp','anim-level','home-conver-score','score-ring'])if(d.querySelectorAll('#'+id).length!==1)throw Error('Missing or duplicate '+id);});
+ for(const button of d.querySelectorAll('.studio-overview [data-studio-page]'))check('Concept action '+button.dataset.studioPage,()=>{button.click();const target=button.dataset.studioPage==='coaches'?'practice':button.dataset.studioPage;if(!d.querySelector('#page-'+target).classList.contains('active'))throw Error('Wrong destination');if(button.dataset.studioPage==='coaches'&&d.querySelector('#psub-coaches').style.display!=='block')throw Error('Coach tab not selected');});
+ check('Sidebar coaches uses real selection screen',()=>{d.querySelector('.at-sidebar [data-page=profiles]').click();if(d.querySelector('#psub-coaches').style.display!=='block')throw Error('Coach screen missing');});
+ check('Voice stage retains original start handler',()=>{const button=d.querySelector('.studio-voice-stage button[onclick="startVoiceSession()"]');if(!button)throw Error('Live-session button missing');const original=w.startVoiceSession;let invoked=0;try{w.startVoiceSession=()=>invoked++;button.click();if(invoked!==1)throw Error('Handler not called');}finally{w.startVoiceSession=original;}});
+ for(const page of ['home','warmup','practice','voice','coldopen','insights','settings','contact'])check('Navigate '+page,()=>{w.navTo(page);if(!d.querySelector('#page-'+page).classList.contains('active'))throw Error('Page not active')});
+ for(const page of ['debate','qbank','companion','realtime','coaches','practice'])check('Practice tab '+page,()=>{w.navTo('practice');w.switchPracticeTab(page);if(d.querySelector('#psub-'+page).style.display!=='block')throw Error('Tab panel hidden')});
+ check('Question Bank uses aligned editorial rows',()=>{
+  w.navTo('practice');w.switchPracticeTab('qbank');
+  const rows=[...d.querySelectorAll('#qb-list .qb-item')];
+  const css=fs.readFileSync(path.resolve(path.dirname(process.argv[2]),'studio-plasma.css'),'utf8');
+  if(rows.length<3||rows.some(row=>!row.querySelector('.qb-diff')||!row.querySelector('.qb-meta>.tag')||!row.querySelector('.qb-practice-btn')))throw Error('Question metadata rail incomplete');
+  if(css.includes('#psub-qbank .qb-item:nth-child(even)')||!css.includes("content:'Level'")||!css.includes("content:'Context'"))throw Error('Old stagger or pill treatment remains');
+ });
+ for(const page of ['insights','skills','history','briefing','coachnotes'])check('Insights tab '+page,()=>{
+  w.navTo('insights');w.switchInsightsTab(page);
+  const buttons=[...d.querySelectorAll('#page-insights .insights-tab-btn')];
+  if(d.querySelector('#insights-tab-'+page).style.display!=='block')throw Error('Tab panel hidden');
+  if(buttons.filter(button=>button.classList.contains('active')).length!==1||!d.getElementById('itab-'+page).classList.contains('active'))throw Error('Green selection state is not exclusive');
+  if(buttons.some(button=>button.style.background||button.style.borderColor||button.style.color))throw Error('Legacy purple inline state remains');
+  if(d.getElementById('itab-'+page).getAttribute('aria-selected')!=='true')throw Error('Selected tab state not announced');
+ });
+ const radar=d.getElementById('radar-canvas');
+ radar.dataset.studioRadar='';
+ w.switchInsightsTab('skills');
+ await new Promise(resolve=>setTimeout(resolve,120));
+ check('Skills radar is sharp, legible and unclipped',()=>{
+  const css=fs.readFileSync(path.resolve(path.dirname(process.argv[2]),'studio-plasma.css'),'utf8');
+  if(radar.dataset.studioRadar!=='enhanced'||radar.width<420||radar.height<360)throw Error('Enhanced radar did not render');
+  if(!css.includes('#insights-tab-skills .radar-wrap')||!css.includes('#insights-tab-skills .skill-row'))throw Error('Skills typography system missing');
+ });
+ // Exercise original callbacks with local fixtures, never live services.
+ for(const name of ['Blaze','Echo','Sage','Nova','Rex','Luna'])check('Select coach '+name,()=>{
+  w.selectCoach(name);
+  if(!d.querySelector('#chip-coach').textContent.includes(name))throw Error('Coach chip not synchronized');
+  if(d.querySelectorAll('#coach-profiles-grid .selected').length!==1)throw Error('Coach selection not exclusive');
+ });
+ w.navTo('settings');
+ const preferences=[...d.querySelectorAll('#page-settings input,#page-settings select')].filter(el=>el.type!=='file');
+ for(const control of preferences)check('Persist preference '+control.id,()=>{
+  const wanted=control.type==='checkbox'?!control.checked:control.tagName==='SELECT'?control.options[control.options.length-1].value:'Studio test';
+  if(control.type==='checkbox')control.checked=wanted;else control.value=wanted;
+  control.dispatchEvent(new w.Event('change',{bubbles:true}));
+  // Discard the in-DOM value, then restore it through the existing persistence code.
+  if(control.type==='checkbox')control.checked=!wanted;else control.value='';
+  w.applySettingsToUI();
+  if((control.type==='checkbox'?control.checked:control.value)!==wanted)throw Error('Saved preference did not reload');
+ });
+ check('Reduced motion preference applied',()=>{if(!d.body.classList.contains('reducemotion'))throw Error('Motion class not applied')});
+ check('Compact preference applied',()=>{if(!d.body.classList.contains('compact-mode'))throw Error('Compact class not applied')});
+ check('Saved accent remains functional',()=>{w.setAccentColor('#38bdf8');if(d.documentElement.style.getPropertyValue('--accent')!=='#38bdf8')throw Error('Accent not applied')});
+ for(const button of d.querySelectorAll('.studio-settings-nav button'))check('Settings category '+button.textContent,()=>{
+  button.click();if(button.getAttribute('aria-pressed')!=='true')throw Error('Category not selected');
+  if(![...d.querySelectorAll('#page-settings .settings-section-title')].some(title=>!title.closest('.panel').hidden))throw Error('No settings visible');
+ });
+ if(d.querySelector('.studio-settings-nav'))check('All settings remain reachable',()=>{
+  d.querySelector('.studio-settings-nav button').click();
+  if([...d.querySelectorAll('#page-settings .settings-section-title')].some(title=>title.closest('.panel').hidden))throw Error('A section was lost');
+ });
+ if(d.querySelector('.studio-settings-nav'))check('Preference accessible names',()=>{
+  for(const input of preferences)if(!input.getAttribute('aria-label')&&!input.labels?.length)throw Error('Missing name '+input.id);
+ });
+ const analysis={composite:8,clarity:8,confidence:7,persuasion:9,storytelling:8,conciseness:7,overall:'Test assessment',strengths:['Specific example'],improvements:['Shorter closing'],rewrite:'Test rewritten answer',filler_feedback:'One pause',weak_skill:'Conciseness',weak_skill_tip:'Keep the closing focused'};
+ check('Generated feedback renders five dimensions',()=>{w.renderResults(analysis,'This is a local fixture answer.');const text=d.querySelector('#results-area').textContent;for(const name of ['Clarity','Confidence','Persuasion','Storytelling','Conciseness'])if(!text.includes(name))throw Error('Missing score '+name);if(!text.includes('Test assessment'))throw Error('Assessment missing');});
+ check('Session report opens with real renderer',()=>{w.openReport({scenario:'Interview',coach:'Luna',time:new w.Date(),question:'Test question',analysis});if(d.querySelector('#report-modal').classList.contains('hidden'))throw Error('Report hidden');if(d.querySelector('#rm-rewrite').textContent!=='Test rewritten answer')throw Error('Rewrite missing');});
+ check('Session report closes',()=>{w.closeReport();if(!d.querySelector('#report-modal').classList.contains('hidden'))throw Error('Report stays open');});
+ await new Promise(resolve=>setTimeout(resolve,0));
+ if(d.querySelector('.studio-settings-nav'))check('Dynamic coach cards support keyboard',()=>{const card=d.querySelector('#coach-profiles-grid .coach-profile-card');if(card.tabIndex!==0||card.getAttribute('role')!=='button')throw Error('Keyboard affordance missing');card.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Enter',bubbles:true}));if(!d.querySelector('#chip-coach').textContent.includes('Blaze'))throw Error('Keyboard did not select coach');});
+ check('Share progress dialog',()=>{w.openShareModal();if(d.querySelector('#share-modal').classList.contains('hidden'))throw Error('Dialog hidden')});
+ await new Promise(resolve=>setTimeout(resolve,100));
+ check('Overview coach tracks real selection',()=>{if(d.querySelector('.studio-overview .at-selected-name').textContent!==d.querySelector('#home-coach').textContent)throw Error('Coach name diverged');});
+ const actionableIssues=[...new Set(issues)];
+ console.log(JSON.stringify({checks:out,issues:actionableIssues,requests:[...new Set(requests)]},null,2));w.close(); if(out.some(test=>!test.pass)||actionableIssues.length)process.exitCode=1;
+},250);
