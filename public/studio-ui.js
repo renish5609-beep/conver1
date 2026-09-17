@@ -110,9 +110,9 @@
   layer.setAttribute('aria-hidden', 'true');
   layer.innerHTML = `<div class="studio-transition-core">
     <div class="studio-dialogue-stage" aria-hidden="true">
-      <span class="studio-speaker studio-speaker-left"><svg viewBox="0 0 96 112"><path class="studio-speaker-frame" d="M14 100V25L26 13h44l12 12v75"/><path class="studio-head-silhouette" d="M18 103c1-13 8-23 20-29l6-3v-7c-8-6-12-16-12-28C32 19 43 7 59 7c15 0 25 11 25 25 0 6-2 10-1 14l7 8c2 3 0 7-4 8l-5 1-1 8c-1 7-7 10-15 10h-3v7c11 4 19 13 22 25Z"/><circle class="studio-head-eye" cx="71" cy="37" r="1.8"/><path class="studio-head-mouth" d="M74 59h7"/></svg></span>
+      <span class="studio-speaker studio-speaker-left"><svg viewBox="0 0 112 136"><path class="studio-head-silhouette" d="M22 134l-1-18c-1-8-4-14-8-21C6 84 4 71 8 56 13 35 29 21 50 20c20-1 36 10 42 28 3 9 3 18 1 27-1 4 0 7 3 10l8 8c4 4 2 9-3 11l-7 2c1 3 0 6-3 8 3 3 2 7-2 9l-5 2-1 8c-1 8-7 12-16 12H55l2 15H22Z"/></svg></span>
       <span class="studio-dialogue-signal"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
-      <span class="studio-speaker studio-speaker-right"><svg viewBox="0 0 96 112"><path class="studio-speaker-frame" d="M14 100V25L26 13h44l12 12v75"/><path class="studio-head-silhouette" d="M18 103c1-13 8-23 20-29l6-3v-7c-8-6-12-16-12-28C32 19 43 7 59 7c15 0 25 11 25 25 0 6-2 10-1 14l7 8c2 3 0 7-4 8l-5 1-1 8c-1 7-7 10-15 10h-3v7c11 4 19 13 22 25Z"/><circle class="studio-head-eye" cx="71" cy="37" r="1.8"/><path class="studio-head-mouth" d="M74 59h7"/></svg></span>
+      <span class="studio-speaker studio-speaker-right"><svg viewBox="0 0 112 136"><path class="studio-head-silhouette" d="M22 134l-1-18c-1-8-4-14-8-21C6 84 4 71 8 56 13 35 29 21 50 20c20-1 36 10 42 28 3 9 3 18 1 27-1 4 0 7 3 10l8 8c4 4 2 9-3 11l-7 2c1 3 0 6-3 8 3 3 2 7-2 9l-5 2-1 8c-1 8-7 12-16 12H55l2 15H22Z"/></svg></span>
     </div>
     <span class="studio-transition-word">conver<i>.</i></span>
     <span class="studio-transition-status">opening your studio</span>

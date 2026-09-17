@@ -3,7 +3,7 @@ const {JSDOM,VirtualConsole}=require('jsdom');
 const path=require('path');const root=path.resolve(__dirname,'..');
 let intervals=[],errors=[];const vc=new VirtualConsole();vc.on('jsdomError',e=>errors.push(e.message));
 let source=fs.readFileSync(path.join(root,'public/landing.html'),'utf8');
-source=source.replace('<script src="/studio-landing.js?v=7" defer></script>','<script>'+fs.readFileSync(path.join(root,'public/studio-landing.js'),'utf8')+'</script>');
+source=source.replace('<script src="/studio-landing.js?v=8" defer></script>','<script>'+fs.readFileSync(path.join(root,'public/studio-landing.js'),'utf8')+'</script>');
 const dom=new JSDOM(source,{url:'http://localhost:4173/',runScripts:'dangerously',pretendToBeVisual:true,virtualConsole:vc,beforeParse(w){w.matchMedia=()=>({matches:false,addEventListener(){}});w.HTMLElement.prototype.scrollIntoView=function(){this.dataset.scrolled='true'};w.setInterval=(fn,ms)=>{intervals.push({fn,ms});return intervals.length};w.setTimeout=fn=>{fn();return 1};}});
 const d=dom.window.document;
 try{
@@ -12,6 +12,7 @@ try{
  assert.equal(d.querySelectorAll('[data-public-coach]').length,6);
  assert.equal(d.querySelectorAll('.studio-public-transition .studio-speaker').length,2);
  assert.ok(d.querySelector('.studio-public-transition .studio-dialogue-signal'));
+ for(const speaker of d.querySelectorAll('.studio-public-transition .studio-speaker')){assert.equal(speaker.querySelectorAll('.studio-head-silhouette').length,1);assert.equal(speaker.querySelectorAll('.studio-speaker-frame,.studio-head-eye,.studio-head-mouth').length,0);}
  for(const button of d.querySelectorAll('[data-public-coach]')){const img=button.querySelector('.at-site-coach-art img');assert.ok(img);assert.ok(fs.existsSync(path.join(root,'public',img.getAttribute('src'))));button.click();assert.equal(d.querySelector('.at-detail-avatar img').getAttribute('src'),img.getAttribute('src'));}
  assert.equal(d.querySelector('.at-site-header-actions .at-text-button').getAttribute('href'),'/app?auth=signin');
  assert.ok(d.querySelector('.at-site-type-line .at-type-cursor'));

@@ -2,7 +2,7 @@ const {JSDOM,VirtualConsole}=require('jsdom');
 const fs=require('fs');
 let source=fs.readFileSync(process.argv[2],'utf8');
 const path=require('path');
-source=source.replace('<script src="/studio-ui.js?v=11" defer></script>',()=>'<script>'+fs.readFileSync(path.resolve(path.dirname(process.argv[2]),'studio-ui.js'),'utf8')+'</script>');
+source=source.replace('<script src="/studio-ui.js?v=12" defer></script>',()=>'<script>'+fs.readFileSync(path.resolve(path.dirname(process.argv[2]),'studio-ui.js'),'utf8')+'</script>');
 const issues=[];const requests=[];
 const vc=new VirtualConsole();vc.on('jsdomError',e=>issues.push(e.message));
 const noop=()=>{};
@@ -21,7 +21,7 @@ setTimeout(async()=>{
  check('Intentional auth entry skips the duplicate boot splash',()=>{if(d.getElementById('boot-splash'))throw Error('Second splash remains')});
  check('Guest entry',()=>{d.querySelector('.auth-btn-guest').click();if(!d.querySelector('#auth-screen').classList.contains('hidden'))throw Error('Auth overlay remains')});
  await new Promise(resolve=>setTimeout(resolve,0));
- check('Conversation route transition is present',()=>{const layer=d.querySelector('.studio-route-transition');if(!layer||!layer.querySelector('.studio-transition-word')||layer.querySelectorAll('.studio-speaker').length!==2||!layer.querySelector('.studio-dialogue-signal'))throw Error('Conversation transition incomplete');});
+ check('Conversation route transition uses clean profile silhouettes',()=>{const layer=d.querySelector('.studio-route-transition'),speakers=layer&&layer.querySelectorAll('.studio-speaker');if(!layer||!layer.querySelector('.studio-transition-word')||speakers.length!==2||!layer.querySelector('.studio-dialogue-signal'))throw Error('Conversation transition incomplete');for(const speaker of speakers){if(speaker.querySelectorAll('.studio-head-silhouette').length!==1||speaker.querySelector('.studio-speaker-frame,.studio-head-eye,.studio-head-mouth'))throw Error('Abstract face details remain');}});
  check('Account entry triggers one transition',()=>{if(!d.querySelector('.studio-route-transition').classList.contains('active'))throw Error('Account boundary transition missing');});
  d.querySelector('.studio-route-transition').classList.remove('active','leaving');
  check('In-app navigation stays immediate',()=>{w.navTo('warmup');if(d.querySelector('.studio-route-transition').classList.contains('active'))throw Error('Routine navigation was blocked by transition');});
