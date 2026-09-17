@@ -50,6 +50,13 @@ setTimeout(async()=>{
  check('Voice stage retains original start handler',()=>{const button=d.querySelector('.studio-voice-stage button[onclick="startVoiceSession()"]');if(!button)throw Error('Live-session button missing');const original=w.startVoiceSession;let invoked=0;try{w.startVoiceSession=()=>invoked++;button.click();if(invoked!==1)throw Error('Handler not called');}finally{w.startVoiceSession=original;}});
  for(const page of ['home','warmup','practice','voice','coldopen','insights','settings','contact'])check('Navigate '+page,()=>{w.navTo(page);if(!d.querySelector('#page-'+page).classList.contains('active'))throw Error('Page not active')});
  for(const page of ['debate','qbank','companion','realtime','coaches','practice'])check('Practice tab '+page,()=>{w.navTo('practice');w.switchPracticeTab(page);if(d.querySelector('#psub-'+page).style.display!=='block')throw Error('Tab panel hidden')});
+ check('Question Bank uses aligned editorial rows',()=>{
+  w.navTo('practice');w.switchPracticeTab('qbank');
+  const rows=[...d.querySelectorAll('#qb-list .qb-item')];
+  const css=fs.readFileSync(path.resolve(path.dirname(process.argv[2]),'studio-plasma.css'),'utf8');
+  if(rows.length<3||rows.some(row=>!row.querySelector('.qb-diff')||!row.querySelector('.qb-meta>.tag')||!row.querySelector('.qb-practice-btn')))throw Error('Question metadata rail incomplete');
+  if(css.includes('#psub-qbank .qb-item:nth-child(even)')||!css.includes("content:'Level'")||!css.includes("content:'Context'"))throw Error('Old stagger or pill treatment remains');
+ });
  for(const page of ['skills','history','briefing','coachnotes'])check('Insights tab '+page,()=>{w.navTo('insights');w.switchInsightsTab(page);if(d.querySelector('#insights-tab-'+page).style.display!=='block')throw Error('Tab panel hidden')});
  // Exercise original callbacks with local fixtures, never live services.
  for(const name of ['Blaze','Echo','Sage','Nova','Rex','Luna'])check('Select coach '+name,()=>{
