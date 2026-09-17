@@ -108,7 +108,15 @@
   const layer = document.createElement('div');
   layer.className = 'studio-route-transition';
   layer.setAttribute('aria-hidden', 'true');
-  layer.innerHTML = '<div class="studio-transition-core"><span class="studio-transition-mark"><img src="/brand-mark.svg" alt=""></span><span class="studio-transition-word">conver<i>.</i></span><span class="studio-transition-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><span class="studio-transition-status">opening your studio</span></div>';
+  layer.innerHTML = `<div class="studio-transition-core">
+    <div class="studio-dialogue-stage" aria-hidden="true">
+      <span class="studio-speaker studio-speaker-left"><svg viewBox="0 0 96 112"><path class="studio-speaker-frame" d="M14 100V25L26 13h44l12 12v75"/><path class="studio-head-silhouette" d="M18 103c1-13 8-23 20-29l6-3v-7c-8-6-12-16-12-28C32 19 43 7 59 7c15 0 25 11 25 25 0 6-2 10-1 14l7 8c2 3 0 7-4 8l-5 1-1 8c-1 7-7 10-15 10h-3v7c11 4 19 13 22 25Z"/><circle class="studio-head-eye" cx="71" cy="37" r="1.8"/><path class="studio-head-mouth" d="M74 59h7"/></svg></span>
+      <span class="studio-dialogue-signal"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+      <span class="studio-speaker studio-speaker-right"><svg viewBox="0 0 96 112"><path class="studio-speaker-frame" d="M14 100V25L26 13h44l12 12v75"/><path class="studio-head-silhouette" d="M18 103c1-13 8-23 20-29l6-3v-7c-8-6-12-16-12-28C32 19 43 7 59 7c15 0 25 11 25 25 0 6-2 10-1 14l7 8c2 3 0 7-4 8l-5 1-1 8c-1 7-7 10-15 10h-3v7c11 4 19 13 22 25Z"/><circle class="studio-head-eye" cx="71" cy="37" r="1.8"/><path class="studio-head-mouth" d="M74 59h7"/></svg></span>
+    </div>
+    <span class="studio-transition-word">conver<i>.</i></span>
+    <span class="studio-transition-status">opening your studio</span>
+  </div>`;
   document.body.append(layer);
   const status = layer.querySelector('.studio-transition-status');
   let closeTimer = 0;
