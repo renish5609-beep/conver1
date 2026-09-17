@@ -225,6 +225,23 @@
     animate(after, reverse, before.page !== after.page);
     syncBack();
   }
+  function syncInsightsSelection(tab) {
+    const buttons = [...document.querySelectorAll('#page-insights .insights-tab-btn')];
+    if (!buttons.length) return;
+    buttons[0].parentElement?.setAttribute('role', 'tablist');
+    buttons.forEach(button => {
+      const selected = button.id === 'itab-' + tab;
+      button.classList.toggle('active', selected);
+      button.setAttribute('role', 'tab');
+      button.setAttribute('aria-selected', String(selected));
+      button.setAttribute('aria-controls', 'insights-tab-' + button.id.replace('itab-', ''));
+      // The legacy callback paints the current tab with the old purple accent.
+      // Selection now belongs to the green active class, so clear those inline paints.
+      button.style.removeProperty('background');
+      button.style.removeProperty('border-color');
+      button.style.removeProperty('color');
+    });
+  }
 
   window.navTo = function() {
     const rootCall = depth === 0;
@@ -249,11 +266,13 @@
     window.switchInsightsTab = function() {
       const rootCall = depth === 0;
       const before = rootCall ? state() : null;
+      const tab = arguments[0];
       depth++;
       try { return originalInsightsTab.apply(this, arguments); }
-      finally { depth--; if (rootCall) commit(before, state()); }
+      finally { depth--; syncInsightsSelection(tab); if (rootCall) commit(before, state()); }
     };
   }
+  syncInsightsSelection(typeof currentInsightsTab === 'string' ? currentInsightsTab : 'insights');
 
   function cleanup(current) {
     // Preserve the original specialized exit behavior for active recording or
@@ -491,4 +510,100 @@
       card.click();
     });
   });
+})();
+
+// Replace only the small legacy canvas presentation. Existing skill values,
+// rendering calls, persistence and score calculations remain authoritative.
+(() => {
+  const canvas = document.getElementById('radar-canvas');
+  if (!canvas) return;
+  const keys = ['clarity', 'confidence', 'persuasion', 'storytelling', 'conciseness'];
+  const labels = ['CLARITY', 'CONFIDENCE', 'PERSUASION', 'STORYTELLING', 'CONCISENESS'];
+  const W = 420;
+  const H = 360;
+  const cx = W / 2;
+  const cy = H / 2 + 2;
+  const radius = 118;
+  const labelRadius = 158;
+
+  function point(index, distance) {
+    const angle = -Math.PI / 2 + index * Math.PI * 2 / keys.length;
+    return {x: cx + Math.cos(angle) * distance, y: cy + Math.sin(angle) * distance, angle};
+  }
+
+  function drawStudioRadar() {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    canvas.style.aspectRatio = W + ' / ' + H;
+    canvas.dataset.studioRadar = 'enhanced';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    ctx.lineJoin = 'round';
+    const state = typeof S !== 'undefined' && S.skills ? S.skills : {};
+    const values = keys.map(key => Math.max(0, Math.min(100, Number(state[key]) || 0)));
+    canvas.setAttribute('role', 'img');
+    canvas.setAttribute('aria-label', labels.map((label, index) => label.toLowerCase() + ' ' + Math.round(values[index])).join(', '));
+
+    // Five precise levels and their axes establish hierarchy even before data exists.
+    for (let ring = 5; ring >= 1; ring--) {
+      ctx.beginPath();
+      keys.forEach((_, index) => {
+        const p = point(index, radius * ring / 5);
+        if (!index) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+      });
+      ctx.closePath();
+      ctx.fillStyle = ring % 2 ? 'rgba(213,224,202,.018)' : 'rgba(213,224,202,.035)';
+      ctx.fill();
+      ctx.strokeStyle = ring === 5 ? 'rgba(201,214,188,.34)' : 'rgba(201,214,188,.16)';
+      ctx.lineWidth = ring === 5 ? 1.2 : 1;
+      ctx.stroke();
+    }
+    keys.forEach((_, index) => {
+      const p = point(index, radius);
+      ctx.beginPath();ctx.moveTo(cx, cy);ctx.lineTo(p.x, p.y);
+      ctx.strokeStyle = 'rgba(201,214,188,.16)';ctx.lineWidth = 1;ctx.stroke();
+    });
+
+    // Real values only—no invented baseline—drawn in the Studio copper/olive system.
+    ctx.beginPath();
+    values.forEach((value, index) => {
+      const p = point(index, radius * value / 100);
+      if (!index) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+    });
+    ctx.closePath();
+    const fill = ctx.createLinearGradient(cx - radius, cy - radius, cx + radius, cy + radius);
+    fill.addColorStop(0, 'rgba(126,150,105,.28)');
+    fill.addColorStop(1, 'rgba(214,145,88,.25)');
+    ctx.fillStyle = fill;ctx.fill();
+    ctx.strokeStyle = '#d2925d';ctx.lineWidth = 2.25;ctx.stroke();
+
+    if (values.some(Boolean)) {
+      values.forEach((value, index) => {
+        const p = point(index, radius * value / 100);
+        ctx.beginPath();ctx.arc(p.x, p.y, 5.5, 0, Math.PI * 2);ctx.fillStyle = '#253020';ctx.fill();
+        ctx.beginPath();ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);ctx.fillStyle = '#e0a36b';ctx.fill();
+      });
+    } else {
+      ctx.beginPath();ctx.arc(cx, cy, 12, 0, Math.PI * 2);ctx.strokeStyle = 'rgba(224,163,107,.38)';ctx.lineWidth = 1;ctx.stroke();
+      ctx.beginPath();ctx.arc(cx, cy, 4.5, 0, Math.PI * 2);ctx.fillStyle = '#e0a36b';ctx.fill();
+    }
+
+    labels.forEach((label, index) => {
+      const p = point(index, labelRadius);
+      const cosine = Math.cos(p.angle);
+      const sine = Math.sin(p.angle);
+      ctx.textAlign = cosine > .25 ? 'right' : cosine < -.25 ? 'left' : 'center';
+      ctx.textBaseline = sine > .55 ? 'top' : sine < -.55 ? 'bottom' : 'middle';
+      ctx.font = '700 10px Manrope, sans-serif';
+      ctx.fillStyle = '#edf1e6';
+      ctx.fillText(label, p.x, p.y);
+    });
+  }
+
+  window.drawRadar = drawStudioRadar;
+  drawStudioRadar();
+  document.fonts?.ready?.then(drawStudioRadar);
 })();

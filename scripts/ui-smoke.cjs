@@ -2,7 +2,7 @@ const {JSDOM,VirtualConsole}=require('jsdom');
 const fs=require('fs');
 let source=fs.readFileSync(process.argv[2],'utf8');
 const path=require('path');
-source=source.replace('<script src="/studio-ui.js?v=8" defer></script>',()=>'<script>'+fs.readFileSync(path.resolve(path.dirname(process.argv[2]),'studio-ui.js'),'utf8')+'</script>');
+source=source.replace('<script src="/studio-ui.js?v=10" defer></script>',()=>'<script>'+fs.readFileSync(path.resolve(path.dirname(process.argv[2]),'studio-ui.js'),'utf8')+'</script>');
 const issues=[];const requests=[];
 const vc=new VirtualConsole();vc.on('jsdomError',e=>issues.push(e.message));
 const noop=()=>{};
@@ -64,7 +64,23 @@ setTimeout(async()=>{
   if(rows.length<3||rows.some(row=>!row.querySelector('.qb-diff')||!row.querySelector('.qb-meta>.tag')||!row.querySelector('.qb-practice-btn')))throw Error('Question metadata rail incomplete');
   if(css.includes('#psub-qbank .qb-item:nth-child(even)')||!css.includes("content:'Level'")||!css.includes("content:'Context'"))throw Error('Old stagger or pill treatment remains');
  });
- for(const page of ['skills','history','briefing','coachnotes'])check('Insights tab '+page,()=>{w.navTo('insights');w.switchInsightsTab(page);if(d.querySelector('#insights-tab-'+page).style.display!=='block')throw Error('Tab panel hidden')});
+ for(const page of ['insights','skills','history','briefing','coachnotes'])check('Insights tab '+page,()=>{
+  w.navTo('insights');w.switchInsightsTab(page);
+  const buttons=[...d.querySelectorAll('#page-insights .insights-tab-btn')];
+  if(d.querySelector('#insights-tab-'+page).style.display!=='block')throw Error('Tab panel hidden');
+  if(buttons.filter(button=>button.classList.contains('active')).length!==1||!d.getElementById('itab-'+page).classList.contains('active'))throw Error('Green selection state is not exclusive');
+  if(buttons.some(button=>button.style.background||button.style.borderColor||button.style.color))throw Error('Legacy purple inline state remains');
+  if(d.getElementById('itab-'+page).getAttribute('aria-selected')!=='true')throw Error('Selected tab state not announced');
+ });
+ const radar=d.getElementById('radar-canvas');
+ radar.dataset.studioRadar='';
+ w.switchInsightsTab('skills');
+ await new Promise(resolve=>setTimeout(resolve,120));
+ check('Skills radar is sharp, legible and unclipped',()=>{
+  const css=fs.readFileSync(path.resolve(path.dirname(process.argv[2]),'studio-plasma.css'),'utf8');
+  if(radar.dataset.studioRadar!=='enhanced'||radar.width<420||radar.height<360)throw Error('Enhanced radar did not render');
+  if(!css.includes('#insights-tab-skills .radar-wrap')||!css.includes('#insights-tab-skills .skill-row'))throw Error('Skills typography system missing');
+ });
  // Exercise original callbacks with local fixtures, never live services.
  for(const name of ['Blaze','Echo','Sage','Nova','Rex','Luna'])check('Select coach '+name,()=>{
   w.selectCoach(name);
