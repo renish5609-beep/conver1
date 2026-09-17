@@ -375,6 +375,11 @@
 #conver-atelier .at-legal-body form{display:none}
 #conver-atelier .at-reveal{transition:transform .7s cubic-bezier(.2,.8,.2,1),opacity .7s}
 #conver-atelier .at-reveal.at-pending{opacity:0;transform:translateY(14px)}
+#conver-atelier .at-scroll-reveal{transition:opacity .78s cubic-bezier(.2,.78,.2,1),transform .78s cubic-bezier(.2,.78,.2,1),filter .78s;transition-delay:var(--at-reveal-delay,0ms);will-change:opacity,transform}
+#conver-atelier .at-scroll-reveal.at-pending{opacity:0;transform:translate3d(var(--at-reveal-x,0),28px,0);filter:blur(4px)}
+#conver-atelier .at-scroll-reveal.at-revealed{opacity:1;transform:translate3d(0,0,0);filter:blur(0)}
+#conver-atelier .at-scroll-arrive{animation:at-scroll-arrive .68s cubic-bezier(.2,.78,.2,1)}
+@keyframes at-scroll-arrive{0%{transform:translateY(18px);opacity:.72}100%{transform:translateY(0);opacity:1}}
 @keyframes at-site-ring{to{transform:perspective(700px) rotateY(-7deg) rotateX(5deg) rotateZ(0deg) translateY(-8px)}}
 @keyframes at-example-float{to{transform:translateY(-7px)}}
 @keyframes at-cursor-blink{50%{opacity:0}}
@@ -490,11 +495,11 @@
 #conver-atelier .at-public.at-public .at-legal-body{padding:30px 25px}
 }
 
-#conver-atelier.at-less-motion .at-reveal.at-pending{opacity:1;transform:none}
-@media(prefers-reduced-motion:reduce){#conver-atelier .at-reveal.at-pending{opacity:1;transform:none}}
+#conver-atelier.at-less-motion .at-reveal.at-pending,#conver-atelier.at-less-motion .at-scroll-reveal.at-pending{opacity:1;transform:none;filter:none}
+@media(prefers-reduced-motion:reduce){#conver-atelier .at-reveal.at-pending,#conver-atelier .at-scroll-reveal.at-pending{opacity:1;transform:none;filter:none}#conver-atelier .at-scroll-arrive{animation:none}}
 
 
-html{scroll-behavior:smooth}body{margin:0;background:#f7f6f2}#conver-atelier a{color:inherit;text-decoration:none}#conver-atelier button{cursor:pointer}#conver-atelier .at-public{border:0;border-radius:0;max-width:1440px;margin:auto}#conver-atelier .at-site-header{position:relative}#conver-atelier .at-site-header .at-brand{margin:0}#conver-atelier .at-site-header nav{display:flex;gap:24px}#conver-atelier .at-site-footer nav{display:flex;flex-wrap:wrap;gap:16px}#conver-atelier :focus-visible{outline:2px solid #8b5738;outline-offset:4px}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+html{scroll-behavior:smooth;scroll-padding-top:28px}body{margin:0;background:#f7f6f2}#conver-atelier a{color:inherit;text-decoration:none}#conver-atelier button{cursor:pointer}#conver-atelier .at-public{border:0;border-radius:0;max-width:1440px;margin:auto}#conver-atelier .at-site-header{position:relative}#conver-atelier .at-site-header .at-brand{margin:0}#conver-atelier .at-site-header nav{display:flex;gap:24px}#conver-atelier .at-site-footer nav{display:flex;flex-wrap:wrap;gap:16px}#conver-atelier :focus-visible{outline:2px solid #8b5738;outline-offset:4px}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 
 #conver-atelier .at-site-header .at-brand{background:transparent;border:0;box-shadow:none;white-space:nowrap;flex-shrink:0}
 #conver-atelier .at-site-coach-art img{display:block;width:76px;height:76px;object-fit:contain;position:relative;z-index:1;transition:transform .35s cubic-bezier(.2,.7,.2,1)}

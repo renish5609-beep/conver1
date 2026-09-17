@@ -108,3 +108,10 @@
 .studio-transition-wave{display:flex;align-items:center;gap:3px;height:20px}.studio-transition-wave i{display:block;width:3px;height:6px;border-radius:5px;background:linear-gradient(#e4b36f,#82966a);animation:studio-transition-wave .65s ease-in-out infinite alternate}.studio-transition-wave i:nth-child(2n){height:16px;animation-delay:-.3s}.studio-transition-wave i:nth-child(3n){height:11px;animation-delay:-.5s}
 @keyframes studio-transition-orbit{to{transform:translate(-50%,-50%) rotate(342deg)}}@keyframes studio-transition-wave{to{height:19px}}
 @media(prefers-reduced-motion:reduce){.studio-route-transition{transition-duration:.01ms}.studio-transition-core::before,.studio-transition-core::after,.studio-transition-wave i{animation:none}}
+
+/* Lightweight directional motion for internal navigation. */
+.studio-slide-forward{animation:studio-slide-forward .38s cubic-bezier(.2,.78,.2,1) both}.studio-slide-back{animation:studio-slide-back .38s cubic-bezier(.2,.78,.2,1) both}
+@keyframes studio-slide-forward{from{opacity:.18;transform:translate3d(28px,0,0);filter:blur(3px)}to{opacity:1;transform:translate3d(0,0,0);filter:blur(0)}}
+@keyframes studio-slide-back{from{opacity:.18;transform:translate3d(-28px,0,0);filter:blur(3px)}to{opacity:1;transform:translate3d(0,0,0);filter:blur(0)}}
+@media(prefers-reduced-motion:reduce){.studio-slide-forward,.studio-slide-back{animation:none!important}}
+body.reducemotion .studio-slide-forward,body.reducemotion .studio-slide-back{animation:none!important}

@@ -164,6 +164,129 @@
   }, true);
 })();
 
+// Directional application navigation with a real page/sub-tab history.
+// This wraps the existing functions without replacing any page state, data,
+// callbacks, persistence, or tool cleanup owned by index.html.
+(() => {
+  const originalNavTo = window.navTo;
+  const originalPracticeTab = window.switchPracticeTab;
+  const originalInsightsTab = window.switchInsightsTab;
+  const originalBack = window.handleBackBtn;
+  if (typeof originalNavTo !== 'function') return;
+
+  const trail = [];
+  let depth = 0;
+  let restoring = false;
+  const defaultSub = {practice:'practice', insights:'insights'};
+
+  function state() {
+    const page = document.querySelector('.page.active')?.id?.replace('page-', '') || 'home';
+    const sub = page === 'practice' ? (typeof currentPracticeTab === 'string' ? currentPracticeTab : 'practice')
+      : page === 'insights' ? (typeof currentInsightsTab === 'string' ? currentInsightsTab : 'insights') : '';
+    return {page, sub};
+  }
+  function same(a, b) { return a.page === b.page && a.sub === b.sub; }
+  function targetFor(next) {
+    if (next.page === 'practice' && next.sub) return document.getElementById('psub-' + next.sub);
+    if (next.page === 'insights' && next.sub) return document.getElementById('insights-tab-' + next.sub);
+    return document.getElementById('page-' + next.page);
+  }
+  function animate(next, reverse = false, pageChange = false) {
+    const target = targetFor(next);
+    if (!target || matchMedia('(prefers-reduced-motion: reduce)').matches || document.body.classList.contains('reducemotion')) return;
+    target.classList.remove('studio-slide-forward', 'studio-slide-back');
+    void target.offsetWidth;
+    const motionClass = reverse ? 'studio-slide-back' : 'studio-slide-forward';
+    target.classList.add(motionClass);
+    setTimeout(() => target.classList.remove(motionClass), 440);
+    const scroller = document.querySelector('.app-content');
+    if (scroller?.scrollTo && pageChange) scroller.scrollTo({top:0, behavior:'smooth'});
+  }
+  function previousLabel() {
+    const previous = trail[trail.length - 1];
+    if (!previous) return 'Home';
+    if (previous.page === 'home') return 'Home';
+    if (previous.page === 'practice' && previous.sub !== 'practice') return 'Practice';
+    if (previous.page === 'insights' && previous.sub !== 'insights') return 'Insights';
+    return (typeof PAGE_TITLES === 'object' && PAGE_TITLES[previous.page]) || 'Back';
+  }
+  function syncBack() {
+    const current = state();
+    const atRoot = current.page === 'home' && !trail.length;
+    window.showBackBtn(!atRoot, previousLabel());
+  }
+  function commit(before, after, reverse = false) {
+    if (same(before, after)) { syncBack(); return; }
+    if (!restoring) {
+      const last = trail[trail.length - 1];
+      if (!last || !same(last, before)) trail.push(before);
+      if (trail.length > 40) trail.shift();
+    }
+    animate(after, reverse, before.page !== after.page);
+    syncBack();
+  }
+
+  window.navTo = function() {
+    const rootCall = depth === 0;
+    const before = rootCall ? state() : null;
+    depth++;
+    try { return originalNavTo.apply(this, arguments); }
+    finally {
+      depth--;
+      if (rootCall) commit(before, state());
+    }
+  };
+  if (typeof originalPracticeTab === 'function') {
+    window.switchPracticeTab = function() {
+      const rootCall = depth === 0;
+      const before = rootCall ? state() : null;
+      depth++;
+      try { return originalPracticeTab.apply(this, arguments); }
+      finally { depth--; if (rootCall) commit(before, state()); }
+    };
+  }
+  if (typeof originalInsightsTab === 'function') {
+    window.switchInsightsTab = function() {
+      const rootCall = depth === 0;
+      const before = rootCall ? state() : null;
+      depth++;
+      try { return originalInsightsTab.apply(this, arguments); }
+      finally { depth--; if (rootCall) commit(before, state()); }
+    };
+  }
+
+  function cleanup(current) {
+    // Preserve the original specialized exit behavior for active recording or
+    // live-session states, then let the history controller perform navigation.
+    if (['voice','coldopen','warmup'].includes(current.page) && typeof originalBack === 'function') {
+      originalBack();
+    } else if (current.page === 'practice' && current.sub === 'debate' && typeof window.resetDebate === 'function') {
+      window.resetDebate();
+    }
+  }
+  function restore(destination) {
+    depth++;
+    try {
+      originalNavTo(destination.page);
+      if (destination.page === 'practice' && typeof originalPracticeTab === 'function') originalPracticeTab(destination.sub || defaultSub.practice);
+      if (destination.page === 'insights' && typeof originalInsightsTab === 'function') originalInsightsTab(destination.sub || defaultSub.insights);
+    } finally { depth--; }
+  }
+  window.handleBackBtn = function() {
+    const before = state();
+    cleanup(before);
+    const destination = trail.pop() || {page:'home', sub:''};
+    restoring = true;
+    try { restore(destination); }
+    finally { restoring = false; }
+    const after = state();
+    animate(after, true, before.page !== after.page);
+    syncBack();
+  };
+
+  syncBack();
+})();
+
 // Port the approved concept's actual overview markup. No demo state or mock APIs.
 (() => {
   'use strict';
