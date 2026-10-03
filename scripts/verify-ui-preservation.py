@@ -46,6 +46,11 @@ for file in ['public/index.html','public/contact.html','public/privacy.html','pu
 for file in ['server.js','package.json','package-lock.json','capacitor.config.json','codemagic.yaml']:
     assert original(file)==(ROOT/file).read_text(),f'{file}: changed'
     count+=1
+sharp_link = '<link rel="stylesheet" href="/studio-sharp.css?v=1">'
+assert (ROOT/'public/index.html').read_text().count('<link rel="stylesheet" href="/studio-sharp.css?v=1"/>') == 1
+for file in ['public/landing.html','public/contact.html','public/privacy.html','public/terms.html','public/cookies.html','public/support.html']:
+    assert (ROOT/file).read_text().count(sharp_link) == 1, f'{file}: precision stylesheet missing or duplicated'
+count+=7
 native=subprocess.check_output(['git','diff','--name-only',BASE,'--','ios'],cwd=ROOT).decode().splitlines()
 assert set(native) <= {'ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png'}, 'Native iOS code/configuration changed'
 count+=1
