@@ -615,3 +615,20 @@
   drawStudioRadar();
   document.fonts?.ready?.then(drawStudioRadar);
 })();
+
+// Mobile-only presentation helpers. Existing navigation, auth, persistence,
+// API calls, and contact submission remain owned by index.html.
+(()=>{
+  'use strict';
+  const nav=document.getElementById('mobile-nav');
+  const mobile=window.matchMedia?.('(max-width: 767px)');
+  const center=()=>{const active=nav?.querySelector('.mnav-btn.active');if(active&&mobile?.matches)active.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});};
+  const cleanContact=()=>{
+    const page=document.getElementById('page-contact');if(!page?.classList.contains('active'))return;
+    const email=document.getElementById('cf-email');const identity=document.getElementById('user-email-display')?.textContent?.trim();
+    if(identity==='Guest'&&email?.value==='Guest'){email.value='';email.placeholder='your@email.com';}
+    page.querySelectorAll('*').forEach(node=>{if(node.children.length||!node.textContent)return;if(node.textContent.includes('Profiles tab'))node.textContent=node.textContent.replace('Profiles tab','AI Profiles');});
+  };
+  if(nav){nav.setAttribute('aria-label','Studio navigation');nav.addEventListener('click',e=>{if(e.target.closest('.mnav-btn'))setTimeout(center,40);},true);new MutationObserver(center).observe(nav,{subtree:true,attributes:true,attributeFilter:['class']});window.addEventListener('resize',center,{passive:true});setTimeout(center,0);}
+  const app=document.querySelector('.app');if(app)new MutationObserver(()=>{center();cleanContact();}).observe(app,{subtree:true,childList:true,attributes:true,attributeFilter:['class','value']});cleanContact();
+})();
