@@ -3228,7 +3228,7 @@ h1, h2, h3 {
 <link rel="stylesheet" href="/studio-concept.css?v=3"/>
 <link rel="stylesheet" href="/studio-connected.css?v=8"/>
 <link rel="stylesheet" href="/studio-plasma.css?v=9"/>
-<link rel="stylesheet" href="/studio-sharp.css?v=2"/>
+<link rel="stylesheet" href="/studio-sharp.css?v=3"/>
 </head>
 <body>
 
@@ -3258,7 +3258,7 @@ h1, h2, h3 {
     </div>
     <div class="share-actions">
       <button class="share-btn share-btn-ghost" onclick="copyShareText()">Copy Text</button>
-      <button class="share-btn share-btn-primary" onclick="downloadScoreCard()">⬇ Download Card</button>
+      <button class="share-btn share-btn-primary" onclick="downloadScoreCard()">Download Card</button>
     </div>
   </div>
 </div>
@@ -3295,7 +3295,7 @@ h1, h2, h3 {
     </div>
     <div class="rm-actions">
       <button class="rm-btn rm-btn-ghost" onclick="closeReport()">Close</button>
-      <button class="rm-btn rm-btn-primary" onclick="printReport()">⬇ Save as PDF</button>
+      <button class="rm-btn rm-btn-primary" onclick="printReport()">Save as PDF</button>
     </div>
   </div>
 </div>
@@ -3932,7 +3932,7 @@ h1, h2, h3 {
                what its own display style said (a hidden ancestor hides
                everything inside it regardless of the child's own style). -->
           <button id="rt-download-btn" style="display:none;margin-top:16px;width:100%;max-width:420px;padding:12px;background:linear-gradient(135deg,#7c6fff,#b48cff);border:none;border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;cursor:pointer" onclick="downloadRecording()">
-            ⬇ Download Recording (WebM — plays in Chrome, Firefox, VLC)
+            Download Recording (WebM — plays in Chrome, Firefox, VLC)
           </button>
           <button class="btn-primary" onclick="resetRealTime()" style="margin-top:16px;max-width:220px">New Session</button>
         </div>
@@ -4604,7 +4604,7 @@ h1, h2, h3 {
                 <label class="toggle"><input type="checkbox" id="tog-autosave" checked onchange="S.autosave=this.checked;saveSettings()"><span class="toggle-slider"></span></label>
               </div>
               <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
-                <button class="btn-ghost" onclick="exportUserData()" style="font-size:12.5px">⬇ Export My Data (JSON)</button>
+                <button class="btn-ghost" onclick="exportUserData()" style="font-size:12.5px">Export My Data (JSON)</button>
                 <button class="btn-ghost" onclick="clearHistory()" style="color:var(--red);border-color:rgba(248,113,113,0.2);font-size:12.5px">Clear All History</button>
               </div>
               <div style="margin-top:14px;font-size:11.5px;color:var(--muted);line-height:1.8">
@@ -12859,6 +12859,6 @@ document.head.appendChild(rippleStyle);
   </div>
 </div>
 
-<script src="/studio-ui.js?v=13" defer></script>
+<script src="/studio-ui.js?v=14" defer></script>
 </body>
 </html>
