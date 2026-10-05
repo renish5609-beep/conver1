@@ -12,7 +12,8 @@ const root = path.resolve(__dirname, '..');
 const read = file => fs.readFileSync(path.join(root, 'public', file), 'utf8');
 const original = read('index.html');
 const ui = read('studio-ui.js');
-const source = original.replace(/<script src="\/studio-ui\.js\?v=\d+" defer><\/script>/, () => '<script>' + ui + '</script>');
+const source = original.replace(/<script src="\/studio-ui\.js\?v=\d+" defer><\/script>/, () => '<script>' + ui + '</script>')
+  .replace('<script src="/studio-header.js?v=1" defer></script>', () => '<script>' + read('studio-header.js') + '</script>');
 const errors = [], requests = [];
 const vc = new VirtualConsole();
 vc.on('jsdomError', error => errors.push(error.message));
@@ -58,6 +59,42 @@ function responsiveCss(ast) {
   check('auth isolates the app from keyboard/VoiceOver focus',()=>assert.equal(d.querySelector('.app').inert,true));
   d.querySelector('.auth-btn-guest').click(); await wait();
   check('guest entry restores app interactivity',()=>assert.equal(d.querySelector('.app').inert,false));
+  const header=d.querySelector('.app-header'), home=d.querySelector('#page-home');
+  Object.defineProperty(home,'scrollHeight',{configurable:true,value:2000});
+  Object.defineProperty(home,'clientHeight',{configurable:true,value:600});
+  const scroll=async y=>{home.scrollTop=y;home.dispatchEvent(new w.Event('scroll'));await wait()};
+  await scroll(70);
+  check('header remains visible near the page top',()=>assert.equal(header.classList.contains('studio-header-collapsed'),false));
+  await scroll(150);
+  check('downward page scroll collapses header and removes hidden controls from focus',()=>{assert.ok(header.classList.contains('studio-header-collapsed'));assert.equal(header.inert,true);assert.equal(header.getAttribute('aria-hidden'),'true')});
+  await scroll(170);await scroll(162);
+  check('small upward movement does not flicker the header',()=>assert.ok(header.classList.contains('studio-header-collapsed')));
+  await scroll(145);
+  check('intentional upward scrolling restores header',()=>{assert.equal(header.classList.contains('studio-header-collapsed'),false);assert.equal(header.inert,false);assert.equal(header.getAttribute('aria-hidden'),null)});
+  await scroll(220);await scroll(-20);
+  check('rubber-band overscroll at the top restores header',()=>assert.equal(header.classList.contains('studio-header-collapsed'),false));
+  await scroll(250);
+  d.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Tab',bubbles:true}));
+  check('keyboard navigation restores hidden header controls',()=>assert.equal(header.inert,false));
+  await scroll(1390);Object.defineProperty(home,'clientHeight',{configurable:true,value:700});await scroll(1300);
+  check('header collapse at page bottom does not trigger a reveal loop',()=>assert.ok(header.classList.contains('studio-header-collapsed')));
+  Object.defineProperty(home,'clientHeight',{configurable:true,value:600});
+  await scroll(300);w.navTo('practice');await wait();
+  check('changing routes restores header',()=>assert.equal(header.classList.contains('studio-header-collapsed'),false));
+  w.navTo('home');await wait();home.scrollTop=0;
+  const nested=d.createElement('div');home.append(nested);nested.scrollTop=500;nested.dispatchEvent(new w.Event('scroll'));await wait();
+  check('nested scroll areas do not collapse the main header',()=>assert.equal(header.classList.contains('studio-header-collapsed'),false));nested.remove();
+  const publicHeaderDoc = new JSDOM('<main id="conver-atelier"><header class="at-site-header"><a href="#section">Features</a></header><section id="section"></section></main>',{
+    runScripts:'dangerously',pretendToBeVisual:true,beforeParse(p){p.matchMedia=()=>({matches:true,addEventListener:noop});}
+  });
+  const pd=publicHeaderDoc.window.document, ph=pd.querySelector('header'), ps=pd.documentElement;
+  Object.defineProperty(pd,'scrollingElement',{value:ps});Object.defineProperty(ps,'scrollHeight',{value:2000});Object.defineProperty(ps,'clientHeight',{value:600});
+  publicHeaderDoc.window.eval(read('studio-header.js'));
+  ps.scrollTop=250;pd.dispatchEvent(new publicHeaderDoc.window.Event('scroll'));await wait();
+  check('public landing header collapses on document scroll',()=>assert.ok(ph.classList.contains('studio-header-collapsed')));
+  ps.scrollTop=220;pd.dispatchEvent(new publicHeaderDoc.window.Event('scroll'));await wait();
+  check('public landing header returns on upward document scroll',()=>assert.equal(ph.inert,false));
+  publicHeaderDoc.window.close();
   for (const icon of ['\u26a0\ufe0f','\u2b07','\u2713','\u2715']) {
     w.showToast(icon, 'Status message');
     check('toast uses a vector indicator for '+JSON.stringify(icon),()=>{
