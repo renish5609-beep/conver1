@@ -1,4 +1,41 @@
 /* Presentation enhancements only. Existing app callbacks own state and persistence. */
+// Replace application-owned emoji feedback, not user messages or saved data.
+// These observers are scoped to four controls/status indicators, never the page.
+(() => {
+  const svg = paths => `<svg class="studio-status-symbol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+  const icons = {
+    success: svg('<path d="m5 12 4 4L19 6"/>'),
+    warning: svg('<path d="M12 3 2 21h20L12 3Z"/><path d="M12 9v5m0 3v.1"/>'),
+    error: svg('<path d="m6 6 12 12M18 6 6 18"/>'),
+    download: svg('<path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/>')
+  };
+  const originalToast = window.showToast;
+  if (typeof originalToast === 'function') {
+    window.showToast = function(icon, message) {
+      const result = originalToast.apply(this, arguments);
+      const node = document.getElementById('toast-icon');
+      const kind = /[✓✔]/u.test(icon) ? 'success' : /[✕✗❌]/u.test(icon) ? 'error'
+        : /[⚠]/u.test(icon) ? 'warning' : /[⬇]/u.test(icon) ? 'download' : null;
+      if (node && kind) node.innerHTML = icons[kind];
+      else if (node && /\p{Extended_Pictographic}/u.test(icon)) node.textContent = '';
+      return result;
+    };
+  }
+  for (const id of ['hold-btn','debate-mic-btn','co-mic-btn','rt-eye-badge']) {
+    const node = document.getElementById(id);
+    if (!node) continue;
+    function refresh() {
+      if (!node.textContent.includes('\u23f3')) return;
+      if (id === 'rt-eye-badge') {
+        node.textContent = node.textContent.replace(/\u23f3\s*/gu, '');
+      } else {
+        node.innerHTML = '<span class="studio-progress-spinner" aria-hidden="true"></span><span class="studio-visually-hidden">Processing</span>';
+      }
+    }
+    new MutationObserver(refresh).observe(node, {childList:true,characterData:true,subtree:true});
+    refresh();
+  }
+})();
 // A deliberate visit from the public site already has a route transition. Remove
 // the older boot splash before auth is revealed so the visitor sees one branded
 // moment, never two stacked animations.
@@ -183,6 +220,7 @@
   if (typeof originalNavTo !== 'function') return;
 
   const trail = [];
+  const motionTimers = new WeakMap();
   let depth = 0;
   let restoring = false;
   const defaultSub = {practice:'practice', insights:'insights'};
@@ -201,12 +239,17 @@
   }
   function animate(next, reverse = false, pageChange = false) {
     const target = targetFor(next);
-    if (!target || matchMedia('(prefers-reduced-motion: reduce)').matches || document.body.classList.contains('reducemotion')) return;
+    if (!target) return;
+    clearTimeout(motionTimers.get(target));
     target.classList.remove('studio-slide-forward', 'studio-slide-back');
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches || document.body.classList.contains('reducemotion')) return;
     void target.offsetWidth;
     const motionClass = reverse ? 'studio-slide-back' : 'studio-slide-forward';
     target.classList.add(motionClass);
-    setTimeout(() => target.classList.remove(motionClass), 440);
+    motionTimers.set(target, setTimeout(() => {
+      target.classList.remove(motionClass);
+      motionTimers.delete(target);
+    }, 440));
     const scroller = document.querySelector('.app-content');
     if (scroller?.scrollTo && pageChange) scroller.scrollTo({top:0, behavior:'smooth'});
   }
