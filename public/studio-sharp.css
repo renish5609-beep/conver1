@@ -259,8 +259,8 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .studio-connected input[type=checkbox],.studio-connected input[type=radio]{accent-color:#647b4a}
 .studio-connected ::-webkit-scrollbar-thumb{background:#9aa989;border:2px solid transparent;background-clip:padding-box;border-radius:4px}
 @media(max-width:980px) and (min-width:768px){.studio-connected #rt-setup>div:first-child>div:last-child{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
-@media(max-width:767px){
- html,body{width:100%;min-width:0;overflow:hidden}
+@media(max-width:767px), (max-height:500px) and (pointer:coarse){
+ html,body{width:100%;min-width:0}
  .studio-connected.app{display:flex!important;flex-direction:column!important;width:100%;height:100vh;min-height:100vh;max-height:100vh;height:100dvh;min-height:100dvh;max-height:100dvh;overflow:hidden}
  .studio-connected .app-header{order:0;flex:0 0 auto;z-index:30;box-sizing:border-box;height:calc(58px + var(--safe-top,0px));min-height:calc(58px + var(--safe-top,0px));padding:var(--safe-top,0px) max(12px,var(--safe-right,0px)) 0 max(12px,var(--safe-left,0px));background:rgba(247,246,242,.96);border-bottom:1px solid #dfe3d8;box-shadow:0 1px 0 rgba(48,59,40,.03);backdrop-filter:blur(20px);gap:8px}
  .studio-connected .app-header-left{flex:1 1 auto;min-width:0;gap:6px;margin:0!important}.studio-connected .app-header-center{display:none!important}.studio-connected .app-header-right{flex:0 0 auto;min-width:0;margin:0!important;gap:6px}.studio-connected .app-header-left>.app-logo{display:flex;align-items:center;min-width:44px;min-height:44px}.studio-connected .app-logo-icon{width:30px;height:30px}.studio-connected .app-logo-text{display:none!important}.studio-connected .back-btn{min-width:44px;max-width:50vw;min-height:44px;padding:0 11px!important;border-radius:3px!important;font-size:12px!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.studio-connected .back-btn:not(.visible){display:none!important}.studio-connected .user-menu{width:44px;height:44px;min-width:44px;max-width:44px;padding:0!important;border-radius:3px!important;justify-content:center;overflow:visible}.studio-connected .user-avatar{width:28px!important;height:28px!important}.studio-connected .user-email{display:none!important}
@@ -278,3 +278,106 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 }
 @media(max-width:390px){:root{--ios-page-gutter:12px;--ios-nav-height:66px}.studio-connected .page{padding-left:var(--ios-page-gutter)!important;padding-right:var(--ios-page-gutter)!important}.studio-connected #coldopen-setup>div:nth-of-type(3){grid-template-columns:1fr!important}.studio-connected #page-voice .coach-picker{grid-template-columns:repeat(2,minmax(0,1fr))!important}.studio-connected .mnav-btn{flex-basis:46px;width:46px;font-size:8px!important}}
 @media(prefers-reduced-motion:reduce){.studio-connected .mobile-nav-scroll,.studio-connected .page{scroll-behavior:auto!important}}
+
+/* Mobile QA: use a small set of stable destinations and keep long-form pages
+   scrollable. The phone shell must not leak into public or legal documents. */
+.studio-mobile-menu{box-sizing:border-box;color:#303b2a;background:#f7f6f2;border:1px solid #cbd3c1;border-radius:6px;padding:22px;box-shadow:0 -14px 48px #18201226}
+.studio-mobile-menu:not([open]){display:none}
+.studio-mobile-menu::backdrop{background:rgba(25,33,21,.45);backdrop-filter:blur(5px)}
+.studio-mobile-menu header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px}
+.studio-mobile-menu header small{font:500 10px var(--sharp-mono);letter-spacing:.1em;color:#738166}
+.studio-mobile-menu h2{font:600 23px/1.2 var(--sharp-font);letter-spacing:-.04em;margin:6px 0 0}
+.studio-mobile-menu button{cursor:pointer;color:inherit}
+.studio-mobile-menu-close{width:44px;height:44px;flex-shrink:0;border:1px solid #ccd5c3;background:#eef1e8;font-size:26px}
+.studio-mobile-menu-items{display:grid;gap:2px}
+.studio-mobile-menu-items>button{display:flex;align-items:center;gap:16px;min-height:68px;padding:14px 10px;border:0;border-bottom:1px solid #dce1d4;background:transparent;text-align:left}
+.studio-mobile-menu-items>button>svg{width:22px;height:22px;flex-shrink:0;color:#61774a}
+.studio-mobile-menu-items>button>span{display:grid;gap:4px}
+.studio-mobile-menu-items strong{font-size:15px;font-weight:600;line-height:1.3}
+.studio-mobile-menu-items small{font-size:12px;color:#68765c;line-height:1.45}
+.studio-mobile-menu-items>button[aria-current=page]{background:#e8eddf}
+.studio-mobile-menu button:focus-visible{outline:2px solid #8e653e;outline-offset:2px}
+
+@media(max-width:767px), (max-height:500px) and (pointer:coarse){
+  .studio-connected .app-tabs-wrap{display:none!important}
+  .studio-connected.app{height:var(--studio-viewport-height,100dvh);min-height:var(--studio-viewport-height,100dvh);max-height:var(--studio-viewport-height,100dvh)}
+  .studio-connected .page{padding-left:max(var(--ios-page-gutter),env(safe-area-inset-left));padding-right:max(var(--ios-page-gutter),env(safe-area-inset-right));scroll-padding-block:18px 28px}
+  .studio-connected .page>*{min-width:0;max-width:100%}
+  .studio-connected .page>.section-head::after{opacity:.22;pointer-events:none}
+  .studio-connected .page>.section-head p{position:relative;z-index:1;font-size:13px!important}
+  .studio-connected .studio-overview .at-heading{align-items:center}
+  .studio-connected .studio-overview .at-heading h1{font-size:34px!important}
+  .studio-connected .studio-overview .at-hero{min-height:340px!important}
+  .studio-connected .studio-overview .at-hero-copy h2{font-size:clamp(34px,9vw,44px)!important;max-width:88%!important}
+  .studio-connected .studio-overview .at-hero-art{width:230px!important;height:200px!important;top:160px!important;right:-55px!important}
+  .studio-connected .studio-overview .at-hero-copy p{font-size:13px;max-width:85%}
+  .studio-connected .studio-overview .at-heading>.at-text-button{font-size:11px!important;min-height:44px;white-space:normal;text-align:right}
+  .studio-connected .studio-overview .at-launch{min-height:136px!important;min-width:0;text-align:left}
+  .studio-connected .studio-overview .at-launch-desc{font-size:13px!important}
+  .studio-connected .studio-overview .at-coach-strip p,.studio-connected .studio-overview .at-warmup-strip small{font-size:13px}
+  .studio-connected .studio-more-tools summary{min-height:44px;display:list-item;align-content:center;line-height:1.5}
+
+  /* Five equal touch targets. More exposes the remaining original routes. */
+  :root{--ios-nav-height:64px}
+  .studio-mobile-nav-ready .mobile-nav-scroll{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;overflow:visible;padding:4px max(6px,env(safe-area-inset-right)) 4px max(6px,env(safe-area-inset-left));scroll-snap-type:none}
+  .studio-mobile-nav-ready .mnav-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;min-width:0!important;height:100%;min-height:44px;font-family:var(--sharp-font)!important;font-size:11px!important;line-height:1.2;letter-spacing:0;white-space:nowrap}
+  .studio-mobile-nav-ready .mnav-btn svg{width:21px;height:21px}
+  .studio-mobile-nav-ready .studio-mobile-secondary{display:none!important}
+  .studio-mobile-menu{position:fixed;inset:auto 0 0;width:100%;max-width:540px;max-height:calc(var(--studio-viewport-height,100dvh) - 24px - env(safe-area-inset-top));margin:0 auto;overflow-y:auto;overscroll-behavior:contain;padding:22px max(18px,env(safe-area-inset-right)) max(20px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left))}
+  .studio-mobile-menu[open]{animation:studio-mobile-sheet-in .18s ease-out}
+  .studio-connected .user-dropdown{max-width:calc(100vw - 24px);right:0}
+
+  /* Avoid iOS input zoom; toggles have a 44px hit area around a compact track. */
+  .studio-app-host :is(input:not([type=checkbox]):not([type=radio]),select,textarea){font-size:16px!important}
+  .studio-app-host :is(.auth-btn,.auth-btn-guest,.ob-btn-primary,.ob-skip,.rm-close,.rm-btn,.share-btn,.ve-topbar button,#ve-done-btn,#ve-tap-to-talk-btn){min-height:44px;touch-action:manipulation}
+  .studio-connected #page-settings .setting-row:has(>.toggle){grid-template-columns:minmax(0,1fr) 44px!important;align-items:center;column-gap:16px!important}
+  .studio-connected #page-settings .setting-info{min-width:0}
+  .studio-connected #page-settings .setting-info p{font-size:12px;line-height:1.5}
+  .studio-connected .toggle{width:44px;height:44px;min-width:44px;display:inline-block}
+  .studio-connected .toggle-slider{inset:11px 2px}
+  .studio-connected .toggle input:focus-visible+.toggle-slider{outline:2px solid #8e653e;outline-offset:3px}
+  .studio-connected #page-settings .setting-row>select,.studio-connected #page-settings .setting-row>input{width:100%!important;max-width:100%!important;min-height:44px}
+  .studio-connected #page-settings #settings-scenario-cards{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .studio-connected #page-settings .sc-card{min-width:0}
+  .studio-connected #page-contact .panel{min-width:0;overflow-wrap:anywhere}
+  .studio-connected #psub-companion .chat-input-row{min-width:0}
+  .studio-connected #psub-companion .chat-input-row textarea{min-width:0}
+  .studio-connected #psub-qbank .qb-item{min-width:0;overflow-wrap:anywhere}
+  .studio-connected #radar-canvas{max-width:100%!important}
+  .studio-connected .radar-wrap{width:min(100%,280px);height:auto;min-width:0}
+
+  /* Auth and dialogs are siblings of .app, not descendants of it. */
+  #auth-screen{height:var(--studio-viewport-height,100dvh);min-height:0;max-height:var(--studio-viewport-height,100dvh);overflow-y:auto!important;overflow-x:hidden;overscroll-behavior:contain;padding:0}
+  #auth-screen:not(.hidden){display:block}
+  #auth-screen .studio-auth-story,#auth-screen .auth-box{width:100%;min-height:0;max-width:none;box-sizing:border-box}
+  #auth-screen .studio-auth-story{padding:calc(22px + env(safe-area-inset-top)) max(22px,env(safe-area-inset-right)) 22px max(22px,env(safe-area-inset-left));min-height:180px;display:block}
+  #auth-screen .studio-auth-story h2{font-size:30px;line-height:1.1;margin:16px 0 0}
+  #auth-screen .studio-auth-story>p{display:none}
+  #auth-screen .studio-auth-art{width:170px;height:155px;top:55px;right:-15px;opacity:.6;transform:scale(.65);transform-origin:top right}
+  #auth-screen .auth-box{padding:26px max(22px,env(safe-area-inset-right)) calc(28px + env(safe-area-inset-bottom)) max(22px,env(safe-area-inset-left))}
+  #auth-screen .auth-box .auth-logo{display:none}
+  #auth-screen .auth-input,#auth-screen .auth-btn{min-height:48px}
+  #auth-screen .auth-footer a,#auth-screen .studio-auth-back{display:inline-flex;align-items:center;min-height:44px}
+  .studio-app-host .modal-box,.studio-app-host .report-modal,.studio-app-host .share-modal{box-sizing:border-box;width:calc(100% - 24px)!important;max-height:calc(var(--studio-viewport-height,100dvh) - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom))!important;overflow:auto;overscroll-behavior:contain}
+  .studio-app-host #voice-immersive-overlay{height:var(--studio-viewport-height,100dvh)!important;bottom:auto!important}
+  .studio-keyboard-open .mobile-nav{display:none!important}
+  .studio-keyboard-open .studio-connected .page{padding-bottom:20px!important}
+  .studio-keyboard-open #auth-screen .studio-auth-story{display:none}
+  .studio-keyboard-open #auth-screen .auth-box{padding-top:calc(18px + env(safe-area-inset-top))}
+  .studio-keyboard-open .studio-connected .app-header{height:calc(48px + env(safe-area-inset-top));min-height:calc(48px + env(safe-area-inset-top))}
+
+  /* Public pages keep normal document scrolling and readable tap targets. */
+  #conver-atelier .at-site-header{padding-top:max(16px,env(safe-area-inset-top));gap:12px}
+  #conver-atelier .at-site-header :is(a,button),#conver-atelier .at-site-footer a{min-height:44px;display:inline-flex;align-items:center}
+  #conver-atelier .at-site-footer{padding-bottom:calc(24px + env(safe-area-inset-bottom))}
+  body>.container input,body>.container select,body>.container textarea{font-size:16px!important}
+}
+@media(max-height:500px) and (pointer:coarse){
+  .studio-connected .studio-overview .at-hero{min-height:260px!important}
+  .studio-connected .studio-overview .at-hero-art{top:45px!important;right:20px!important}
+  .studio-connected .studio-overview .at-launch-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+  .studio-mobile-menu{max-width:640px}
+}
+@keyframes studio-mobile-sheet-in{from{transform:translateY(18px);opacity:0}to{transform:translateY(0);opacity:1}}
+@media(prefers-reduced-motion:reduce){.studio-mobile-menu[open]{animation:none}}
+body.reducemotion .studio-mobile-menu[open]{animation:none}
