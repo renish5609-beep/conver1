@@ -13,7 +13,7 @@ const read = file => fs.readFileSync(path.join(root, 'public', file), 'utf8');
 const original = read('index.html');
 const ui = read('studio-ui.js');
 const source = original.replace(/<script src="\/studio-ui\.js\?v=\d+" defer><\/script>/, () => '<script>' + ui + '</script>')
-  .replace('<script src="/studio-header.js?v=1" defer></script>', () => '<script>' + read('studio-header.js') + '</script>');
+  .replace('<script src="/studio-header.js?v=2" defer></script>', () => '<script>' + read('studio-header.js') + '</script>');
 const errors = [], requests = [];
 const vc = new VirtualConsole();
 vc.on('jsdomError', error => errors.push(error.message));
@@ -67,6 +67,9 @@ function responsiveCss(ast) {
   check('header remains visible near the page top',()=>assert.equal(header.classList.contains('studio-header-collapsed'),false));
   await scroll(150);
   check('downward page scroll collapses header and removes hidden controls from focus',()=>{assert.ok(header.classList.contains('studio-header-collapsed'));assert.equal(header.inert,true);assert.equal(header.getAttribute('aria-hidden'),'true')});
+  w.dispatchEvent(new w.Event('resize'));await wait();
+  check('Safari toolbar height changes do not reveal the collapsed header',()=>assert.ok(header.classList.contains('studio-header-collapsed')));
+  check('header animation uses transform without resizing the scroller',()=>{const s=read('studio-header.js');assert.ok(s.includes('transition:transform .38s'));assert.equal(s.includes('margin-bottom'),false);assert.ok(s.includes('position:absolute;top:0'));assert.ok(s.includes('#page-home{padding-top:calc(72px'))});
   await scroll(170);await scroll(162);
   check('small upward movement does not flicker the header',()=>assert.ok(header.classList.contains('studio-header-collapsed')));
   await scroll(145);
