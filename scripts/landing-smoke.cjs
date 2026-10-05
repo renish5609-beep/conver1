@@ -7,6 +7,9 @@ source=source.replace('<script src="/studio-landing.js?v=8" defer></script>','<s
 const dom=new JSDOM(source,{url:'http://localhost:4173/',runScripts:'dangerously',pretendToBeVisual:true,virtualConsole:vc,beforeParse(w){w.matchMedia=()=>({matches:false,addEventListener(){}});w.HTMLElement.prototype.scrollIntoView=function(){this.dataset.scrolled='true'};w.setInterval=(fn,ms)=>{intervals.push({fn,ms});return intervals.length};w.setTimeout=fn=>{fn();return 1};}});
 const d=dom.window.document;
 try{
+ assert.equal(d.body.textContent.includes('\u2197'),false,'No text arrow that iOS can render as emoji');
+ assert.equal(d.querySelectorAll('.at-action-arrow').length,10);
+ for(const arrow of d.querySelectorAll('.at-action-arrow')){assert.equal(arrow.getAttribute('stroke'),'currentColor');assert.equal(arrow.getAttribute('aria-hidden'),'true');assert.equal(arrow.getAttribute('width'),'18');assert.ok(arrow.querySelector('path'));}
  assert.equal(d.querySelectorAll('.at-site-feature').length,6);
  assert.equal(d.querySelectorAll('.at-site-step').length,4);
  assert.equal(d.querySelectorAll('[data-public-coach]').length,6);
