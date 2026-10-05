@@ -1,0 +1,89 @@
+/* Mobile header presentation only. Native page scrolling and navigation own state. */
+(() => {
+  const header = document.querySelector('.app-header, #conver-atelier .at-site-header');
+  if (!header) return;
+  const mobile = matchMedia('(max-width:767px), (max-height:500px) and (pointer:coarse)');
+  const app = header.closest('.app');
+  const originalInert = header.inert;
+  const originalAria = header.getAttribute('aria-hidden');
+  const style = document.createElement('style');
+  style.textContent = `
+    @media(max-width:767px), (max-height:500px) and (pointer:coarse){
+      .studio-connected .app-header.studio-scroll-header{transition:transform .22s cubic-bezier(.22,.8,.25,1),margin-bottom .22s cubic-bezier(.22,.8,.25,1)}
+      .studio-connected .app-header.studio-header-collapsed{transform:translateY(-100%);margin-bottom:-58px;pointer-events:none}
+      #conver-atelier .at-site-header.studio-scroll-header{position:sticky;top:0;z-index:40;background:#f7f6f2;transition:transform .22s cubic-bezier(.22,.8,.25,1)}
+      #conver-atelier .at-site-header.studio-header-collapsed{transform:translateY(-100%);pointer-events:none}
+      html.studio-scroll-header-document{scroll-padding-top:calc(var(--studio-mobile-header-height,160px) + 12px)}
+      .studio-keyboard-open .app-header.studio-header-collapsed{transform:none;margin-bottom:0}
+    }
+    @media(prefers-reduced-motion:reduce){.app-header.studio-scroll-header,#conver-atelier .at-site-header.studio-scroll-header{transition:none!important}}
+    body.reducemotion .studio-scroll-header{transition:none!important}
+  `;
+  document.head.append(style);
+  header.classList.add('studio-scroll-header');
+  if (!app) {
+    document.documentElement.classList.add('studio-scroll-header-document');
+    const measure = () => document.documentElement.style.setProperty('--studio-mobile-header-height', header.getBoundingClientRect().height + 'px');
+    measure();
+    if (typeof ResizeObserver === 'function') new ResizeObserver(measure).observe(header);
+  }
+  let hidden = false, scroller = null, previous = 0, travel = 0, direction = 0, frame = 0;
+  function show() { setHidden(false); travel = 0; direction = 0; }
+  function setHidden(next) {
+    if (hidden === next) return;
+    hidden = next;
+    header.classList.toggle('studio-header-collapsed', next);
+    header.inert = next || !!originalInert;
+    if (next) header.setAttribute('aria-hidden', 'true');
+    else if (originalAria === null) header.removeAttribute('aria-hidden');
+    else header.setAttribute('aria-hidden', originalAria);
+  }
+  function locked() {
+    const active = document.activeElement;
+    return header.contains(active) || active?.matches('input,textarea,select,[contenteditable="true"]')
+      || document.body.classList.contains('studio-keyboard-open')
+      || document.querySelector('dialog[open], #user-dropdown.show, #user-dropdown.open')
+      || (app && document.getElementById('auth-screen') && !document.getElementById('auth-screen').classList.contains('hidden'));
+  }
+  function update() {
+    frame = 0;
+    if (!mobile.matches || locked() || !scroller) { show(); return; }
+    // Clamp rubber-band overscroll and viewport-induced bottom adjustments.
+    const max = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+    const y = Math.max(0, Math.min(scroller.scrollTop, max));
+    const delta = y - previous;
+    const viewportClamp = previous > max && y === max;
+    previous = y;
+    if (y <= 16 || max <= 96) { show(); return; }
+    if (viewportClamp) return;
+    if (Math.abs(delta) < 1) return;
+    const nextDirection = Math.sign(delta);
+    if (nextDirection !== direction) travel = 0;
+    direction = nextDirection;
+    travel += Math.abs(delta);
+    if (direction > 0 && y > 96 && travel >= 24) setHidden(true);
+    else if (direction < 0 && travel >= 12) show();
+  }
+  function onScroll(event) {
+    const target = event.target;
+    const next = app ? (target?.matches?.('.page.active') ? target : null)
+      : (target === document || target === window ? document.scrollingElement : null);
+    if (!next) return; // Ignore chat logs, carousels, menus and other nested scrollers.
+    if (scroller !== next) { scroller = next; previous = 0; travel = 0; direction = 0; }
+    if (!frame) frame = requestAnimationFrame(update);
+  }
+  document.addEventListener('scroll', onScroll, {capture:true,passive:true});
+  document.addEventListener('focusin', show);
+  document.addEventListener('keydown', event => { if (event.key === 'Tab' || event.key === 'Escape') show(); });
+  window.addEventListener('resize', () => { show(); previous = scroller?.scrollTop || 0; }, {passive:true});
+  mobile.addEventListener?.('change', show);
+  let currentPage = app?.querySelector('.page.active')?.id;
+  if (app) {
+    const routeObserver = new MutationObserver(() => {
+      const id = app.querySelector('.page.active')?.id;
+      if (id === currentPage) return;
+      currentPage = id; scroller = null; previous = 0; show();
+    });
+    app.querySelectorAll('.page').forEach(page => routeObserver.observe(page, {attributes:true,attributeFilter:['class']}));
+  }
+})();
