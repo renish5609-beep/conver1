@@ -83,3 +83,26 @@ signed-build verification was performed in this environment.
   keyboard and pinch-zoom viewport differences.
 - [Capacitor: Keyboard](https://capacitorjs.com/docs/apis/keyboard), existing
   body resize mode and native keyboard events.
+# Mobile motion refinement — 5 October 2026
+
+Mobile navigation now uses a short 260ms transform/opacity transition rather than
+blur-heavy motion. Re-entering a route cancels its previous cleanup timer. Idle
+pages do not retain `will-change`. Native momentum scrolling and existing session
+cleanup remain intact; no gesture handlers intercept scrolling or browser Back.
+Touch cards no longer retain desktop hover lifts. Landing reveals use a shorter
+vertical movement, no animated blur, no accumulated stagger, and no permanent
+compositor hint on mobile. Reduced-motion preferences disable these effects.
+
+App-owned warning/success/error/download toast symbols use inline vectors.
+Processing controls use a CSS progress indicator with an accessible text label;
+calibration retains its percentage without the hourglass. Original voice/debate
+scripts, disabled states, API calls, user messages and stored data are unchanged.
+Download actions now have plain text labels. Meaningful checkmarks, close controls
+and copyright symbols are not decorative emoji and remain functional.
+
+Validation: 56 mobile checks, 115 app checks, landing/sharp/entry suites, and 37
+original-contract preservation checks. Requests in DOM tests are stubbed, not
+live-service verification. Physical iPhone Safari/WKWebView audio, keyboard and
+perceived frame pacing still require the device checklist below.
+
+Motion reference: https://developer.apple.com/design/human-interface-guidelines/motion

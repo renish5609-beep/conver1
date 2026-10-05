@@ -58,6 +58,25 @@ function responsiveCss(ast) {
   check('auth isolates the app from keyboard/VoiceOver focus',()=>assert.equal(d.querySelector('.app').inert,true));
   d.querySelector('.auth-btn-guest').click(); await wait();
   check('guest entry restores app interactivity',()=>assert.equal(d.querySelector('.app').inert,false));
+  for (const icon of ['\u26a0\ufe0f','\u2b07','\u2713','\u2715']) {
+    w.showToast(icon, 'Status message');
+    check('toast uses a vector indicator for '+JSON.stringify(icon),()=>{
+      assert.ok(d.querySelector('#toast-icon svg'));
+      assert.equal(d.querySelector('#toast-msg').textContent,'Status message');
+    });
+  }
+  for (const id of ['debate-mic-btn','co-mic-btn']) {
+    const button = d.getElementById(id);
+    button.className='hold-btn processing';button.disabled=true;button.textContent='\u23f3';await wait();
+    check('processing '+id+' is emoji-free without changing disabled state',()=>{
+      assert.ok(button.querySelector('.studio-progress-spinner'));
+      assert.equal(button.disabled,true);assert.equal(button.textContent,'Processing');
+    });
+    button.className='hold-btn idle';button.disabled=false;button.textContent='○';await wait();
+    check('processing indicator clears on return to idle '+id,()=>assert.equal(button.querySelector('.studio-progress-spinner'),null));
+  }
+  const badge=d.getElementById('rt-eye-badge');badge.textContent='\u23f3 Calibrating... 42%';await wait();
+  check('calibration retains progress without the emoji',()=>assert.equal(badge.textContent,'Calibrating... 42%'));
   const more = d.querySelector('.studio-mobile-more'), menu = d.querySelector('#studio-mobile-menu');
   const expected = {warmup:'warmup',coldopen:'coldopen',profiles:'practice',settings:'settings',contact:'contact'};
   for (const [destination,page] of Object.entries(expected)) {
