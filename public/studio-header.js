@@ -9,12 +9,14 @@
   const style = document.createElement('style');
   style.textContent = `
     @media(max-width:767px), (max-height:500px) and (pointer:coarse){
-      .studio-connected .app-header.studio-scroll-header{transition:transform .22s cubic-bezier(.22,.8,.25,1),margin-bottom .22s cubic-bezier(.22,.8,.25,1)}
-      .studio-connected .app-header.studio-header-collapsed{transform:translateY(-100%);margin-bottom:-58px;pointer-events:none}
-      #conver-atelier .at-site-header.studio-scroll-header{position:sticky;top:0;z-index:40;background:#f7f6f2;transition:transform .22s cubic-bezier(.22,.8,.25,1)}
+      .studio-connected .app-header.studio-scroll-header{position:absolute;top:0;left:0;right:0;transition:transform .38s cubic-bezier(.22,.61,.36,1)}
+      .studio-connected .page{padding-top:calc(78px + var(--safe-top,0px));scroll-padding-top:calc(58px + var(--safe-top,0px))}
+      .studio-connected #page-home{padding-top:calc(72px + var(--safe-top,0px))!important}
+      .studio-connected .app-header.studio-header-collapsed{transform:translateY(-100%);pointer-events:none}
+      #conver-atelier .at-site-header.studio-scroll-header{position:sticky;top:0;z-index:40;background:#f7f6f2;transition:transform .38s cubic-bezier(.22,.61,.36,1)}
       #conver-atelier .at-site-header.studio-header-collapsed{transform:translateY(-100%);pointer-events:none}
       html.studio-scroll-header-document{scroll-padding-top:calc(var(--studio-mobile-header-height,160px) + 12px)}
-      .studio-keyboard-open .app-header.studio-header-collapsed{transform:none;margin-bottom:0}
+      .studio-keyboard-open .app-header.studio-header-collapsed{transform:none}
     }
     @media(prefers-reduced-motion:reduce){.app-header.studio-scroll-header,#conver-atelier .at-site-header.studio-scroll-header{transition:none!important}}
     body.reducemotion .studio-scroll-header{transition:none!important}
@@ -40,7 +42,7 @@
   }
   function locked() {
     const active = document.activeElement;
-    return header.contains(active) || active?.matches('input,textarea,select,[contenteditable="true"]')
+    return (header.contains(active) && active?.matches(':focus-visible')) || active?.matches('input,textarea,select,[contenteditable="true"]')
       || document.body.classList.contains('studio-keyboard-open')
       || document.querySelector('dialog[open], #user-dropdown.show, #user-dropdown.open')
       || (app && document.getElementById('auth-screen') && !document.getElementById('auth-screen').classList.contains('hidden'));
@@ -75,7 +77,14 @@
   document.addEventListener('scroll', onScroll, {capture:true,passive:true});
   document.addEventListener('focusin', show);
   document.addEventListener('keydown', event => { if (event.key === 'Tab' || event.key === 'Escape') show(); });
-  window.addEventListener('resize', () => { show(); previous = scroller?.scrollTop || 0; }, {passive:true});
+  // Safari changes viewport height as its own toolbar collapses. That is not a
+  // navigation event and must not cancel our scroll animation.
+  let viewportWidth = window.innerWidth;
+  window.addEventListener('resize', () => {
+    if (window.innerWidth === viewportWidth) return;
+    viewportWidth = window.innerWidth;
+    show(); previous = scroller?.scrollTop || 0;
+  }, {passive:true});
   mobile.addEventListener?.('change', show);
   let currentPage = app?.querySelector('.page.active')?.id;
   if (app) {
