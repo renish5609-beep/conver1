@@ -10,7 +10,7 @@ try{
  assert.equal(d.querySelectorAll('.at-site-feature').length,6);
  assert.equal(d.querySelectorAll('.at-site-step').length,4);
  assert.equal(d.querySelectorAll('[data-public-coach]').length,6);
- assert.ok(d.querySelector('link[href="/studio-sharp.css?v=1"]'));
+ assert.ok(d.querySelector('link[href="/studio-sharp.css?v=2"]'));
  const sharpCss=fs.readFileSync(path.join(root,'public/studio-sharp.css'),'utf8');assert.ok(sharpCss.includes('#conver-atelier .at-site-art'));assert.ok(sharpCss.includes('#conver-atelier .at-site-tags span'));assert.ok(sharpCss.includes('#conver-atelier :is(.at-example-dot,.at-site-rings>div'));
  assert.equal(d.querySelectorAll('.studio-public-transition .studio-speaker').length,2);
  assert.ok(d.querySelector('.studio-public-transition .studio-dialogue-signal'));

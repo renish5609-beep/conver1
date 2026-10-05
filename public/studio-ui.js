@@ -616,19 +616,170 @@
   document.fonts?.ready?.then(drawStudioRadar);
 })();
 
-// Mobile-only presentation helpers. Existing navigation, auth, persistence,
-// API calls, and contact submission remain owned by index.html.
-(()=>{
+// Mobile presentation only. Original navTo, session state, auth and API calls
+// still own every destination and action.
+(() => {
   'use strict';
-  const nav=document.getElementById('mobile-nav');
-  const mobile=window.matchMedia?.('(max-width: 767px)');
-  const center=()=>{const active=nav?.querySelector('.mnav-btn.active');if(active&&mobile?.matches)active.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});};
-  const cleanContact=()=>{
-    const page=document.getElementById('page-contact');if(!page?.classList.contains('active'))return;
-    const email=document.getElementById('cf-email');const identity=document.getElementById('user-email-display')?.textContent?.trim();
-    if(identity==='Guest'&&email?.value==='Guest'){email.value='';email.placeholder='your@email.com';}
-    page.querySelectorAll('*').forEach(node=>{if(node.children.length||!node.textContent)return;if(node.textContent.includes('Profiles tab'))node.textContent=node.textContent.replace('Profiles tab','AI Profiles');});
-  };
-  if(nav){nav.setAttribute('aria-label','Studio navigation');nav.addEventListener('click',e=>{if(e.target.closest('.mnav-btn'))setTimeout(center,40);},true);new MutationObserver(center).observe(nav,{subtree:true,attributes:true,attributeFilter:['class']});window.addEventListener('resize',center,{passive:true});setTimeout(center,0);}
-  const app=document.querySelector('.app');if(app)new MutationObserver(()=>{center();cleanContact();}).observe(app,{subtree:true,childList:true,attributes:true,attributeFilter:['class','value']});cleanContact();
+  const app = document.querySelector('.app');
+  const nav = document.getElementById('mobile-nav');
+  if (!app || !nav) return;
+  document.body.classList.add('studio-app-host');
+  const mobile = window.matchMedia('(max-width: 767px), (max-height: 500px) and (pointer: coarse)');
+  const primaryPages = new Set(['home', 'practice', 'voice', 'insights']);
+  const rail = nav.querySelector('.mobile-nav-scroll');
+  const more = document.createElement('button');
+  more.type = 'button';
+  more.className = 'mnav-btn studio-mobile-more';
+  more.setAttribute('aria-haspopup', 'dialog');
+  more.setAttribute('aria-controls', 'studio-mobile-menu');
+  more.setAttribute('aria-expanded', 'false');
+  more.innerHTML = '<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span>More</span>';
+
+  const menu = document.createElement('dialog');
+  menu.id = 'studio-mobile-menu';
+  menu.className = 'studio-mobile-menu';
+  menu.setAttribute('aria-labelledby', 'studio-mobile-menu-title');
+  menu.innerHTML = '<header><div><small>YOUR STUDIO</small><h2 id="studio-mobile-menu-title">Make your next move.</h2></div><button type="button" class="studio-mobile-menu-close" aria-label="Close menu">×</button></header><div class="studio-mobile-menu-items"></div>';
+  const items = menu.querySelector('.studio-mobile-menu-items');
+  const destinations = [
+    ['warmup', 'Daily warmup', 'Build momentum in a few minutes'],
+    ['coldopen', 'Cold Open', 'Practice thinking on your feet'],
+    ['profiles', 'Your coaches', 'Find your approach'],
+    ['settings', 'Settings', 'Make the studio yours'],
+    ['contact', 'Help & support', 'Answers and a way to reach us']
+  ];
+  destinations.forEach(([page, title, description]) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.destination = page;
+    const icon = nav.querySelector('[data-page="' + page + '"] svg') ||
+      document.querySelector('#app-tabs [data-page="' + page + '"] svg');
+    if (icon) { const copy = icon.cloneNode(true); copy.setAttribute('aria-hidden', 'true'); button.append(copy); }
+    const copy = document.createElement('span');
+    const heading = document.createElement('strong');
+    heading.textContent = title;
+    const detail = document.createElement('small');
+    detail.textContent = description;
+    copy.append(heading, detail);
+    button.append(copy);
+    button.addEventListener('click', () => {
+      closeMenu();
+      window.navTo(page);
+    });
+    items.append(button);
+  });
+  document.body.append(menu);
+  rail.append(more);
+  nav.setAttribute('aria-label', 'Studio navigation');
+  // Keep the original controls and handlers; secondary destinations have larger
+  // targets in More instead of seven compressed labels in the bottom bar.
+  nav.querySelectorAll('.mnav-btn[data-page]').forEach(button => {
+    button.classList.toggle('studio-mobile-secondary', !primaryPages.has(button.dataset.page));
+  });
+  app.classList.add('studio-mobile-nav-ready');
+
+  function closeMenu() {
+    if (!menu.open) return;
+    if (typeof menu.close === 'function') menu.close();
+    else menu.removeAttribute('open');
+    more.setAttribute('aria-expanded', 'false');
+    more.focus({preventScroll: true});
+  }
+  more.addEventListener('click', () => {
+    if (!mobile.matches) return;
+    if (typeof menu.showModal === 'function') menu.showModal();
+    else menu.setAttribute('open', '');
+    more.setAttribute('aria-expanded', 'true');
+    menu.querySelector('.studio-mobile-menu-close').focus({preventScroll: true});
+  });
+  menu.querySelector('.studio-mobile-menu-close').addEventListener('click', closeMenu);
+  menu.addEventListener('click', event => { if (event.target === menu) closeMenu(); });
+  menu.addEventListener('close', () => more.setAttribute('aria-expanded', 'false'));
+  menu.addEventListener('keydown', event => {
+    if (event.key === 'Escape') { event.preventDefault(); closeMenu(); }
+    if (event.key !== 'Tab') return;
+    const controls = [...menu.querySelectorAll('button')];
+    const first = controls[0], last = controls[controls.length - 1];
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  });
+
+  function cleanContact() {
+    const page = document.getElementById('page-contact');
+    if (!page?.classList.contains('active')) return;
+    const email = document.getElementById('cf-email');
+    const identity = document.getElementById('user-email-display')?.textContent?.trim();
+    if (identity === 'Guest' && email?.value === 'Guest') { email.value = ''; email.placeholder = 'your@email.com'; }
+    page.querySelectorAll('*').forEach(node => {
+      if (!node.children.length && node.textContent.includes('Profiles tab')) node.textContent = node.textContent.replace('Profiles tab', 'AI Profiles');
+    });
+  }
+  function syncNavigation() {
+    const page = app.querySelector('.page.active')?.id.replace('page-', '');
+    more.classList.toggle('active', !!page && !primaryPages.has(page));
+    nav.querySelectorAll('.mnav-btn').forEach(button => {
+      if (button.classList.contains('active')) button.setAttribute('aria-current', 'page');
+      else button.removeAttribute('aria-current');
+    });
+    items.querySelectorAll('button').forEach(button => {
+      if (button.dataset.destination === page) button.setAttribute('aria-current', 'page');
+      else button.removeAttribute('aria-current');
+    });
+    cleanContact();
+  }
+  // Observe page changes only, not every animation, form edit or coach render.
+  const pageObserver = new MutationObserver(syncNavigation);
+  app.querySelectorAll('.page').forEach(page => pageObserver.observe(page, {attributes:true, attributeFilter:['class']}));
+  syncNavigation();
+
+  const auth = document.getElementById('auth-screen');
+  function syncAuth() {
+    const signingIn = auth && !auth.classList.contains('hidden');
+    app.inert = !!signingIn;
+    if (signingIn) closeMenu();
+  }
+  if (auth) new MutationObserver(syncAuth).observe(auth, {attributes:true, attributeFilter:['class']});
+  syncAuth();
+
+  // Safari resizes the visual viewport; Capacitor's existing `body` keyboard
+  // mode resizes body only. Account for both without changing native config.
+  let nativeKeyboardHeight = 0;
+  let frame = 0;
+  const viewport = window.visualViewport;
+  const textInput = () => document.activeElement?.matches('textarea,select,input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]),[contenteditable="true"]');
+  function updateViewport() {
+    frame = 0;
+    if (!mobile.matches) {
+      document.documentElement.style.removeProperty('--studio-viewport-height');
+      document.body.classList.remove('studio-keyboard-open');
+      closeMenu();
+      return;
+    }
+    // Pinch zoom is an accessibility action, not a keyboard resize.
+    if (viewport && Math.abs(viewport.scale - 1) > .05) return;
+    const fullHeight = window.innerHeight;
+    let height = viewport?.height || fullHeight;
+    if (nativeKeyboardHeight) {
+      const bodyHeight = document.body.getBoundingClientRect().height;
+      const nativeHeight = bodyHeight > 100 && bodyHeight < fullHeight - 80 ? bodyHeight : fullHeight - nativeKeyboardHeight;
+      height = Math.min(height, nativeHeight);
+    }
+    const keyboardOpen = !!nativeKeyboardHeight || (!!textInput() && fullHeight - height > 120);
+    document.documentElement.style.setProperty('--studio-viewport-height', Math.max(120, Math.round(height)) + 'px');
+    const wasOpen = document.body.classList.contains('studio-keyboard-open');
+    document.body.classList.toggle('studio-keyboard-open', keyboardOpen);
+    if (keyboardOpen && !wasOpen && textInput()) document.activeElement.scrollIntoView({block:'nearest',behavior:'auto'});
+  }
+  function scheduleViewport() { if (!frame) frame = requestAnimationFrame(updateViewport); }
+  window.addEventListener('resize', scheduleViewport, {passive:true});
+  viewport?.addEventListener('resize', scheduleViewport, {passive:true});
+  document.addEventListener('focusin', scheduleViewport);
+  document.addEventListener('focusout', scheduleViewport);
+  window.addEventListener('keyboardWillShow', event => {
+    nativeKeyboardHeight = Math.max(0, Number(event.keyboardHeight || event.detail?.keyboardHeight) || 0);
+    scheduleViewport();
+  });
+  window.addEventListener('keyboardWillHide', () => { nativeKeyboardHeight = 0; scheduleViewport(); });
+  window.addEventListener('keyboardDidHide', () => { nativeKeyboardHeight = 0; scheduleViewport(); });
+  scheduleViewport();
 })();
