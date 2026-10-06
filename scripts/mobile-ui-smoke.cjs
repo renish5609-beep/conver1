@@ -13,7 +13,7 @@ const read = file => fs.readFileSync(path.join(root, 'public', file), 'utf8');
 const original = read('index.html');
 const ui = read('studio-ui.js');
 const source = original.replace(/<script src="\/studio-ui\.js\?v=\d+" defer><\/script>/, () => '<script>' + ui + '</script>')
-  .replace('<script src="/studio-header.js?v=2" defer></script>', () => '<script>' + read('studio-header.js') + '</script>');
+  .replace('<script src="/studio-header.js?v=3" defer></script>', () => '<script>' + read('studio-header.js') + '</script>');
 const errors = [], requests = [];
 const vc = new VirtualConsole();
 vc.on('jsdomError', error => errors.push(error.message));
@@ -70,6 +70,7 @@ function responsiveCss(ast) {
   w.dispatchEvent(new w.Event('resize'));await wait();
   check('Safari toolbar height changes do not reveal the collapsed header',()=>assert.ok(header.classList.contains('studio-header-collapsed')));
   check('header animation uses transform without resizing the scroller',()=>{const s=read('studio-header.js');assert.ok(s.includes('transition:transform .38s'));assert.equal(s.includes('margin-bottom'),false);assert.ok(s.includes('position:absolute;top:0'));assert.ok(s.includes('#page-home{padding-top:calc(72px'))});
+  check('mobile navigation belongs to the app viewport and safe-area background',()=>{const s=read('studio-header.js');assert.ok(s.includes('.mobile-nav{position:absolute;bottom:0;background:#f7f6f2'));assert.ok(s.includes('.studio-connected.app{position:fixed;top:0'));assert.ok(s.includes('max-height:var(--ios-nav-height)'));assert.ok(d.documentElement.classList.contains('studio-scroll-app'))});
   await scroll(170);await scroll(162);
   check('small upward movement does not flicker the header',()=>assert.ok(header.classList.contains('studio-header-collapsed')));
   await scroll(145);

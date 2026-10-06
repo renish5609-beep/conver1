@@ -25,7 +25,7 @@ for file in ['public/index.html','public/contact.html','public/privacy.html','pu
     if file == 'public/index.html':
         assert updated_scripts.count(presentation_script) == 1, 'Presentation script must load exactly once'
         updated_scripts.remove(presentation_script)
-        header_script = '<script src="/studio-header.js?v=2" defer></script>'
+        header_script = '<script src="/studio-header.js?v=3" defer></script>'
         assert updated_scripts.count(header_script) == 1
         updated_scripts.remove(header_script)
         # Only this explicitly reviewed UI entry block differs from the original auth script.
