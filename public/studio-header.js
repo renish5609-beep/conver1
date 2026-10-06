@@ -9,6 +9,10 @@
   const style = document.createElement('style');
   style.textContent = `
     @media(max-width:767px), (max-height:500px) and (pointer:coarse){
+      html.studio-scroll-app,body.studio-app-host{height:100%;min-height:0;overflow:hidden;background:#f7f6f2!important}
+      .studio-connected.app{position:fixed;top:0;left:0;right:0;bottom:auto;margin:0;height:var(--studio-viewport-height,100dvh);min-height:var(--studio-viewport-height,100dvh);max-height:var(--studio-viewport-height,100dvh);background:#f7f6f2}
+      .studio-connected .mobile-nav{position:absolute;bottom:0;background:#f7f6f2;box-shadow:0 -1px 0 #d9dfd2;backdrop-filter:none}
+      .studio-connected .mobile-nav-scroll{box-sizing:border-box;height:100%;max-height:var(--ios-nav-height);align-items:stretch}
       .studio-connected .app-header.studio-scroll-header{position:absolute;top:0;left:0;right:0;transition:transform .38s cubic-bezier(.22,.61,.36,1)}
       .studio-connected .page{padding-top:calc(78px + var(--safe-top,0px));scroll-padding-top:calc(58px + var(--safe-top,0px))}
       .studio-connected #page-home{padding-top:calc(72px + var(--safe-top,0px))!important}
@@ -23,6 +27,7 @@
   `;
   document.head.append(style);
   header.classList.add('studio-scroll-header');
+  if (app) document.documentElement.classList.add('studio-scroll-app');
   if (!app) {
     document.documentElement.classList.add('studio-scroll-header-document');
     const measure = () => document.documentElement.style.setProperty('--studio-mobile-header-height', header.getBoundingClientRect().height + 'px');
