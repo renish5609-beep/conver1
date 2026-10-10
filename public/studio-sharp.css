@@ -16,6 +16,10 @@
 }
 
 html,body,button,input,select,textarea{font-family:var(--sharp-font)!important}
+/* Safari paints its exposed toolbar/safe-area from the document canvas. */
+@media(max-width:767px), (max-height:500px) and (pointer:coarse){
+  html,body{background-color:#f7f6f2!important;color-scheme:light}
+}
 :is(h1,h2,h3,h4,h5,.page-title,.panel-title,.section-head h2,.hero-h1,.hg-title,.vc-title,.rm-title,.auth-title,.ob-title,.coach-avatar-name,.settings-about-title){font-family:var(--sharp-font)!important;font-weight:600;letter-spacing:-.035em}
 :is(.auth-label,.hero-eyebrow,.panel-title,.settings-section-title,.rm-section-label,.qb-diff,.tag,.tone-pill,.at-overline,.at-site-art-overline,.at-site-art-bottom,.at-site-fine,.at-how-fine,.at-site-feature-icon,.studio-transition-status){font-family:var(--sharp-mono)!important;letter-spacing:.095em}
 
